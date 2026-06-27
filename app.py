@@ -10,7 +10,7 @@ import json
 import os
 
 # 1. 網頁全域設定
-st.set_page_config(page_title="智慧看盤系統 V5.5 - XQ 點擊連動版", layout="wide") 
+st.set_page_config(page_title="智慧看盤系統 V5.6 - XQ 完美中文化版", layout="wide") 
 
 # --- 💡 永久儲存自選股功能 ---
 SAVE_FILE = "watchlist.json"
@@ -60,9 +60,33 @@ def get_ai_analysis(stock_name, price, change, pct, ma5, k_val, d_val):
         return f"AI 暫時繁忙中。錯誤訊息: {e}" 
 
 # ==================================================================== 
-# 🛠️ 側邊欄自選股管理 (已清理多餘選單)
+# 🛠️ 1. 處理「新增股票與刪除」的側邊欄功能
 # ==================================================================== 
-# 取得目前全域選定的股票名稱與代碼
+st.sidebar.header("🔧 我的自選股管理面版") 
+
+with st.sidebar.expander("➕ 新增自選股", expanded=True): 
+    new_code = st.text_input("輸入股票代碼", placeholder="例如: 2882").strip() 
+    if st.button("確認加入自選"): 
+        if new_code: 
+            target_code = new_code.upper()
+            pure_number = target_code.split('.')[0]
+            if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
+                target_code = f"{pure_number}.TW"
+            try:
+                test_stock = yf.Ticker(target_code)
+                test_df = test_stock.history(period="1d")
+                if test_df.empty:
+                    st.sidebar.error(f"❌ 查無此代碼 [{target_code}]")
+                else:
+                    detected_name = TAIWAN_STOCK_DICT.get(pure_number, test_stock.info.get('shortName', pure_number))
+                    display_key = f"{detected_name} ({target_code})" if "(" not in detected_name else detected_name
+                    st.session_state["watchlist_dict"][display_key] = target_code
+                    save_my_watchlist()
+                    st.sidebar.success(f"成功加入: {detected_name}")
+                    st.rerun()
+            except:
+                st.sidebar.error("❌ 無法連線驗證。")
+
 watchlist_keys = list(st.session_state["watchlist_dict"].keys())
 if "current_selected_idx" not in st.session_state or st.session_state["current_selected_idx"] >= len(watchlist_keys):
     st.session_state["current_selected_idx"] = 0
@@ -70,12 +94,12 @@ if "current_selected_idx" not in st.session_state or st.session_state["current_s
 selected_display = watchlist_keys[st.session_state["current_selected_idx"]]
 stock_code = st.session_state["watchlist_dict"][selected_display]
 
-# 側邊欄僅保留刪除按鈕與刷新頻率，功能更專一
 if st.sidebar.button("❌ 從清單中刪除目前股票"): 
     if len(st.session_state["watchlist_dict"]) > 1: 
         del st.session_state["watchlist_dict"][selected_display] 
         save_my_watchlist()
         st.session_state["current_selected_idx"] = 0
+        st.sidebar.success("已成功移出自選清單！")
         st.rerun() 
     else: 
         st.sidebar.warning("清單內至少需保留一檔股票！") 
@@ -89,7 +113,7 @@ try:
     prev_close = info.get("previousClose", df['Close'].iloc[-2]) 
     price_change = current_price - prev_close 
     price_change_pct = (price_change / prev_close) * 100 
-    color_text = "red" if price_change >= 0 else "green"
+    color_text = "#FF3333" if price_change >= 0 else "#00AA00"
     sign = "+" if price_change >= 0 else ""
 except Exception as e:
     st.error(f"數據載入失敗: {e}")
@@ -98,27 +122,27 @@ except Exception as e:
 # ==================================================================== 
 # 📊 XQ 仿真四宮格主排版控制
 # ==================================================================== 
-st.markdown(f"### 📊 XQ 操盤模擬器 | 當前關注：{selected_display}")
+# 🌟 2. 解決切換連動問題：統一由主畫面的中央選單當作樞紐控制
+st.markdown(f"### 📊 XQ 操盤模擬器 | 當前關注：<span style='color:{color_text};'>{selected_display}</span>", unsafe_allow_html=True)
 
 row1_col1, row1_col2 = st.columns(2)
 
 with row1_col1:
     st.markdown("🧱 **【看盤重點/報價組合】**")
     
-    # 主畫面核心切換樞紐
+    # 這裡的下拉選單將全權引導整張網頁的其餘資訊同步更新
     selected_display = st.selectbox(
-        "🔍 快速點擊切換關注商品", 
+        "🔍 點擊下方下拉框，一鍵同步切換全部圖表", 
         watchlist_keys, 
         index=st.session_state["current_selected_idx"],
-        key="main_grid_select"
+        key="main_central_select"
     )
     
     if watchlist_keys.index(selected_display) != st.session_state["current_selected_idx"]:
         st.session_state["current_selected_idx"] = watchlist_keys.index(selected_display)
         st.rerun()
-        
-    stock_code = st.session_state["watchlist_dict"][selected_display]
 
+    # 建立數據包
     quote_data = []
     for name, code in st.session_state["watchlist_dict"].items():
         try:
@@ -127,55 +151,50 @@ with row1_col1:
             p_c = s_info.get("previousClose", s_df['Close'].iloc[-2])
             chg = c_p - p_c
             pct = (chg / p_c) * 100
-            quote_data.append({"商品名稱": name, "成交價": f"{c_p:,.2f}", "漲跌": f"{chg:+,.2f}", "漲幅(%)": f"{pct:+.2f}%"})
+            quote_data.append({"商品名稱": name, "成交價": c_p, "漲跌": chg, "漲幅(%)": pct})
         except:
-            quote_data.append({"商品名稱": name, "成交價": "載入中...", "漲跌": "-", "漲幅(%)": "-"})
+            quote_data.append({"商品名稱": name, "成交價": 0.0, "漲跌": 0.0, "漲幅(%)": 0.0})
             
     quote_df = pd.DataFrame(quote_data)
-    st.dataframe(quote_df, use_container_width=True, hide_index=True, height=180)
+
+    # 🌟 3. 解決紅綠顏色問題：利用 Pandas Styler 來精準控制表格的紅漲綠跌文字特效
+    def color_picker(val):
+        if val > 0: return 'color: #FF3333; font-weight: bold;' # 紅色
+        elif val < 0: return 'color: #00AA00; font-weight: bold;' # 綠色
+        return 'color: #333333;'
+
+    styled_html = (
+        quote_df.style
+        .format({"成交價": "{:,.2f}", "漲跌": "{:+,.2f}", "漲幅(%)": "{:+.2f}%"})
+        .applymap(color_picker, subset=["漲跌", "漲幅(%)"])
+        .hide(axis="index")
+        .set_properties(**{'text-align': 'center', 'padding': '6px', 'border-bottom': '1px solid #eee'})
+        .to_html()
+    )
+    
+    # 將客製化的紅綠報價表格以 HTML 渲染出來
+    st.write(styled_html, unsafe_allow_html=True)
+
 
 with row1_col2:
     st.markdown("📈 **【技術分析】**")
     time_frame = st.segmented_control("時間區間", ["當日", "近月", "一年", "五年"], default="一年", key="tech_tf")
-    
-    # 計算五日均線
     df['MA5'] = df['Close'].rolling(window=5).mean()
     plot_df = df.tail(60) if time_frame == "一年" else df.tail(15)
     
-    # 建立主附圖 (K線 + 成交量)
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.65, 0.35])
-    
-    # 🌟 升級處：精準客製台股「紅漲綠跌」實心 K 線配色
     fig.add_trace(go.Candlestick(
-        x=plot_df.index, 
-        open=plot_df['Open'], high=plot_df['High'], low=plot_df['Low'], close=plot_df['Close'], 
+        x=plot_df.index, open=plot_df['Open'], high=plot_df['High'], low=plot_df['Low'], close=plot_df['Close'], 
         name="K線", 
-        increasing_line_color='#FF3333',   # 漲：亮紅色線條
-        increasing_fillcolor='#FF3333',   # 漲：紅色實心填滿
-        decreasing_line_color='#00AA00',   # 跌：亮綠色線條
-        decreasing_fillcolor='#00AA00'    # 跌：綠色實心填滿
+        increasing_line_color='#FF3333', increasing_fillcolor='#FF3333', 
+        decreasing_line_color='#00AA00', decreasing_fillcolor='#00AA00'
     ), row=1, col=1)
     
-    # 加入均線折線
-    fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA5'], mode='lines', line=dict(color='#1A73E8', width=1.5), name='MA5'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA5'], mode='lines', line=dict(color='#1A73E8', width=1.5)), row=1, col=1)
     
-    # 🌟 升級處：讓成交量柱狀圖也同步呈現「紅漲綠跌」配色
     vol_colors = ['#FF3333' if c >= o else '#00AA00' for o, c in zip(plot_df['Open'], plot_df['Close'])]
-    fig.add_trace(go.Bar(
-        x=plot_df.index, 
-        y=plot_df['Volume'], 
-        marker_color=vol_colors, 
-        name="成交量"
-    ), row=2, col=1)
-    
-    # 圖表外觀優化 (白底與單邊右側座標軸)
-    fig.update_layout(
-        template="plotly_white", 
-        xaxis_rangeslider_visible=False, 
-        height=210, 
-        margin=dict(l=10, r=40, t=5, b=5), 
-        showlegend=False
-    )
+    fig.add_trace(go.Bar(x=plot_df.index, y=plot_df['Volume'], marker_color=vol_colors), row=2, col=1)
+    fig.update_layout(template="plotly_white", xaxis_rangeslider_visible=False, height=210, margin=dict(l=10, r=40, t=5, b=5), showlegend=False)
     fig.update_yaxes(side="right", gridcolor="#e5e5e5")
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
@@ -200,18 +219,24 @@ with row2_col1:
 
     with tab_ticks:
         try:
+            # 確保抓取即時數據
             intra_df = yf.Ticker(stock_code).history(period="1d", interval="5m")
-            if intra_df.empty: intra_df = df.tail(20)
+            if intra_df.empty: 
+                intra_df = df.tail(20)
+            
             tick_df = intra_df.tail(6).copy().sort_index(ascending=False)
             
+            # 建立表格
             html_table = "<table style='width:100%; border-collapse: collapse; font-size:12px; text-align:center;'>"
             html_table += "<tr style='background:#f8f9fa; border-bottom:2px solid #ddd;'><th>時間</th><th>價格</th><th>單量</th><th>總量</th></tr>"
+            
             for idx, r in tick_df.iterrows():
                 c_color = "red" if r['Close'] >= r['Open'] else "green"
                 html_table += f"<tr style='border-bottom:1px solid #eee;'><td>{idx.strftime('%H:%M')}</td><td>{r['Close']:,.2f}</td><td style='color:{c_color}; font-weight:bold;'>{int(r['Volume']):,}</td><td>{int(r['Volume']*2):,}</td></tr>"
+            
             html_table += "</table>"
             st.write(html_table, unsafe_allow_html=True)
-        except:
+        except Exception as ticks_err:
             st.info("成交明細載入中...")
 
 with row2_col2:
@@ -228,7 +253,7 @@ with row2_col2:
                 market_news = yf.Ticker("^TWII").info.get('news', [])[:3]
                 for m_item in market_news:
                     st.markdown(f"📰 [{m_item.get('title')}]({m_item.get('link')})")
-        except Exception as e:
+        except Exception as news_err:
             st.caption("暫無即時新聞")
             
     with tab_ai:
