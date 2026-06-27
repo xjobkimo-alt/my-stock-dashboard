@@ -212,12 +212,12 @@ if not df.empty:
      
     # 【4. 籌碼面區塊（精準對齊安全保護版）】 
     if ".tw" in stock_code.lower(): 
-            st.markdown("### 📊 籌碼面：機構與大戶持股概況") 
-            raw_inst = info.get("institutionsPercentHeld", 0)
-            raw_insider = info.get("heldPercentInsiders", 0)
+        st.markdown("### 📊 籌碼面：機構與大戶持股概況") 
+        raw_inst = info.get("institutionsPercentHeld", 0)
+        raw_insider = info.get("heldPercentInsiders", 0)
             
-            institutional_holders = float(raw_inst) * 100 if raw_inst is not None else 0.0
-            insider_holders = float(raw_insider) * 100 if raw_insider is not None else 0.0
+        institutional_holders = float(raw_inst) * 100 if raw_inst is not None else 0.0
+        insider_holders = float(raw_insider) * 100 if raw_insider is not None else 0.0
          
-            if institutional_holders > 0 or insider_holders > 0: 
-                cc1, cc2 = st.columns(2) 
+        if institutional_holders > 0 or insider_holders > 0: 
+            cc1, cc2 = st.columns(2) 
