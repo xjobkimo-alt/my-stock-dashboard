@@ -35,30 +35,42 @@ st.markdown("""
             border: 1px solid #444444 !important;
         }
         
-                /* 2. 🧱 終極消滅右上角時間區間按鈕組的所有白色區塊 */
-        div.stSegmentedControl, [data-baseweb="segmented-control"] {
+        /* 2. 🧱 地毯式全面抹除右上角時間區間的白底黑字 */
+        .stSegmentedControl, 
+        [data-testid="stSegmentedControl"], 
+        [role="radiogroup"],
+        div[class*="stSegmentedControl"] {
             background-color: #1E1E1E !important;
             border: 1px solid #444444 !important;
             border-radius: 6px !important;
             padding: 3px !important;
         }
-        
-        /* 規定按鈕組裡面所有未選中按鈕的樣式：深灰底、灰字 */
-        div.stSegmentedControl button, [data-baseweb="segmented-control"] button {
+
+        /* 強制將裏面所有的按鈕與文字全部變暗、字體轉灰白 */
+        .stSegmentedControl button, 
+        [data-testid="stSegmentedControl"] button,
+        div[class*="stSegmentedControl"] button,
+        [role="radiogroup"] button,
+        [role="radiogroup"] div {
             background-color: #262626 !important;
             color: #BBBBBB !important;
             border: none !important;
+            background: #262626 !important;
             box-shadow: none !important;
         }
-        
-        /* 規定被滑鼠點選（選中）的那顆按鈕：亮紅色背景、純白字 */
-        div.stSegmentedControl button[aria-checked="true"], 
-        [data-baseweb="segmented-control"] button[aria-checked="true"],
-        div.stSegmentedControl button[data-checked="true"] {
+
+        /* 強制規定被選中的那顆按鈕（一年）必須是台股紅色、字體純白 */
+        .stSegmentedControl button[aria-checked="true"],
+        [data-testid="stSegmentedControl"] button[aria-checked="true"],
+        div[class*="stSegmentedControl"] button[aria-checked="true"],
+        [role="radiogroup"] button[aria-checked="true"],
+        [aria-checked="true"] {
             background-color: #FF3333 !important;
             color: #FFFFFF !important;
+            background: #FF3333 !important;
             font-weight: bold !important;
         }
+
 
         /* 3. 📋 強制修正自訂 HTML 表格在暗色系下的顯色 */
         table {
