@@ -70,7 +70,7 @@ def get_ai_analysis(stock_name, price, change, pct, ma5, ma20, k_val, d_val):
         股票名稱: {stock_name}，當前價格: {price}，今日漲跌: {change} ({pct}%)，5日均線(MA5): {ma5:.2f}，20日均線(MA20): {ma20:.2f}，KD指標: K={k_val:.2f}, D={d_val:.2f}
         請條理分明、語氣客觀，直接給出核心結論（偏多、偏空、觀望），並說明原因。
         """
-        response = client.models.generate_content(model='gemini-1.5-flash', contents=prompt)
+        response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
         return response.text
     except Exception as e:
         return f"AI 診斷失敗。錯誤訊息: {e}"
