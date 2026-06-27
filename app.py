@@ -157,16 +157,18 @@ with row1_col1:
             
     quote_df = pd.DataFrame(quote_data)
 
-    # 🌟 3. 解決紅綠顏色問題：利用 Pandas Styler 來精準控制表格的紅漲綠跌文字特效
+    # 🌟 修正處：將原本的 .applymap 改為支援新版 Pandas 的寫法
     def color_picker(val):
-        if val > 0: return 'color: #FF3333; font-weight: bold;' # 紅色
-        elif val < 0: return 'color: #00AA00; font-weight: bold;' # 綠色
+        if isinstance(val, (int, float)):
+            if val > 0: return 'color: #FF3333; font-weight: bold;' # 紅色
+            elif val < 0: return 'color: #00AA00; font-weight: bold;' # 綠色
         return 'color: #333333;'
 
+    # 這裡將原本的 .applymap 改成全新的 .map 語法，徹底消除 AttributeError
     styled_html = (
         quote_df.style
         .format({"成交價": "{:,.2f}", "漲跌": "{:+,.2f}", "漲幅(%)": "{:+.2f}%"})
-        .applymap(color_picker, subset=["漲跌", "漲幅(%)"])
+        .map(color_picker, subset=["漲跌", "漲幅(%)"])  # 🌟 核心修正點
         .hide(axis="index")
         .set_properties(**{'text-align': 'center', 'padding': '6px', 'border-bottom': '1px solid #eee'})
         .to_html()
