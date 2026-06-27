@@ -144,8 +144,7 @@ TAIWAN_STOCK_DICT = {
     "2357": "華碩", "3231": "緯創", "2324": "仁寶", "2356": "英業達"
 }
 
-# --- 數據安全抓取函式 ---
-@st.cache_data(ttl=60)
+st.cache_data(ttl=60)
 def fetch_safe_stock_data(ticker): 
     session = requests.Session() 
     session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}) 
