@@ -47,7 +47,7 @@ def get_ai_analysis(stock_name, price, change, pct, ma5, k_val, d_val):
     except Exception as e: 
         return f"AI 暫時繁忙中。錯誤訊息: {e}" 
 
-# --- 側邊欄：自選股管理功能（自動中文化與嚴格防錯版） ---
+# --- 側邊欄：自選股管理功能（自動中文化與嚴格防錯不崩潰版） ---
 st.sidebar.header("我的自訂追蹤清單") 
 
 # 初始清單 (預設為中文)
@@ -75,55 +75,59 @@ with st.sidebar.expander("➕ 新增自選股"):
     
     if st.button("確認加入自選"): 
         if new_code: 
-            # 1. 智慧補全邏輯：如果輸入純數字，自動補上台灣市場後綴 .TW
+            # 1. 智慧補全邏輯：如果是純數字且沒加後綴，自動補上 .TW
             target_code = new_code.upper()
-            pure_number = target_code.split('.')[0] # 提取純數字部分
+            pure_number = target_code.split('.')[0]
             
             if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
                 target_code = f"{pure_number}.TW"
             
-            with st.spinner("正在驗證股票代碼並獲取中文名稱..."):
+            with st.spinner("正在驗證股票代碼..."):
                 try:
-                    # 2. 嚴格驗證：向 yfinance 發出輕量請求，確認該代碼是否真的存在
+                    # 2. 嚴格驗證：向 yfinance 確認該代碼是否真的存在
                     test_stock = yf.Ticker(target_code)
                     test_df = test_stock.history(period="1d")
                     
-                    # 如果回傳的歷史 K 線是空的，代表交易所根本沒這檔股票
+                    # 如果回傳是空的，代表沒有這檔股票
                     if test_df.empty:
-                        st.sidebar.error(f"❌ 查無此代碼 [{target_code}]，請重新確認！")
-                        st.stop()
-                    
-                    # 3. 帶出中文名稱邏輯
-                    # 優先看字典裡有沒有登記的台股中文名
-                    if pure_number in TAIWAN_STOCK_DICT:
-                        detected_name = TAIWAN_STOCK_DICT[pure_number]
+                        # 🌟 修改點：將 st.sidebar.error 存入暫存，不使用 st.stop() 避免右側主畫面斷電壞死
+                        st.session_state["add_stock_error"] = f"❌ 查無此代碼 [{target_code}]，請重新確認！"
                     else:
-                        # 字典沒有，則嘗試從 yahoo 獲取官方簡稱或全稱
-                        test_info = test_stock.info
-                        detected_name = test_info.get('shortName') or test_info.get('longName') or pure_number
+                        # 3. 帶出中文名稱邏輯
+                        if pure_number in TAIWAN_STOCK_DICT:
+                            detected_name = TAIWAN_STOCK_DICT[pure_number]
+                        else:
+                            test_info = test_stock.info
+                            raw_name = test_info.get('shortName') or test_info.get('longName') or pure_number
+                            # 簡化可能太長的外國英文名稱
+                            detected_name = raw_name.split(' ')[0] if len(raw_name) > 12 else raw_name
                         
-                        # 如果拿到的是落落長的英文，切掉後面的 Corporation 或 Inc
-                        if len(detected_name) > 12:
-                            detected_name = detected_name.split(' ')[0]
-                    
-                    # 4. 寫入清單並重新整理網頁
-                    display_key = f"{detected_name} ({target_code})"
-                    st.session_state["watchlist_dict"][display_key] = target_code
-                    st.sidebar.success(f"已加入：{detected_name}")
-                    st.rerun()
-                    
+                        # 4. 寫入清單，並清空先前的錯誤紀錄，最後重新整理網頁
+                        display_key = f"{detected_name} ({target_code})"
+                        st.session_state["watchlist_dict"][display_key] = target_code
+                        if "add_stock_error" in st.session_state:
+                            del st.session_state["add_stock_error"]
+                        st.rerun()
+                        
                 except Exception as e:
-                    st.sidebar.error("❌ 無法連線至交易所或代碼格式錯誤，請再試一次。")
+                    st.session_state["add_stock_error"] = "❌ 無法連線至交易所或代碼格式錯誤。"
         else:
             st.sidebar.warning("請先輸入代碼！")
 
-# 選擇與刪除股票 (保留原邏輯)
+    # 🌟 在按鈕下方動態顯示錯誤訊息，但不中斷後續程式碼執行
+    if "add_stock_error" in st.session_state:
+        st.error(st.session_state["add_stock_error"])
+
+# 選擇與刪除股票 (維持正常主畫面運作)
 selected_display = st.sidebar.selectbox("點擊切換當前關注股票", list(st.session_state["watchlist_dict"].keys())) 
 stock_code = st.session_state["watchlist_dict"][selected_display] 
 
 if st.sidebar.button("❌ 從清單中刪除目前股票"): 
     if len(st.session_state["watchlist_dict"]) > 1: 
         del st.session_state["watchlist_dict"][selected_display] 
+        # 刪除股票時順便清空錯誤訊息
+        if "add_stock_error" in st.session_state:
+            del st.session_state["add_stock_error"]
         st.rerun() 
     else: 
         st.sidebar.warning("清單內至少需保留一檔股票！") 
