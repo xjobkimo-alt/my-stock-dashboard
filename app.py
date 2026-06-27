@@ -213,7 +213,7 @@ try:
  with row1_3: st.markdown(f"**幅度：** <span style='color:{color_light}; font-size:20px; font-weight:bold;'>{price_change_pct:+.2f}%</span>", unsafe_allow_html=True) 
  st.markdown("---") 
  
- # 【4. 籌碼面區塊】 
+ # --- 📊 籌碼面區塊 --- 
  if ".tw" in stock_code.lower(): 
      st.markdown("### 📊 籌碼面：機構與大戶持股概況") 
      institutional_holders = info.get("institutionsPercentHeld", 0) * 100 
@@ -226,6 +226,34 @@ try:
  
          bar_fig = go.Figure() 
          bar_fig.add_trace(go.Bar(y=['持股'], x=[institutional_holders], orientation='h', marker_color='#ff4d4d', name='法人')) 
-# 請確保這段程式碼放在整個檔案的最底部，且縮排與第 121 行的 try 一致
-except Exception as e: 
-    st.error(f"❌ 數據載入失敗。請檢查股票代碼是否正確！錯誤訊息: {e}")
+         bar_fig.add_trace(go.Bar(y=['持股'], x=[insider_holders], orientation='h', marker_color='#00cc66', name='大戶')) 
+         bar_fig.update_layout(barmode='stack', template="plotly_dark", plot_bgcolor="#121212", paper_bgcolor="#121212", height=60, margin=dict(l=0,r=80,t=0,b=0)) 
+         st.plotly_chart(bar_fig, use_container_width=True) 
+     else: 
+         st.info("💡 該個股當前交易日之大戶籌碼暫無異動。") 
+ else: 
+     st.info("💡 該個股當前交易日之大戶籌碼暫無異動。") 
+
+ # 📢 這裡非常重要！先加一條分隔線，並確保縮排完全靠左對齊外層
+ st.markdown("---") 
+ 
+ # --- 🤖 【5. 最底層：AI 智慧解說區塊】 --- 
+ # 💡 確保以下這一整段與最外層的 if ".tw" in stock_code.lower(): 對齊！
+ st.markdown("### 🤖 AI 智慧投資決策輔助") 
+ with st.expander("✨ 展開 AI 即時盤勢分析建議", expanded=True): 
+     tab1, tab2 = st.tabs(["🔒 原有 Gemini 旗艦解說", "🌐 全新開源 AI 每日股價診斷"])
+     
+     with tab1:
+         if st.button("🚀 啟動 Gemini 分析當前策略"): 
+             with st.spinner("Gemini AI 正在深度分析中..."): 
+                 ai_report = get_ai_analysis(stock_name, current_price, price_change, price_change_pct, df['MA5'].iloc[-1], df['MA20'].iloc[-1], df['K'].iloc[-1], df['D'].iloc[-1]) 
+                 st.write(ai_report) 
+                 
+     with tab2:
+         st.caption("※ 本功能採用免密鑰開源大語言模型 (Llama-3) 進行本地/雲端開源診斷。")
+         if st.button("🔍 啟動開源 AI 每日股價診斷"):
+             with st.spinner("開源 AI 正在進行個股綜合技術面診斷..."):
+                 os_ai_report = get_open_source_ai_analysis(stock_name, current_price, price_change, price_change_pct, df['MA5'].iloc[-1], df['MA20'].iloc[-1], df['K'].iloc[-1], df['D'].iloc[-1])
+                 st.write(os_ai_report)
+except Exception as e:
+    st.error(f"❌ 系統發生全域錯誤：{e}")
