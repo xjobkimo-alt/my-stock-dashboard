@@ -157,26 +157,42 @@ def render_live_charts():
 render_live_charts()
 st.markdown("---")
 
-# 3. 📊 三大法人籌碼面區塊
-if ".TW" in stock_code:
-    st.markdown("### 📊 籌碼面：三大法人買賣超統計 (大盤整體)")
-    inst_df, msg = fetch_tw_legal_data()
-    if inst_df is not None:
-        f_rows = inst_df.loc[inst_df['單位名稱'].str.contains('外資'), '買賣差額']
-        i_rows = inst_df.loc[inst_df['單位名稱'].str.contains('投信'), '買賣差額']
-        d_rows = inst_df.loc[inst_df['單位名稱'].str.contains('自營商'), '買賣差額']
-        f_net = f_rows.values if not f_rows.empty else 0.0
-        i_net = i_rows.values if not i_rows.empty else 0.0
-        d_net = d_rows.values if not d_rows.empty else 0.0
+# --- 🌐 證交所三大法人數據爬蟲 (自動回溯週五版) ---
+@st.cache_data(ttl=3600)  
+def fetch_tw_legal_data():
+    """自動判斷週末休市，若為週六日則自動往前抓取週五的最新交易數據"""
+    try:
+        # 取得今天日期與星期幾 (0是週一, 5是週六, 6是週日)
+        today = datetime.datetime.now()
+        weekday = today.weekday()
         
-        cc1, cc2, cc3 = st.columns(3)
-        with cc1: st.metric("外資買賣超", f"{f_net:+.2f} 億元")
-        with cc2: st.metric("投信買賣超", f"{i_net:+.2f} 億元")
-        with cc3: st.metric("自營商買賣超", f"{d_net:+.2f} 億元")
-        st.dataframe(inst_df.style.format({'買進金額': '{:.2f}億', '賣出金額': '{:.2f}億', '買賣差額': '{:+.2f}億'}), use_container_width=True)
-    else:
-        st.info(msg)
-    st.markdown("---")
+        # ⚙️ 關鍵邏輯：如果是週末，自動推算回上週五
+        if weekday == 5:    # 星期六，往前推 1 天到週五
+            target_date = today - datetime.timedelta(days=1)
+        elif weekday == 6:  # 星期日，往前推 2 天到週五
+            target_date = today - datetime.timedelta(days=2)
+        else:
+            target_date = today
+            
+        today_str = target_date.strftime("%Y%m%d")
+        
+        # 🛡️ 標準官方 API 接口
+        url = f"https://twse.com.tw{today_str}&response=json"
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        
+        response = requests.get(url, headers=headers, timeout=10)
+        data_json = response.json()
+        
+        if "data" not in data_json:
+            return None, f"⚠️ 證交所今日 ({target_date.strftime('%Y-%m-%d')}) 籌碼數據尚未公佈或休市。"
+            
+        df_inst = pd.DataFrame(data_json['data'], columns=data_json['fields'])
+        df_inst = df_inst[['單位名稱', '買進金額', '賣出金額', '買賣差額']]
+        for col in ['買進金額', '賣出金額', '買賣差額']:
+            df_inst[col] = df_inst[col].str.replace(',', '').astype(float) / 100000000
+        return df_inst, "成功"
+    except Exception as e:
+        return None, f"無法取得籌碼數據: {e}"
 
 # 4. 🤖 AI 解說區塊
 st.markdown("### 🤖 AI 智慧投資解說")
