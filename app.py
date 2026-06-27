@@ -13,15 +13,14 @@ import os
 st.set_page_config(page_title="智慧看盤系統 V5.6 - XQ 完美中文化版", layout="wide") 
 
 # 🌟 升級版：全方位黑化與細節微調 CSS
-# 🌟 最終完結版：全網頁、側邊欄、輸入框、按鈕組全方位黑化 CSS
+# 🌟 超級終極版：強效壓制折疊鈕白底、輸入框與提示框 CSS
 st.markdown("""
     <style>
-        /* 1. 網頁主體與側邊欄底色徹底變黑 */
+        /* 1. 網頁全域底色徹底變黑 */
         .stApp {
             background-color: #121212 !important;
             color: #E0E0E0 !important;
         }
-        /* 讓左側側邊欄背景變成內斂的深灰色 */
         [data-testid="stSidebar"], section[data-testid="stSidebarViewPort"] {
             background-color: #1C1C1E !important;
         }
@@ -32,26 +31,37 @@ st.markdown("""
             border-top: 1px solid #333333 !important;
         }
         
-        /* 2. ➕ 徹底解決「新增自選股」展開元件與文字輸入框的白底 */
-        /* 讓摺疊卡片 st.expander 變深灰 */
-        [data-testid="stExpander"], .streamlit-expanderHeader {
-            background-color: #2C2C2E !important;
+        /* 2. ➕ 強效修正「➕ 新增自選股」折疊按鈕與提示框的所有死白 */
+        /* 讓 st.expander 整個主體變成沉穩深灰 */
+        .stExpander, [data-testid="stExpander"] {
+            background-color: #222224 !important;
             border: 1px solid #444444 !important;
+            border-radius: 6px !important;
         }
-        /* 強制將股票代碼「文字輸入框」染成純黑底、白字，消滅慘白 */
+        /* 💡 核心修正：將折疊按鈕內部的死白文字強制改為高對比的純白與深黑底 */
+        .stExpander summary, .stExpander button, [data-testid="stExpander"] summary {
+            background-color: #26262B !important;
+            color: #FFFFFF !important;
+        }
+        /* 讓代碼「文字輸入框」維持完美的純黑底白字 */
         input[type="text"], .stTextInput>div>div>input {
             background-color: #121212 !important;
             color: #FFFFFF !important;
             border: 1px solid #555555 !important;
-            border-radius: 4px !important;
         }
-        /* 當滑鼠點擊輸入框時的邊框發光微調 */
-        input[type="text"]:focus {
-            border-color: #FF3333 !important;
-            box-shadow: 0 0 0 1px #FF3333 !important;
+        
+        /* 3. 🟢 修正成功提示框（st.success）與錯誤提示框（st.error）在黑底下的顏色 */
+        [data-testid="stNotification"] {
+            background-color: #222224 !important;
+            border-left: 5px solid #00AA00 !important; /* 成功框左邊留綠條 */
+            color: #FFFFFF !important;
+        }
+        div[data-testid="stNotificationV2"] {
+            background-color: #222224 !important;
+            color: #FFFFFF !important;
         }
 
-        /* 3. 🧱 地毯式全面抹除右上角時間區間的白底 */
+        /* 4. 🧱 地毯式全面抹除右上角時間區間的白底 */
         .stSegmentedControl, [data-testid="stSegmentedControl"], [role="radiogroup"], div[class*="stSegmentedControl"] {
             background-color: #1E1E1E !important;
             border: 1px solid #444444 !important;
@@ -70,7 +80,7 @@ st.markdown("""
             font-weight: bold !important;
         }
 
-        /* 4. 📋 修正自訂 HTML 表格與按鈕外觀 */
+        /* 5. 📋 修正自訂 HTML 表格與按鈕外觀 */
         table { background-color: #121212 !important; color: #E0E0E0 !important; }
         tr { background-color: #121212 !important; border-bottom: 1px solid #2D2D2D !important; }
         th { background-color: #1E1E1E !important; color: #FFFFFF !important; }
@@ -81,7 +91,6 @@ st.markdown("""
         }
     </style>
 """, unsafe_allow_html=True)
-
 
 
 # --- 💡 永久儲存自選股功能 ---
