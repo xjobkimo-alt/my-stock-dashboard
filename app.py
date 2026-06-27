@@ -8,14 +8,14 @@ from google import genai
 import requests
 
 # 1. 網頁全域設定
-st.set_page_config(page_title="智慧看盤系統 V3.4", layout="centered")
+st.set_page_config(page_title="智慧看盤系統 V3.5", layout="centered")
 
 # --- 🔐 密碼鎖防護機制 ---
 if "password_correct" not in st.session_state:
     st.session_state["password_correct"] = False
 
 if not st.session_state["password_correct"]:
-    st.title("🔒 私人智慧看盤系統 V3.4")
+    st.title("🔒 私人智慧看盤系統 V3.5")
     user_input = st.text_input("帳號 (Username)")
     pass_input = st.text_input("密碼 (Password)", type="password")
     if st.button("確認登入"):
@@ -27,12 +27,12 @@ if not st.session_state["password_correct"]:
     st.stop() 
 # ------------------------------------
 
-# --- 🌐 證交所三大法人數據爬蟲 ---
+# --- 🌐 證交所三大法人數據爬蟲 (⚠️ 更名破除舊快取記憶) ---
 @st.cache_data(ttl=3600)  
-def get_tw_inst_data():
+def fetch_tw_legal_data():
+    """強制更換函式名稱，逼迫 Streamlit 丟掉卡住的舊網址暫存"""
     try:
         today_str = datetime.datetime.now().strftime("%Y%m%d")
-        # ⚠️ 100% 正確的官方 API 接口
         url = f"https://twse.com.tw{today_str}&response=json"
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         response = requests.get(url, headers=headers, timeout=10)
@@ -64,7 +64,7 @@ def get_ai_analysis(stock_name, price, change, pct, ma5, ma20, k_val, d_val):
         return f"AI 暫時繁忙中，請稍候再點擊。錯誤訊息: {e}"
 
 # --- 📊 看盤系統主程式 ---
-st.title("📊 Python 智慧看盤網頁 (V3.4 穩定版)")
+st.title("📊 Python 智慧看盤網頁 (V3.5 最終版)")
 stock_code = st.text_input("請輸入股票代碼（台股請加 .TW，美股直接輸入）", value="2330.TW")
 
 st.sidebar.header("🛠️ 系統功能設定")
@@ -73,7 +73,6 @@ st.sidebar.markdown("---")
 show_ma = st.sidebar.checkbox("顯示均線 (MA5 / MA20 / MA60)", value=True)
 sub_indicator = st.sidebar.selectbox("下方副圖指標", ["無", "KD (9, 3, 3)", "MACD (12, 26, 9)"])
 
-# 1. 股票基礎數據先行抓取 (供主圖與 AI 共享)
 stock = yf.Ticker(stock_code)
 df = stock.history(period="5y")
 info = stock.info
@@ -96,7 +95,6 @@ price_change_pct = (price_change / prev_close) * 100
 color_light = "#ff4d4d" if price_change >= 0 else "#00cc66"
 stock_name = info.get('longName', stock_code)
 
-# 2. 精美線圖與即時報價區塊 (只有這區會每 10 秒默默定時定點自動刷新)
 @st.fragment(run_every=refresh_rate)
 def render_live_charts():
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -117,7 +115,7 @@ def render_live_charts():
     else: plot_df = yf.Ticker(stock_code).history(period="1d", interval="5m")
 
     if sub_indicator != "無" and time_frame != "當日":
-        fig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.03, row_heights=[0.55, 0.22, 0.23])
+        fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.7, 0.3])
     else:
         fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.7, 0.3])
 
@@ -134,25 +132,30 @@ def render_live_charts():
     volume_colors = ['#ff4d4d' if c >= o else '#00cc66' for o, c in zip(plot_df['Open'], plot_df['Close'])]
     fig.add_trace(go.Bar(x=plot_df.index, y=plot_df['Volume'], marker_color=volume_colors, name="成交量", opacity=0.7), row=2, col=1)
 
-    fig.update_layout(template="plotly_dark", plot_bgcolor="#1c1c1e", paper_bgcolor="#121212", margin=dict(l=20, r=20, t=10, b=10), xaxis_rangeslider_visible=False, height=450)
+    # ⚠️ 【圖例優化】強制把說明文字放在圖表上方，並讓文字變成白色，防止隱形
+    fig.update_layout(
+        template="plotly_dark", plot_bgcolor="#1c1c1e", paper_bgcolor="#121212", 
+        margin=dict(l=20, r=20, t=30, b=10), xaxis_rangeslider_visible=False, height=450,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(color="white"))
+    )
     fig.update_yaxes(side="right", gridcolor="#2c2c2e")
     st.plotly_chart(fig, on_select="ignore")
 
-# 觸發畫圖
+# 執行畫圖
 render_live_charts()
 st.markdown("---")
 
-# 3. 📊 三大法人籌碼面區塊 (放在自動重新整理範圍外，防止閃退與干擾)
+# 3. 📊 三大法人籌碼面區塊 (更換為 fetch_tw_legal_data 破除舊暫存)
 if ".TW" in stock_code:
     st.markdown("### 📊 籌碼面：三大法人買賣超統計 (大盤整體)")
-    inst_df, msg = get_tw_inst_data()
+    inst_df, msg = fetch_tw_legal_data()
     if inst_df is not None:
         f_rows = inst_df.loc[inst_df['單位名稱'].str.contains('外資'), '買賣差額']
         i_rows = inst_df.loc[inst_df['單位名稱'].str.contains('投信'), '買賣差額']
         d_rows = inst_df.loc[inst_df['單位名稱'].str.contains('自營商'), '買賣差額']
-        f_net = f_rows.values[0] if not f_rows.empty else 0.0
-        i_net = i_rows.values[0] if not i_rows.empty else 0.0
-        d_net = d_rows.values[0] if not d_rows.empty else 0.0
+        f_net = f_rows.values if not f_rows.empty else 0.0
+        i_net = i_rows.values if not i_rows.empty else 0.0
+        d_net = d_rows.values if not d_rows.empty else 0.0
         
         cc1, cc2, cc3 = st.columns(3)
         with cc1: st.metric("外資買賣超", f"{f_net:+.2f} 億元")
@@ -163,7 +166,7 @@ if ".TW" in stock_code:
         st.info(msg)
     st.markdown("---")
 
-# 4. 🤖 AI 解說區塊 (獨立運作，點擊後絕對不會再被定時刷新洗掉！)
+# 4. 🤖 AI 解說區塊
 st.markdown("### 🤖 AI 智慧投資解說")
 with st.expander("✨ 展開 AI 即時盤勢分析建議", expanded=True):
     if st.button("🚀 啟動 AI 分析當前策略"):
