@@ -118,14 +118,14 @@ sub_indicator = st.sidebar.selectbox("下方副圖指標", ["無", "KD (9, 3, 3)
 # --- 看盤系統主程式排版控制 --- 
 st.title("📈 Python 智慧看盤網頁 (V5.3 開源雙AI版)") 
  
-try: 
+
  # 【1. 最頂端：自選股行情快報看板】 
- st.markdown("### 📊 我的自選股即時行情快報") 
- stocks_to_show = list(st.session_state["watchlist_dict"].items()) 
- cols = st.columns(len(stocks_to_show)) 
+st.markdown("### 📊 我的自選股即時行情快報") 
+stocks_to_show = list(st.session_state["watchlist_dict"].items()) 
+cols = st.columns(len(stocks_to_show)) 
  
- for idx, (name, code) in enumerate(stocks_to_show): 
-     with cols[idx]: 
+for idx, (name, code) in enumerate(stocks_to_show): 
+    with cols[idx]: 
          try: 
              s_df, s_info = fetch_safe_stock_data(code) 
              c_p = s_info.get("currentPrice", s_df['Close'].iloc[-1]) 
@@ -136,35 +136,35 @@ try:
          except: 
              st.caption(f"{name} 載入中...") 
  
- st.markdown("---") 
+st.markdown("---") 
  
- # 核心數據加載 
- df, info = fetch_safe_stock_data(stock_code) 
+# 核心數據加載 
+df, info = fetch_safe_stock_data(stock_code) 
  
  # 【精準加回主要大標題】放在行情快報與 K 線圖的正中間！ 
- st.markdown(f"## 🎯 當前關注：{selected_display}") 
+st.markdown(f"## 🎯 當前關注：{selected_display}") 
  
- df['MA5'] = df['Close'].rolling(window=5).mean() 
- df['MA20'] = df['Close'].rolling(window=20).mean() 
- df['MA60'] = df['Close'].rolling(window=60).mean() 
+df['MA5'] = df['Close'].rolling(window=5).mean() 
+df['MA20'] = df['Close'].rolling(window=20).mean() 
+df['MA60'] = df['Close'].rolling(window=60).mean() 
  
- low_9 = df['Low'].rolling(window=9).min() 
- high_9 = df['High'].rolling(window=9).max() 
- rsv = 100 * ((df['Close'] - low_9) / (high_9 - low_9)) 
- rsv = rsv.fillna(50) 
- df['K'] = rsv.ewm(com=2, adjust=False).mean() 
- df['D'] = df['K'].ewm(com=2, adjust=False).mean() 
+low_9 = df['Low'].rolling(window=9).min() 
+high_9 = df['High'].rolling(window=9).max() 
+rsv = 100 * ((df['Close'] - low_9) / (high_9 - low_9)) 
+rsv = rsv.fillna(50) 
+df['K'] = rsv.ewm(com=2, adjust=False).mean() 
+df['D'] = df['K'].ewm(com=2, adjust=False).mean() 
  
- current_price = info.get("currentPrice", df['Close'].iloc[-1]) 
- prev_close = info.get("previousClose", df['Close'].iloc[-2]) 
- price_change = current_price - prev_close 
- price_change_pct = (price_change / prev_close) * 100 
- color_light = "#ff4d4d" if price_change >= 0 else "#00cc66" 
- stock_name = info.get('longName', stock_code) 
+current_price = info.get("currentPrice", df['Close'].iloc[-1]) 
+prev_close = info.get("previousClose", df['Close'].iloc[-2]) 
+price_change = current_price - prev_close 
+price_change_pct = (price_change / prev_close) * 100 
+color_light = "#ff4d4d" if price_change >= 0 else "#00cc66" 
+stock_name = info.get('longName', stock_code) 
  
- # 【2. 中間層：K 線技術線圖區塊 (設定 st.fragment 片段刷新)】 
- @st.fragment(run_every=refresh_rate) 
- def render_live_charts(): 
+# 【2. 中間層：K 線技術線圖區塊 (設定 st.fragment 片段刷新)】 
+@st.fragment(run_every=refresh_rate) 
+def render_live_charts(): 
      now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") 
      st.caption(f"🔄 數據最後更新時間: {now} (每 {refresh_rate} 秒自動刷新線圖)") 
  
@@ -200,21 +200,21 @@ try:
      fig.update_yaxes(side="right", gridcolor="#2c2c2e") 
      st.plotly_chart(fig, on_select="ignore") 
  
- # 執行渲染 K 線主圖 
- render_live_charts() 
+# 執行渲染 K 線主圖 
+render_live_charts() 
  
- st.markdown("---") 
+st.markdown("---") 
  
- # 【3. 詳細報價（緊跟在 K 線圖下方）】 
- st.markdown("### 📋 詳細報價") 
- row1_1, row1_2, row1_3 = st.columns(3) 
- with row1_1: st.markdown(f"**成交：** <span style='color:{color_light}; font-size:20px; font-weight:bold;'>{current_price:,.2f}</span>", unsafe_allow_html=True) 
- with row1_2: st.markdown(f"**漲跌：** <span style='color:{color_light}; font-size:20px; font-weight:bold;'>{price_change:+,.2f}</span>", unsafe_allow_html=True) 
- with row1_3: st.markdown(f"**幅度：** <span style='color:{color_light}; font-size:20px; font-weight:bold;'>{price_change_pct:+.2f}%</span>", unsafe_allow_html=True) 
- st.markdown("---") 
+# 【3. 詳細報價（緊跟在 K 線圖下方）】 
+st.markdown("### 📋 詳細報價") 
+row1_1, row1_2, row1_3 = st.columns(3) 
+with row1_1: st.markdown(f"**成交：** <span style='color:{color_light}; font-size:20px; font-weight:bold;'>{current_price:,.2f}</span>", unsafe_allow_html=True) 
+with row1_2: st.markdown(f"**漲跌：** <span style='color:{color_light}; font-size:20px; font-weight:bold;'>{price_change:+,.2f}</span>", unsafe_allow_html=True) 
+with row1_3: st.markdown(f"**幅度：** <span style='color:{color_light}; font-size:20px; font-weight:bold;'>{price_change_pct:+.2f}%</span>", unsafe_allow_html=True) 
+st.markdown("---") 
  
- # --- 📊 籌碼面區塊 --- 
- if ".tw" in stock_code.lower(): 
+# --- 📊 籌碼面區塊 --- 
+if ".tw" in stock_code.lower(): 
      st.markdown("### 📊 籌碼面：機構與大戶持股概況") 
      institutional_holders = info.get("institutionsPercentHeld", 0) * 100 
      insider_holders = info.get("heldPercentInsiders", 0) * 100 
@@ -231,29 +231,41 @@ try:
          st.plotly_chart(bar_fig, use_container_width=True) 
      else: 
          st.info("💡 該個股當前交易日之大戶籌碼暫無異動。") 
- else: 
+else: 
      st.info("💡 該個股當前交易日之大戶籌碼暫無異動。") 
 
- # 📢 這裡非常重要！先加一條分隔線，並確保縮排完全靠左對齊外層
- st.markdown("---") 
+# 📢 這裡非常重要！先加一條分隔線，並確保縮排完全靠左對齊外層
+st.markdown("---") 
  
- # --- 🤖 【5. 最底層：AI 智慧解說區塊】 --- 
- # 💡 確保以下這一整段與最外層的 if ".tw" in stock_code.lower(): 對齊！
- st.markdown("### 🤖 AI 智慧投資決策輔助") 
- with st.expander("✨ 展開 AI 即時盤勢分析建議", expanded=True): 
-     tab1, tab2 = st.tabs(["🔒 原有 Gemini 旗艦解說", "🌐 全新開源 AI 每日股價診斷"])
-     
-     with tab1:
-         if st.button("🚀 啟動 Gemini 分析當前策略"): 
-             with st.spinner("Gemini AI 正在深度分析中..."): 
-                 ai_report = get_ai_analysis(stock_name, current_price, price_change, price_change_pct, df['MA5'].iloc[-1], df['MA20'].iloc[-1], df['K'].iloc[-1], df['D'].iloc[-1]) 
-                 st.write(ai_report) 
-                 
-     with tab2:
-         st.caption("※ 本功能採用免密鑰開源大語言模型 (Llama-3) 進行本地/雲端開源診斷。")
-         if st.button("🔍 啟動開源 AI 每日股價診斷"):
-             with st.spinner("開源 AI 正在進行個股綜合技術面診斷..."):
-                 os_ai_report = get_open_source_ai_analysis(stock_name, current_price, price_change, price_change_pct, df['MA5'].iloc[-1], df['MA20'].iloc[-1], df['K'].iloc[-1], df['D'].iloc[-1])
-                 st.write(os_ai_report)
-except Exception as e:
-    st.error(f"❌ 系統發生全域錯誤：{e}")
+# --- 🌐 全新串接開源 AI 模型診斷邏輯 (免金鑰超穩定 Llama-3 來源) --- 
+def get_open_source_ai_analysis(stock_name, price, change, pct, ma5, ma20, k_val, d_val):
+    try:
+        # 構造給開源模型的 Prompt 
+        prompt = (
+            f"你是一位專業的證券分析師。請針對以下數據進行每日股價診斷。\n"
+            f"股票: {stock_name}\n當前價格: {price}\n今日漲跌: {change} ({pct}%)\n"
+            f"均線狀況: MA5={ma5:.2f}, MA20={ma20:.2f}\nKD指標: K={k_val:.2f}, D={d_val:.2f}\n"
+            f"請提供繁體中文的精準盤勢技術面診斷與操作風險提示。"
+        )
+        
+        # 使用極其穩定的 Pollinations AI 免費開源 Llama 模型端點
+        api_url = "https://pollinations.ai"
+        payload = {
+            "messages": [
+                {"role": "system", "content": "你是一個精通台股與美股技術面分析的 AI 智慧投顧助理，一律使用繁體中文回答。"},
+                {"role": "user", "content": prompt}
+            ],
+            "model": "openai-large",  # 使用其後台架設的穩定開源大模型
+            "jsonMode": False
+        }
+        
+        # 發送請求（設定 15 秒超時防止卡死）
+        response = requests.post(api_url, json=payload, timeout=15)
+        
+        if response.status_code == 200:
+            return response.text.strip()
+        else:
+            return f"開源 AI 伺服器繁忙中（狀態碼: {response.status_code}），請稍後再試。"
+            
+    except Exception as e:
+        return f"開源 AI 診斷連線失敗。錯誤訊息: {e}"
