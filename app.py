@@ -16,7 +16,7 @@ st.set_page_config(page_title="智慧看盤系統 V5.6 - XQ 完美中文化版",
 # 🌟 超級終極版：強效壓制折疊鈕白底、輸入框與提示框 CSS
 st.markdown("""
     <style>
-        /* 1. 網頁全域底色徹底變黑 */
+        /* 1. 網頁全域底色與一般文字黑化 */
         .stApp {
             background-color: #121212 !important;
             color: #E0E0E0 !important;
@@ -24,63 +24,63 @@ st.markdown("""
         [data-testid="stSidebar"], section[data-testid="stSidebarViewPort"] {
             background-color: #1C1C1E !important;
         }
-        p, span, label, th, td, h1, h2, h3, .stMarkdown {
+        /* 🌟 修改處：移除全域強制文字上白色的規則，改用更精準的標籤，釋放紅綠色 */
+        p, label, th, h1, h2, h3, .stMarkdown {
             color: #E0E0E0 !important;
         }
-        hr {
-            border-top: 1px solid #333333 !important;
+        hr { border-top: 1px solid #333333 !important; }
+        
+        /* 🌟 核心新增：強制賦予紅漲綠跌最高顏色優先權，不被系統吃掉 */
+        .stock-up {
+            color: #FF3333 !important;
+            font-weight: bold !important;
+        }
+        .stock-down {
+            color: #00AA00 !important;
+            font-weight: bold !important;
         }
         
-        /* 2. ➕ 強效修正「➕ 新增自選股」折疊按鈕與提示框的所有死白 */
-        /* 讓 st.expander 整個主體變成沉穩深灰 */
+        /* 2. ➕ 側邊欄折疊鈕與輸入框 */
         .stExpander, [data-testid="stExpander"] {
             background-color: #222224 !important;
             border: 1px solid #444444 !important;
             border-radius: 6px !important;
         }
-        /* 💡 核心修正：將折疊按鈕內部的死白文字強制改為高對比的純白與深黑底 */
         .stExpander summary, .stExpander button, [data-testid="stExpander"] summary {
             background-color: #26262B !important;
             color: #FFFFFF !important;
         }
-        /* 讓代碼「文字輸入框」維持完美的純黑底白字 */
         input[type="text"], .stTextInput>div>div>input {
             background-color: #121212 !important;
             color: #FFFFFF !important;
             border: 1px solid #555555 !important;
         }
         
-        /* 3. 🟢 修正成功提示框（st.success）與錯誤提示框（st.error）在黑底下的顏色 */
-        [data-testid="stNotification"] {
-            background-color: #222224 !important;
-            border-left: 5px solid #00AA00 !important; /* 成功框左邊留綠條 */
-            color: #FFFFFF !important;
-        }
-        div[data-testid="stNotificationV2"] {
+        /* 3. 🟢 通知提示框 */
+        [data-testid="stNotification"], div[data-testid="stNotificationV2"] {
             background-color: #222224 !important;
             color: #FFFFFF !important;
         }
 
-        /* 4. 🧱 地毯式全面抹除右上角時間區間的白底 */
+        /* 4. 🧱 右上角時間區間 */
         .stSegmentedControl, [data-testid="stSegmentedControl"], [role="radiogroup"], div[class*="stSegmentedControl"] {
             background-color: #1E1E1E !important;
             border: 1px solid #444444 !important;
             border-radius: 6px !important;
             padding: 3px !important;
         }
-        .stSegmentedControl button, [data-testid="stSegmentedControl"] button, div[class*="stSegmentedControl"] button, [role="radiogroup"] button {
+        .stSegmentedControl button, [data-testid="stSegmentedControl"] button, [role="radiogroup"] button {
             background-color: #262626 !important;
             color: #BBBBBB !important;
             border: none !important;
-            box-shadow: none !important;
         }
-        .stSegmentedControl button[aria-checked="true"], [data-testid="stSegmentedControl"] button[aria-checked="true"], [role="radiogroup"] button[aria-checked="true"], [aria-checked="true"] {
+        .stSegmentedControl button[aria-checked="true"], [data-testid="stSegmentedControl"] button[aria-checked="true"], [role="radiogroup"] button[aria-checked="true"] {
             background-color: #FF3333 !important;
             color: #FFFFFF !important;
             font-weight: bold !important;
         }
 
-        /* 5. 📋 修正自訂 HTML 表格與按鈕外觀 */
+        /* 5. 📋 修正自訂 HTML 表格 */
         table { background-color: #121212 !important; color: #E0E0E0 !important; }
         tr { background-color: #121212 !important; border-bottom: 1px solid #2D2D2D !important; }
         th { background-color: #1E1E1E !important; color: #FFFFFF !important; }
@@ -91,7 +91,6 @@ st.markdown("""
         }
     </style>
 """, unsafe_allow_html=True)
-
 
 # --- 💡 永久儲存自選股功能 ---
 SAVE_FILE = "watchlist.json"
@@ -253,11 +252,14 @@ with row1_col1:
                 
         with b_col2:
             st.markdown(f"<p style='text-align:center; padding-top:6px; font-family:monospace; font-size:13px;'>{c_p:,.2f}</p>", unsafe_allow_html=True)
+        # 根據漲跌動態套用剛剛寫好的 stock-up 或 stock-down 樣式類別
+        css_class = "stock-up" if chg > 0 else ("stock-down" if chg < 0 else "")
+
         with b_col3:
-            st.markdown(f"<p style='text-align:center; padding-top:6px; color:{color}; font-weight:bold; font-family:monospace; font-size:13px;'>{sign}{chg:,.2f}</p>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align:center; padding-top:6px; font-family:monospace; font-size:13px;' class='{css_class}'>{sign}{chg:,.2f}</p>", unsafe_allow_html=True)
         with b_col4:
-            st.markdown(f"<p style='text-align:center; padding-top:6px; color:{color}; font-weight:bold; font-family:monospace; font-size:13px;'>{sign}{pct:.2f}%</p>", unsafe_allow_html=True)
-        
+            st.markdown(f"<p style='text-align:center; padding-top:6px; font-family:monospace; font-size:13px;' class='{css_class}'>{sign}{pct:.2f}%</p>", unsafe_allow_html=True)
+
         st.markdown("<hr style='margin:2px 0px; border-top:1px solid #eee;'>", unsafe_allow_html=True)
 
 with row1_col2:
@@ -336,8 +338,9 @@ with row2_col1:
 
             
             for idx, r in tick_df.iterrows():
-                c_color = "red" if r['Close'] >= r['Open'] else "green"
-                html_table += f"<tr style='border-bottom:1px solid #eee;'><td>{idx.strftime('%H:%M')}</td><td>{r['Close']:,.2f}</td><td style='color:{c_color}; font-weight:bold;'>{int(r['Volume']):,}</td><td>{int(r['Volume']*2):,}</td></tr>"
+                t_class = "stock-up" if r['Close'] >= r['Open'] else "stock-down"
+                html_table += f"<tr style='border-bottom:1px solid #eee;'><td>{idx.strftime('%H:%M')}</td><td>{r['Close']:,.2f}</td><td class='{t_class}'>{int(r['Volume']):,}</td><td>{int(r['Volume']*2):,}</td></tr>"
+
             
             html_table += "</table>"
             st.write(html_table, unsafe_allow_html=True)
