@@ -4,7 +4,6 @@ import pandas as pd
 import streamlit as st 
 import plotly.graph_objects as go 
 from plotly.subplots import make_subplots 
-from google import genai 
 import requests 
 
 # 1. 網頁全域設定 
@@ -25,7 +24,7 @@ if not st.session_state["password_correct"]:
             st.rerun() 
         else: 
             st.error("❌ 帳號或密碼錯誤，請重新輸入！") 
-    st.stop()  # 🛑 沒登入成功前，強制在此中斷程式，以下內容絕對不執行！
+    st.stop()  # 🛑 強制中斷，沒登入前絕不執行下方任何程式
 # ------------------------------------ 
 
 # --- 📊 股價數據安全抓取函式 --- 
@@ -35,12 +34,16 @@ def fetch_safe_stock_data(ticker):
     session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) 
     stock = yf.Ticker(ticker, session=session) 
     df = stock.history(period="5y") 
-    info = stock.info 
+    try:
+        info = stock.info
+    except:
+        info = {}
     return df, info 
 
 # --- 🤖 原有 Gemini 投資解說邏輯 --- 
 def get_ai_analysis(stock_name, price, change, pct, ma5, ma20, k_val, d_val): 
     try: 
+        from google import genai
         client = genai.Client(api_key=st.secrets["api_keys"]["gemini"]) 
         prompt = f"分析以下股票走勢：{stock_name}，當前價格: {price}，今日漲跌: {change} ({pct}%)，KD 指標: K={k_val:.2f}, D={d_val:.2f}，請給予繁體中文短評並提供策略建議。" 
         response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt) 
@@ -123,10 +126,10 @@ for idx, (name, code) in enumerate(stocks_to_show):
     with cols[idx]: 
         try: 
             s_df, s_info = fetch_safe_stock_data(code) 
-            c_p = s_info.get("currentPrice", s_df['Close'].iloc[-1]) 
-            p_c = s_info.get("previousClose", s_df['Close'].iloc[-2]) 
+            c_p = s_info.get("currentPrice", s_df['Close'].iloc[-1] if not s_df.empty else 0) 
+            p_c = s_info.get("previousClose", s_df['Close'].iloc[-2] if len(s_df) > 1 else c_p) 
             chg = c_p - p_c 
-            chg_pct = (chg / p_c) * 100 
+            chg_pct = (chg / p_c) * 100 if p_c != 0 else 0 
             st.metric(label=name, value=f"{c_p:,.2f}", delta=f"{chg:+,.2f} ({chg_pct:+.2f}%)") 
         except: 
             st.caption(f"{name} 載入中...") 
@@ -136,93 +139,85 @@ st.markdown("---")
 # 核心數據加載 
 df, info = fetch_safe_stock_data(stock_code) 
  
-# 【精準加回主要大標題】放在行情快報與 K 線圖的正中間！ 
 st.markdown(f"## 🎯 當前關注：{selected_display}") 
- 
-df['MA5'] = df['Close'].rolling(window=5).mean() 
-df['MA20'] = df['Close'].rolling(window=20).mean() 
-df['MA60'] = df['Close'].rolling(window=60).mean() 
- 
-low_9 = df['Low'].rolling(window=9).min() 
-high_9 = df['High'].rolling(window=9).max() 
-rsv = 100 * ((df['Close'] - low_9) / (high_9 - low_9)) 
-rsv = rsv.fillna(50) 
-df['K'] = rsv.ewm(com=2, adjust=False).mean() 
-df['D'] = df['K'].ewm(com=2, adjust=False).mean() 
- 
-current_price = info.get("currentPrice", df['Close'].iloc[-1]) 
-prev_close = info.get("previousClose", df['Close'].iloc[-2]) 
-price_change = current_price - prev_close 
-price_change_pct = (price_change / prev_close) * 100 
-color_light = "#ff4d4d" if price_change >= 0 else "#00cc66" 
-stock_name = info.get('longName', stock_code) 
- 
-# 【2. 中間層：K 線技術線圖區塊 (設定 st.fragment 片段刷新)】 
-@st.fragment(run_every=refresh_rate) 
-def render_live_charts(): 
-    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") 
-    st.caption(f"🔄 數據最後更新時間: {now} (每 {refresh_rate} 秒自動刷新線圖)") 
- 
-    time_frame = st.segmented_control("時間區間", ["當日", "近月", "一年", "五年"], default="一年") 
-    latest_date = df.index[-1] 
- 
-    if time_frame == "五年": plot_df = df 
-    elif time_frame == "一年": plot_df = df.loc[latest_date - pd.Timedelta(days=365):] 
-    elif time_frame == "近月": plot_df = df.loc[latest_date - pd.Timedelta(days=30):] 
-    else: plot_df = yf.Ticker(stock_code).history(period="1d", interval="5m") 
- 
-    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.7, 0.3]) 
- 
-    fig.add_trace(go.Candlestick( 
-        x=plot_df.index, open=plot_df['Open'], high=plot_df['High'], low=plot_df['Low'], close=plot_df['Close'], 
-        name="K 線", increasing_line_color='#ff4d4d', increasing_fillcolor='#ff4d4d', 
-        decreasing_line_color='#00cc66', decreasing_fillcolor='#00cc66' 
-    ), row=1, col=1) 
- 
-    if show_ma and time_frame != "當日": 
-        fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA5'], mode='lines', line=dict(color='#ffffff', width=1), name='MA5'), row=1, col=1) 
-        fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA20'], mode='lines', line=dict(color='#e6b800', width=1.2), name='MA20'), row=1, col=1) 
-        fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA60'], mode='lines', line=dict(color='#00bcff', width=1.5), name='MA60'), row=1, col=1) 
- 
-    volume_colors = ['#ff4d4d' if c >= o else '#00cc66' for o, c in zip(plot_df['Open'], plot_df['Close'])] 
-    fig.add_trace(go.Bar(x=plot_df.index, y=plot_df['Volume'], marker_color=volume_colors, name="成交量", opacity=0.7), row=2, col=1) 
- 
-    fig.update_layout( 
-        template="plotly_dark", plot_bgcolor="#1c1c1e", paper_bgcolor="#121212", margin=dict(l=20, r=20, t=30, b=10), 
-        xaxis_rangeslider_visible=False, height=450, 
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(color="white")) 
-    ) 
-    fig.update_yaxes(side="right", gridcolor="#2c2c2e") 
-    st.plotly_chart(fig, on_select="ignore") 
- 
-# 執行渲染 K 線主圖 
-render_live_charts() 
- 
-st.markdown("---") 
- 
-# 【3. 詳細報價（緊跟在 K 線圖下方）】 
-st.markdown("### 📋 詳細報價") 
-row1_1, row1_2, row1_3 = st.columns(3) 
-with row1_1: st.markdown(f"**成交：** <span style='color:{color_light}; font-size:20px; font-weight:bold;'>{current_price:,.2f}</span>", unsafe_allow_html=True) 
-with row1_2: st.markdown(f"**漲跌：** <span style='color:{color_light}; font-size:20px; font-weight:bold;'>{price_change:+,.2f}</span>", unsafe_allow_html=True) 
-with row1_3: st.markdown(f"**幅度：** <span style='color:{color_light}; font-size:20px; font-weight:bold;'>{price_change_pct:+.2f}%</span>", unsafe_allow_html=True) 
-st.markdown("---") 
- 
-# 【4. 籌碼面區塊】 
-if ".tw" in stock_code.lower(): 
-    st.markdown("### 📊 籌碼面：機構與大戶持股概況") 
-    institutional_holders = info.get("institutionsPercentHeld", 0) * 100 
-    insider_holders = info.get("heldPercentInsiders", 0) * 100 
- 
-    if institutional_holders > 0 or insider_holders > 0: 
-        cc1, cc2 = st.columns(2) 
-        with cc1: st.metric("外資與法人持股比例", f"{institutional_holders:.2f} %") 
-        with cc2: st.metric("公司內部大戶持股比例", f"{insider_holders:.2f} %") 
- 
-        bar_fig = go.Figure() 
-        bar_fig.add_trace(go.Bar(y=['持股'], x=[institutional_holders], orientation='h', marker_color='#ff4d4d', name='法人')) 
-        bar_fig.add_trace(go.Bar(y=['持股'], x=[insider_holders], orientation='h', marker_color='#00cc66', name='大戶')) 
-        bar_fig.update_layout(barmode='stack', template="plotly_dark", plot_bgcolor="#121212", paper_bgcolor="#121212", height=60, margin=dict(l=0,r=80,t=0,b=0)) 
-        st.plotly_chart(bar_fig, use_container_width=True) 
-    else: 
-        st.info("⚠️ 無法取得籌碼面數據，可能該股票非台股或資料尚未更新。")
+
+if not df.empty:
+    df['MA5'] = df['Close'].rolling(window=5).mean() 
+    df['MA20'] = df['Close'].rolling(window=20).mean() 
+    df['MA60'] = df['Close'].rolling(window=60).mean() 
+     
+    low_9 = df['Low'].rolling(window=9).min() 
+    high_9 = df['High'].rolling(window=9).max() 
+    rsv = 100 * ((df['Close'] - low_9) / (high_9 - low_9)) 
+    rsv = rsv.fillna(50) 
+    df['K'] = rsv.ewm(com=2, adjust=False).mean() 
+    df['D'] = df['K'].ewm(com=2, adjust=False).mean() 
+     
+    current_price = info.get("currentPrice", df['Close'].iloc[-1]) 
+    prev_close = info.get("previousClose", df['Close'].iloc[-2] if len(df) > 1 else current_price) 
+    price_change = current_price - prev_close 
+    price_change_pct = (price_change / prev_close) * 100 if prev_close != 0 else 0 
+    color_light = "#ff4d4d" if price_change >= 0 else "#00cc66" 
+    stock_name = info.get('longName', stock_code) 
+     
+    # 【2. 中間層：K 線技術線圖區塊】 
+    @st.fragment(run_every=refresh_rate) 
+    def render_live_charts(): 
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") 
+        st.caption(f"🔄 數據最後更新時間: {now} (每 {refresh_rate} 秒自動刷新線圖)") 
+     
+        time_frame = st.segmented_control("時間區間", ["當日", "近月", "一年", "五年"], default="一年") 
+        latest_date = df.index[-1] 
+     
+        if time_frame == "五年": plot_df = df 
+        elif time_frame == "一年": plot_df = df.loc[latest_date - pd.Timedelta(days=365):] 
+        elif time_frame == "近月": plot_df = df.loc[latest_date - pd.Timedelta(days=30):] 
+        else: plot_df = yf.Ticker(stock_code).history(period="1d", interval="5m") 
+     
+        fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.7, 0.3]) 
+     
+        fig.add_trace(go.Candlestick( 
+            x=plot_df.index, open=plot_df['Open'], high=plot_df['High'], low=plot_df['Low'], close=plot_df['Close'], 
+            name="K 線", increasing_line_color='#ff4d4d', increasing_fillcolor='#ff4d4d', 
+            decreasing_line_color='#00cc66', decreasing_fillcolor='#00cc66' 
+        ), row=1, col=1) 
+     
+        if show_ma and time_frame != "當日": 
+            fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA5'], mode='lines', line=dict(color='#ffffff', width=1), name='MA5'), row=1, col=1) 
+            fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA20'], mode='lines', line=dict(color='#e6b800', width=1.2), name='MA20'), row=1, col=1) 
+            fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA60'], mode='lines', line=dict(color='#00bcff', width=1.5), name='MA60'), row=1, col=1) 
+     
+        volume_colors = ['#ff4d4d' if c >= o else '#00cc66' for o, c in zip(plot_df['Open'], plot_df['Close'])] 
+        fig.add_trace(go.Bar(x=plot_df.index, y=plot_df['Volume'], marker_color=volume_colors, name="成交量", opacity=0.7), row=2, col=1) 
+     
+        fig.update_layout( 
+            template="plotly_dark", plot_bgcolor="#1c1c1e", paper_bgcolor="#121212", margin=dict(l=20, r=20, t=30, b=10), 
+            xaxis_rangeslider_visible=False, height=450, 
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(color="white")) 
+        ) 
+        fig.update_yaxes(side="right", gridcolor="#2c2c2e") 
+        st.plotly_chart(fig, on_select="ignore") 
+     
+    render_live_charts() 
+     
+    st.markdown("---") 
+     
+    # 【3. 詳細報價】 
+    st.markdown("### 📋 詳細報價") 
+    row1_1, row1_2, row1_3 = st.columns(3) 
+    with row1_1: st.markdown(f"**成交：** <span style='color:{color_light}; font-size:20px; font-weight:bold;'>{current_price:,.2f}</span>", unsafe_allow_html=True) 
+    with row1_2: st.markdown(f"**漲跌：** <span style='color:{color_light}; font-size:20px; font-weight:bold;'>{price_change:+,.2f}</span>", unsafe_allow_html=True) 
+    with row1_3: st.markdown(f"**幅度：** <span style='color:{color_light}; font-size:20px; font-weight:bold;'>{price_change_pct:+.2f}%</span>", unsafe_allow_html=True) 
+    st.markdown("---") 
+     
+    # 【4. 籌碼面區塊】 
+    if ".tw" in stock_code.lower(): 
+        st.markdown("### 📊 籌碼面：機構與大戶持股概況") 
+        institutional_holders = info.get("institutionsPercentHeld", 0) * 100 if info.get("institutionsPercentHeld") else 0
+        insider_holders = info.get("heldPercentInsiders", 0) * 100 if info.get("heldPercentInsiders") else 0
+     
+        if institutional_holders > 0 or insider_holders > 0: 
+            cc1, cc2 = st.columns(2) 
+            with cc1: st.metric("外資與法人持股比例", f"{institutional_holders:.2f} %") 
+            with cc2: st.metric("公司內部大戶持股比例", f"{insider_holders:.2f} %") 
+     
