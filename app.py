@@ -8,14 +8,14 @@ from google import genai
 import requests
 
 # 1. 網頁全域設定
-st.set_page_config(page_title="智慧看盤系統 V5.1", layout="wide") # 👈 改為 wide 寬螢幕版，方便看多筆報價
+st.set_page_config(page_title="智慧看盤系統 V5.2", layout="wide")
 
 # --- 🔐 密碼鎖防護機制 ---
 if "password_correct" not in st.session_state:
     st.session_state["password_correct"] = False
 
 if not st.session_state["password_correct"]:
-    st.title("🔒 私人智慧看盤系統 V5.1")
+    st.title("🔒 私人智慧看盤系統 V5.2")
     st.markdown("本網站已啟動安全防護，請輸入憑證以繼續瀏覽。")
     user_input = st.text_input("帳號 (Username)")
     pass_input = st.text_input("密碼 (Password)", type="password")
@@ -27,24 +27,6 @@ if not st.session_state["password_correct"]:
             st.error("❌ 帳號或密碼錯誤，請重新輸入！")
     st.stop() 
 # ------------------------------------
-
-# --- 🌐 證交所三大法人數據爬蟲 ---
-@st.cache_data(ttl=3600)  
-def fetch_tw_legal_data_v4():
-    try:
-        url = "https://twse.com.tw"
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-        response = requests.get(url, headers=headers, timeout=10)
-        data_json = response.json()
-        if "data" not in data_json:
-            return None, "⚠️ 證交所今日數據尚未公佈或休市。"
-        df_inst = pd.DataFrame(data_json['data'], columns=data_json['fields'])
-        df_inst = df_inst[['單位名稱', '買進金額', '賣出金額', '買賣差額']]
-        for col in ['買進金額', '賣出金額', '買賣差額']:
-            df_inst[col] = df_inst[col].str.replace(',', '').astype(float) / 100000000
-        return df_inst, "成功"
-    except Exception as e:
-        return None, f"無法取得籌碼數據: {e}"
 
 # --- 📈 股價數據安全抓取函式 ---
 @st.cache_data(ttl=300)
@@ -60,7 +42,7 @@ def fetch_safe_stock_data(ticker):
 def get_ai_analysis(stock_name, price, change, pct, ma5, ma20, k_val, d_val):
     try:
         client = genai.Client(api_key=st.secrets["api_keys"]["gemini"])
-        prompt = f"分析以下股票走勢：{stock_name}，當前價格: {price}，今日漲跌: {change} ({pct}%)，KD指標: K={k_val:.2f}, D={d_val:.2f}，請給予繁體中文短評。"
+        prompt = f"分析以下股票走勢：{stock_name}，當前價格: {price}，今日漲跌: {change} ({pct}%)，KD指標: K={k_val:.2f}, D={d_val:.2f}，請給予繁體中文短評並提供策略建議。"
         response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
         return response.text
     except Exception as e:
@@ -69,7 +51,6 @@ def get_ai_analysis(stock_name, price, change, pct, ma5, ma20, k_val, d_val):
 # --- ⚙️ 側邊欄：功能控制與選股清單 ---
 st.sidebar.header("📋 我的自訂追蹤清單")
 
-# 初始化具有「中文對照」的自選股字典
 if "watchlist_dict" not in st.session_state:
     st.session_state["watchlist_dict"] = {
         "台積電 (2330)": "2330.TW",
@@ -79,21 +60,18 @@ if "watchlist_dict" not in st.session_state:
         "輝達 (NVDA)": "NVDA"
     }
 
-# 功能 1：手動新增股票到清單 (需輸入名稱與代號)
 with st.sidebar.expander("➕ 新增自選股"):
     new_name = st.text_input("股票自訂名稱", placeholder="例如: 長榮").strip()
     new_code = st.text_input("股票代碼", placeholder="例如: 2603.TW").strip()
     if st.button("確認加入"):
         if new_name and new_code:
-            display_key = f"{new_name} ({new_code.split('.')[0]})"
+            display_key = f"{new_name} ({new_code.split('.')})"
             st.session_state["watchlist_dict"][display_key] = new_code
             st.rerun()
 
-# 功能 2：下拉選單一鍵切換標的
 selected_display = st.sidebar.selectbox("🔍 點擊一鍵換股看盤", list(st.session_state["watchlist_dict"].keys()))
 stock_code = st.session_state["watchlist_dict"][selected_display]
 
-# 功能 3：手動刪除清單內的股票
 if st.sidebar.button("❌ 從清單中刪除目前股票"):
     if len(st.session_state["watchlist_dict"]) > 1:
         del st.session_state["watchlist_dict"][selected_display]
@@ -107,38 +85,30 @@ refresh_rate = st.sidebar.slider("🔄 即時報價刷新頻率 (秒)", min_valu
 show_ma = st.sidebar.checkbox("顯示均線 (MA5 / MA20 / MA60)", value=True)
 sub_indicator = st.sidebar.selectbox("下方副圖指標", ["無", "KD (9, 3, 3)", "MACD (12, 26, 9)"])
 
-# --- 📊 看盤系統主程式 ---
-st.title("📊 Python 智慧看盤網頁 (V5.1 即時多股看板版)")
+# --- 📊 看盤系統主程式排版控制 ---
+st.title("📊 Python 智慧看盤網頁 (V5.2 旗艦定稿版)")
 
-# 🌟 【全新功能：頂部多筆自選股即時資訊看板】 🌟
-st.markdown("### 🏪 我的自選股即時行情快報")
+try:
+    # 📌 【1. 最頂端：自選股行情快報看板】
+    st.markdown("### 🏪 我的自選股即時行情快報")
+    stocks_to_show = list(st.session_state["watchlist_dict"].items())
+    cols = st.columns(len(stocks_to_show))
     
-# 依據自選股數量動態產生等量的列欄位
-stocks_to_show = list(st.session_state["watchlist_dict"].items())
-cols = st.columns(len(stocks_to_show))
-    
-for idx, (name, code) in enumerate(stocks_to_show):
-    with cols[idx]:
+    for idx, (name, code) in enumerate(stocks_to_show):
+        with cols[idx]:
             try:
-                # 輕量獲取這檔股票的最新收盤價與前收價
                 s_df, s_info = fetch_safe_stock_data(code)
                 c_p = s_info.get("currentPrice", s_df['Close'].iloc[-1])
                 p_c = s_info.get("previousClose", s_df['Close'].iloc[-2])
                 chg = c_p - p_c
                 chg_pct = (chg / p_c) * 100
-                
-                # 在頂部渲染出迷你字體的多股資訊圖卡
-                st.metric(
-                    label=name, 
-                    value=f"{c_p:,.2f}", 
-                    delta=f"{chg:+,.2f} ({chg_pct:+.2f}%)"
-                )
+                st.metric(label=name, value=f"{c_p:,.2f}", delta=f"{chg:+,.2f} ({chg_pct:+.2f}%)")
             except:
                 st.caption(f"{name} 載入中...")
                 
     st.markdown("---")
 
-    # 數據加載 (會跟隨側邊欄選中的 stock_code 自動變更下方主圖)
+    # 核心數據加載
     df, info = fetch_safe_stock_data(stock_code)
 
     df['MA5'] = df['Close'].rolling(window=5).mean()
@@ -159,12 +129,13 @@ for idx, (name, code) in enumerate(stocks_to_show):
     color_light = "#ff4d4d" if price_change >= 0 else "#00cc66"
     stock_name = info.get('longName', stock_code)
 
+    # 📌 【2. 中間層：K 線技術線圖區塊 (設定 st.fragment 片段刷新)】
     @st.fragment(run_every=refresh_rate)
     def render_live_charts():
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         st.caption(f"🕒 數據最後更新時間: {now} (每 {refresh_rate} 秒自動刷新線圖)")
-        
-        st.markdown(f"## 🎯 當前關注：{selected_display}")
+        # 🗑️ 那行 st.markdown 已經直接刪除，畫面就不會再重複出現囉！
+
         
         time_frame = st.segmented_control("時間區間", ["當日", "近月", "一年", "五年"], default="一年")
         latest_date = df.index[-1]
@@ -196,10 +167,19 @@ for idx, (name, code) in enumerate(stocks_to_show):
         fig.update_yaxes(side="right", gridcolor="#2c2c2e")
         st.plotly_chart(fig, on_select="ignore")
 
+    # 執行渲染 K 線主圖
     render_live_charts()
     st.markdown("---")
 
-    # 3. 📊 籌碼面區塊
+    # 📌 【3. 詳細報價（緊跟在 K 線圖下方）】
+    st.markdown("### 📋 詳細報價")
+    row1_1, row1_2, row1_3 = st.columns(3)
+    with row1_1: st.markdown(f"**成交：** <span style='color:{color_light}; font-size:20px; font-weight:bold;'>{current_price:,.2f}</span>", unsafe_allow_html=True)
+    with row1_2: st.markdown(f"**漲跌：** <span style='color:{color_light}; font-size:20px; font-weight:bold;'>{price_change:+,.2f}</span>", unsafe_allow_html=True)
+    with row1_3: st.markdown(f"**幅度：** <span style='color:{color_light}; font-size:20px; font-weight:bold;'>{price_change_pct:+.2f}%</span>", unsafe_allow_html=True)
+    st.markdown("---")
+
+    # 📌 【4. 籌碼面區塊】
     if ".tw" in stock_code.lower():
         st.markdown("### 📊 籌碼面：機構與大戶持股概況")
         institutional_holders = info.get("institutionsPercentHeld", 0) * 100
@@ -219,9 +199,13 @@ for idx, (name, code) in enumerate(stocks_to_show):
             st.info("ℹ️ 該個股當前交易日之大戶籌碼暫無異動。")
         st.markdown("---")
 
-    # 4. 🤖 AI 解說區塊
+    # 📌 【5. 最底層：AI 智慧解說區塊】
     st.markdown("### 🤖 AI 智慧投資解說")
     with st.expander("✨ 展開 AI 即時盤勢分析建議", expanded=True):
         if st.button("🚀 啟動 AI 分析當前策略"):
             with st.spinner("AI 正在深度分析中..."):
                 ai_report = get_ai_analysis(stock_name, current_price, price_change, price_change_pct, df['MA5'].iloc[-1], df['MA20'].iloc[-1], df['K'].iloc[-1], df['D'].iloc[-1])
+                st.write(ai_report)
+
+except Exception as e:
+    st.error(f"❌ 數據載入失敗。請檢查股票代碼是否正確！錯誤訊息: {e}")
