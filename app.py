@@ -197,8 +197,17 @@ with row1_col2:
     
     vol_colors = ['#FF3333' if c >= o else '#00AA00' for o, c in zip(plot_df['Open'], plot_df['Close'])]
     fig.add_trace(go.Bar(x=plot_df.index, y=plot_df['Volume'], marker_color=vol_colors), row=2, col=1)
-    fig.update_layout(template="plotly_white", xaxis_rangeslider_visible=False, height=210, margin=dict(l=10, r=40, t=5, b=5), showlegend=False)
-    fig.update_yaxes(side="right", gridcolor="#e5e5e5")
+        # 將原本的 template="plotly_white" 改為 "plotly_dark"
+    fig.update_layout(
+        template="plotly_dark", 
+        paper_bgcolor="#1E1E1E",  # 圖表外框底色
+        plot_bgcolor="#121212",   # K線圖主體底色
+        xaxis_rangeslider_visible=False, 
+        height=210, 
+        margin=dict(l=10, r=40, t=5, b=5), 
+        showlegend=False
+    )
+    fig.update_yaxes(side="right", gridcolor="#2D2D2D") # 暗色系網格線
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
 # 定義第二橫列 (Row 2)
@@ -215,8 +224,18 @@ with row2_col1:
             fig_line = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.6, 0.4])
             fig_line.add_trace(go.Scatter(x=intra_df.index, y=intra_df['Close'], mode='lines', line=dict(color='blue', width=1.5)), row=1, col=1)
             fig_line.add_trace(go.Bar(x=intra_df.index, y=intra_df['Volume'], marker_color='lightblue'), row=2, col=1)
-            fig_line.update_layout(template="plotly_white", height=200, margin=dict(l=10, r=40, t=5, b=5), showlegend=False)
+                        # 將原本的 template="plotly_white" 改為 "plotly_dark"
+            fig_line.update_layout(
+                template="plotly_dark", 
+                paper_bgcolor="#1E1E1E",
+                plot_bgcolor="#121212",
+                height=200, 
+                margin=dict(l=10, r=40, t=5, b=5), 
+                showlegend=False
+            )
+            fig_line.update_yaxes(side="right", gridcolor="#2D2D2D")
             st.plotly_chart(fig_line, use_container_width=True, config={'displayModeBar': False})
+
         except:
             st.info("走勢圖載入中...")
 
