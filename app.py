@@ -121,7 +121,7 @@ with st.sidebar.expander("➕ 新增自選股", expanded=True):
     if st.button("確認加入自選"): 
         if new_code: 
             target_code = new_code.upper()
-            pure_number = target_code.split('.')[0]
+            pure_number = target_code.split('.')
             if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
                 target_code = f"{pure_number}.TW"
             try:
@@ -138,7 +138,6 @@ with st.sidebar.expander("➕ 新增自選股", expanded=True):
                     st.rerun()
             except:
                 st.sidebar.error("❌ 無法連線驗證。")
-
 watchlist_keys = list(st.session_state["watchlist_dict"].keys())
 if "current_selected_idx" not in st.session_state or st.session_state["current_selected_idx"] >= len(watchlist_keys):
     st.session_state["current_selected_idx"] = 0
@@ -208,3 +207,99 @@ with row1_col1:
                 st.rerun()
                 
         with b_col2: st.markdown(f"<p style='text-align:center; padding-top:6px; font-family:monospace; font-size:13px;'>{c_p:,.2f}</p>", unsafe_allow_html=True)
+        with b_col3: st.markdown(f"<p style='text-align:center; padding-top:6px; font-family:monospace; font-size:13px;' class='{css_class}'>{b_sign}{chg:,.2f}</p>", unsafe_allow_html=True)
+        with b_col4: st.markdown(f"<p style='text-align:center; padding-top:6px; font-family:monospace; font-size:13px;' class='{css_class}'>{b_sign}{pct:.2f}%</p>", unsafe_allow_html=True)
+        st.markdown("<hr style='margin:2px 0px; border-top:1px solid #222;'>", unsafe_allow_html=True)
+
+# --- 右上格：技術分析 (絕不重複版) ---
+with row1_col2:
+    st.markdown("📈 **【技術分析】**")
+    time_frame = st.radio("選擇時間區間", ["當日", "近月", "一年", "五年"], index=2, horizontal=True, key="tech_tf_radio")
+    
+    df['MA5'] = df['Close'].rolling(window=5).mean()
+    latest_date = df.index[-1]
+    
+    if time_frame == "五年":
+        plot_df = df  
+    elif time_frame == "近月":
+        plot_df = df.loc[latest_date - pd.Timedelta(days=30):]
+    elif time_frame == "當日":
+        try:
+            plot_df = yf.Ticker(stock_code).history(period="1d", interval="5m")
+            if plot_df.empty: plot_df = df.tail(20) 
+        except:
+            plot_df = df.tail(20)
+    else: 
+        plot_df = df.loc[latest_date - pd.Timedelta(days=365):]
+    
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.65, 0.35])
+    fig.add_trace(go.Candlestick(x=plot_df.index, open=plot_df['Open'], high=plot_df['High'], low=plot_df['Low'], close=plot_df['Close'], name="K線", increasing_line_color='#FF3333', increasing_fillcolor='#FF3333', decreasing_line_color='#00AA00', decreasing_fillcolor='#00AA00'), row=1, col=1)
+    
+    if 'MA5' in plot_df.columns and time_frame != "當日":
+        fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA5'], mode='lines', line=dict(color='#1A73E8', width=1.5)), row=1, col=1)
+    
+    vol_colors = ['#FF3333' if c >= o else '#00AA00' for o, c in zip(plot_df['Open'], plot_df['Close'])]
+    fig.add_trace(go.Bar(x=plot_df.index, y=plot_df['Volume'], marker_color=vol_colors), row=2, col=1)
+    
+    fig.update_layout(template="plotly_dark", paper_bgcolor="#121212", plot_bgcolor="#121212", xaxis_rangeslider_visible=False, height=210, margin=dict(l=10, r=40, t=5, b=5), showlegend=False)
+    fig.update_yaxes(side="right", gridcolor="#2D2D2D")
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+
+# 定義第二橫列 (Row 2)
+row2_col1, row2_col2 = st.columns(2)
+
+# --- 左下格：走勢與即時明細 ---
+with row2_col1:
+    st.markdown(f"🕒 **【市場焦點動態】** <span style='color:{color_text}; font-weight:bold;'>{current_price:,.2f} ({sign}{price_change_pct:.2f}%)</span>", unsafe_allow_html=True)
+    tab_trend, tab_ticks = st.tabs(["📉 當日分時走勢", "📋 即時成交明細"])
+    
+    with tab_trend:
+        try:
+            intra_df = yf.Ticker(stock_code).history(period="1d", interval="5m")
+            if intra_df.empty: intra_df = df.tail(30)
+            fig_line = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.6, 0.4])
+            fig_line.add_trace(go.Scatter(x=intra_df.index, y=intra_df['Close'], mode='lines', line=dict(color='#1A73E8', width=1.5)), row=1, col=1)
+            fig_line.add_trace(go.Bar(x=intra_df.index, y=intra_df['Volume'], marker_color='lightblue'), row=2, col=1)
+            fig_line.update_layout(template="plotly_dark", paper_bgcolor="#121212", plot_bgcolor="#121212", height=200, margin=dict(l=10, r=40, t=5, b=5), showlegend=False)
+            st.plotly_chart(fig_line, use_container_width=True, config={'displayModeBar': False})
+        except:
+            st.info("走勢圖載入中...")
+
+    with tab_ticks:
+        try:
+            intra_df = yf.Ticker(stock_code).history(period="1d", interval="5m")
+            if intra_df.empty: intra_df = df.tail(20)
+            tick_df = intra_df.tail(6).copy().sort_index(ascending=False)
+            
+            html_table = "<table style='width:100%; border-collapse: collapse; font-size:12px; text-align:center;'><tr><th>時間</th><th>價格</th><th>單量</th><th>總量</th></tr>"
+            for idx, r in tick_df.iterrows():
+                t_class = "stock-up" if r['Close'] >= r['Open'] else "stock-down"
+                html_table += f"<tr><td>{idx.strftime('%H:%M')}</td><td>{r['Close']:,.2f}</td><td class='{t_class}'>{int(r['Volume']):,}</td><td>{int(r['Volume']*2):,}</td></tr>"
+            html_table += "</table>"
+            st.write(html_table, unsafe_allow_html=True)
+        except:
+            st.info("成交明細載入中...")
+
+# --- 右下格：新聞與 AI 策略 ---
+with row2_col2:
+    tab_news, tab_ai = st.tabs(["📰 相關即時新聞", "🤖 AI 智慧投資解說"])
+    with tab_news:
+        try:
+            news_list = info.get('news', [])
+            if news_list and len(news_list) > 0:
+                for item in news_list[:3]:
+                    st.markdown(f"📌 [{item.get('title', '新聞')}]({item.get('link', '#')})")
+            else:
+                st.caption("⏱️ 非交易日，為您聯播大盤近期財經焦點：")
+                market_news = yf.Ticker("^TWII").info.get('news', [])[:3]
+                for m_item in market_news:
+                    st.markdown(f"📰 [{m_item.get('title')}]({m_item.get('link')})")
+        except:
+            st.caption("暫無即時新聞")
+            
+    with tab_ai:
+        st.write(f"當前分析：**{selected_display}**")
+        if st.button("🚀 啟動 AI 深度策略分析", key="ai_btn_final"):
+            with st.spinner("AI 正在解析多空力道..."):
+                ai_report = get_ai_analysis(selected_display, current_price, price_change, price_change_pct, df['Close'].iloc[-1], 50, 50)
+                st.info(ai_report)
