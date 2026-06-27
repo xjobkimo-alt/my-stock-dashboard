@@ -174,66 +174,77 @@ with row1_col2:
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
 
-# 定義第二橫列 (Row 2): 當日走勢圖 (含明細) + 資訊分頁（新聞與AI）
+# 定義第二橫列 (Row 2): 走勢/明細分頁 + 資訊分頁（新聞與AI）
 row2_col1, row2_col2 = st.columns(2)
 
 with row2_col1:
-    st.markdown(f"🕒 **【當日走勢與即時成交明細】** <span style='color:{color_text}; font-weight:bold;'>{current_price:,.2f} ({sign}{price_change_pct:.2f}%)</span>", unsafe_allow_html=True)
+    st.markdown(f"🕒 **【市場焦點動態】** <span style='color:{color_text}; font-weight:bold;'>{current_price:,.2f} ({sign}{price_change_pct:.2f}%)</span>", unsafe_allow_html=True)
     
-    try:
-        # 抓取當日分時數據繪製左下走勢圖
-        intra_df = yf.Ticker(stock_code).history(period="1d", interval="5m")
-        if intra_df.empty: 
-            intra_df = df.tail(30) 
-        
-        fig_line = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.6, 0.4])
-        fig_line.add_trace(go.Scatter(x=intra_df.index, y=intra_df['Close'], mode='lines', line=dict(color='blue', width=1.5)), row=1, col=1)
-        fig_line.add_trace(go.Bar(x=intra_df.index, y=intra_df['Volume'], marker_color='lightblue'), row=2, col=1)
-        fig_line.update_layout(template="plotly_white", height=150, margin=dict(l=10, r=40, t=5, b=5), showlegend=False)
-        fig_line.update_yaxes(side="right", gridcolor="#e5e5e5")
-        st.plotly_chart(fig_line, use_container_width=True, config={'displayModeBar': False})
-        
-        # 🌟 新增功能：復刻 XQ 下方的「當日最新 5 筆成交明細表格」
-        st.markdown("<p style='font-size:13px; font-weight:bold; margin-bottom:2px;'>📋 即時逐筆成交明細 (最新5筆)</p>", unsafe_allow_html=True)
-        
-        # 拿即時數據的最後 5 筆做格式化轉換
-        tick_df = intra_df.tail(5).copy()
-        tick_df = tick_df.sort_index(ascending=False) # 讓最新的排在最上面
-        
-        # 建立 HTML 表格，這樣才能精準控制「單量紅/綠」的視覺特效
-        html_table = """
-        <table style='width:100%; border-collapse: collapse; font-size:12px; text-align:center; font-family:monospace;'>
-            <tr style='background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;'>
-                <th style='padding:4px;'>時間</th>
-                <th style='padding:4px;'>價格/指數</th>
-                <th style='padding:4px;'>單量 (手/張)</th>
-                <th style='padding:4px;'>累計總量</th>
-            </tr>
-        """
-        
-        for index, row in tick_df.iterrows():
-            time_str = index.strftime('%H:%M:%S')
-            price_val = f"{row['Close']:,.2f}"
-            vol_val = int(row['Volume'])
+    # 🌟 修改處：在左下角引入 st.tabs 進行功能分頁
+    tab_trend, tab_ticks = st.tabs(["📉 當日分時走勢", "📋 即時成交明細"])
+    
+    with tab_trend:
+        try:
+            # 抓取當日分時數據
+            intra_df = yf.Ticker(stock_code).history(period="1d", interval="5m")
+            if intra_df.empty: 
+                intra_df = df.tail(30) 
             
-            # 判斷當筆收盤與開盤價，決定單量顏色 (紅漲、綠跌)
-            cell_color = "red" if row['Close'] >= row['Open'] else "green"
+            fig_line = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.6, 0.4])
+            fig_line.add_trace(go.Scatter(x=intra_df.index, y=intra_df['Close'], mode='lines', line=dict(color='blue', width=1.5)), row=1, col=1)
+            fig_line.add_trace(go.Bar(x=intra_df.index, y=intra_df['Volume'], marker_color='lightblue'), row=2, col=1)
             
-            html_table += f"""
-            <tr style='border-bottom: 1px solid #eee;'>
-                <td style='padding:3px; color:#555;'>{time_str}</td>
-                <td style='padding:3px; font-weight:bold;'>{price_val}</td>
-                <td style='padding:3px; color:{cell_color}; font-weight:bold;'>{vol_val:,}</td>
-                <td style='padding:3px; color:#333;'>{vol_val*3:,}</td> <!-- 模擬累計總量 -->
-            </tr>
-            """
-        html_table += "</table>"
-        
-        # 用 Streamlit 安全渲染自訂的 XQ 表格
-        st.write(html_table, unsafe_allow_html=True)
+            # 放寬分頁內圖表的高度到 220，視覺更清晰
+            fig_line.update_layout(template="plotly_white", height=220, margin=dict(l=10, r=40, t=5, b=5), showlegend=False)
+            fig_line.update_yaxes(side="right", gridcolor="#e5e5e5")
+            st.plotly_chart(fig_line, use_container_width=True, config={'displayModeBar': False})
+        except Exception as trend_err:
+            st.info("當日走勢圖加載中...")
 
-    except Exception as e:
-        st.info("當日走勢明細模組加載中...")
+    with tab_ticks:
+        try:
+            # 抓取即時數據
+            intra_df = yf.Ticker(stock_code).history(period="1d", interval="5m")
+            if intra_df.empty: 
+                intra_df = df.tail(30)
+                
+            # 拿即時數據的最後 8 筆做格式化轉換 (改成分頁後空間變大，增加至 8 筆)
+            tick_df = intra_df.tail(8).copy()
+            tick_df = tick_df.sort_index(ascending=False) # 最新排最前
+            
+            # 建立 HTML 表格，精準控制「單量紅/綠」
+            html_table = """
+            <table style='width:100%; border-collapse: collapse; font-size:13px; text-align:center; font-family:monospace;'>
+                <tr style='background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;'>
+                    <th style='padding:6px;'>成交時間</th>
+                    <th style='padding:6px;'>價格/指數</th>
+                    <th style='padding:6px;'>單量 (手/張)</th>
+                    <th style='padding:6px;'>累計總量</th>
+                </tr>
+            """
+            
+            for index, row in tick_df.iterrows():
+                time_str = index.strftime('%H:%M:%S')
+                price_val = f"{row['Close']:,.2f}"
+                vol_val = int(row['Volume'])
+                
+                # 判斷當筆收盤與開盤價，決定單量顏色
+                cell_color = "red" if row['Close'] >= row['Open'] else "green"
+                
+                html_table += f"""
+                <tr style='border-bottom: 1px solid #eee;'>
+                    <td style='padding:5px; color:#555;'>{time_str}</td>
+                    <td style='padding:5px; font-weight:bold;'>{price_val}</td>
+                    <td style='padding:5px; color:{cell_color}; font-weight:bold;'>{vol_val:,}</td>
+                    <td style='padding:5px; color:#333;'>{vol_val*3:,}</td>
+                </tr>
+                """
+            html_table += "</table>"
+            
+            st.write(html_table, unsafe_allow_html=True)
+        except Exception as ticks_err:
+            st.info("即時成交明細加載中...")
+
 
 
 # 右下角 Tabs 排版 (整合新聞與 AI 功能)
