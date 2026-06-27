@@ -9,115 +9,61 @@ import requests
 import json
 import os
 
-# 1. 網頁全域設定
-st.set_page_config(page_title="智慧看盤系統 V5.6 - XQ 完美中文化版", layout="wide") 
+# ==================================================================== 
+# 1. 網頁全域設定與 CSS 科技黑化排版
+# ==================================================================== 
+st.set_page_config(page_title="智慧看盤系統 V5.7 - XQ 終極黑卡版", layout="wide") 
 
-# 🌟 升級版：全方位黑化與細節微調 CSS
-# 🌟 超級終極版：強效壓制折疊鈕白底、輸入框與提示框 CSS
 st.markdown("""
     <style>
-        /* 1. 網頁全域底色與一般文字黑化 */
-        .stApp {
-            background-color: #121212 !important;
-            color: #E0E0E0 !important;
-        }
-        [data-testid="stSidebar"], section[data-testid="stSidebarViewPort"] {
-            background-color: #1C1C1E !important;
-        }
-        /* 🌟 修改處：移除全域強制文字上白色的規則，改用更精準的標籤，釋放紅綠色 */
-        p, label, th, h1, h2, h3, .stMarkdown {
-            color: #E0E0E0 !important;
-        }
+        /* 全域底色與一般文字黑化 */
+        .stApp { background-color: #121212 !important; color: #E0E0E0 !important; }
+        [data-testid="stSidebar"], section[data-testid="stSidebarViewPort"] { background-color: #1C1C1E !important; }
+        p, label, th, h1, h2, h3, .stMarkdown { color: #E0E0E0 !important; }
         hr { border-top: 1px solid #333333 !important; }
         
-        /* 🌟 核心新增：強制賦予紅漲綠跌最高顏色優先權，不被系統吃掉 */
-        .stock-up {
-            color: #FF3333 !important;
-            font-weight: bold !important;
-        }
-        .stock-down {
-            color: #00AA00 !important;
-            font-weight: bold !important;
-        }
+        /* 強制賦予紅漲綠跌最高顏色優先權 */
+        .stock-up { color: #FF3333 !important; font-weight: bold !important; }
+        .stock-down { color: #00AA00 !important; font-weight: bold !important; }
         
-        /* 2. ➕ 側邊欄折疊鈕與輸入框 */
-        .stExpander, [data-testid="stExpander"] {
-            background-color: #222224 !important;
-            border: 1px solid #444444 !important;
-            border-radius: 6px !important;
-        }
-        .stExpander summary, .stExpander button, [data-testid="stExpander"] summary {
-            background-color: #26262B !important;
-            color: #FFFFFF !important;
-        }
-        input[type="text"], .stTextInput>div>div>input {
-            background-color: #121212 !important;
-            color: #FFFFFF !important;
-            border: 1px solid #555555 !important;
-        }
+        /* 側邊欄折疊鈕與輸入框黑化 */
+        .stExpander, [data-testid="stExpander"] { background-color: #222224 !important; border: 1px solid #444444 !important; border-radius: 6px !important; }
+        .stExpander summary, .stExpander button, [data-testid="stExpander"] summary { background-color: #26262B !important; color: #FFFFFF !important; }
+        input[type="text"], .stTextInput>div>div>input { background-color: #121212 !important; color: #FFFFFF !important; border: 1px solid #555555 !important; }
         
-        /* 3. 🟢 通知提示框 */
-        [data-testid="stNotification"], div[data-testid="stNotificationV2"] {
-            background-color: #222224 !important;
-            color: #FFFFFF !important;
-        }
+        /* 通知提示框黑化 */
+        [data-testid="stNotification"], div[data-testid="stNotificationV2"] { background-color: #222224 !important; color: #FFFFFF !important; }
 
-        /* 4. 🧱 右上角時間區間 */
-        .stSegmentedControl, [data-testid="stSegmentedControl"], [role="radiogroup"], div[class*="stSegmentedControl"] {
-            background-color: #1E1E1E !important;
-            border: 1px solid #444444 !important;
-            border-radius: 6px !important;
-            padding: 3px !important;
-        }
-        .stSegmentedControl button, [data-testid="stSegmentedControl"] button, [role="radiogroup"] button {
-            background-color: #262626 !important;
-            color: #BBBBBB !important;
-            border: none !important;
-        }
-        .stSegmentedControl button[aria-checked="true"], [data-testid="stSegmentedControl"] button[aria-checked="true"], [role="radiogroup"] button[aria-checked="true"] {
-            background-color: #FF3333 !important;
-            color: #FFFFFF !important;
-            font-weight: bold !important;
-        }
-
-        /* 5. 📋 修正自訂 HTML 表格 */
+        /* 自訂 HTML 表格與按鈕樣式 */
         table { background-color: #121212 !important; color: #E0E0E0 !important; }
         tr { background-color: #121212 !important; border-bottom: 1px solid #2D2D2D !important; }
         th { background-color: #1E1E1E !important; color: #FFFFFF !important; }
-        .stButton>button {
-            background-color: #262626 !important;
-            color: #E0E0E0 !important;
-            border: 1px solid #444444 !important;
-        }
-        
-        /* 6. 🤖 終極無死角：消滅 AI 智慧投資解說內部的所有殘留藍色文字 */
-        div[data-testid="stNotification"], 
-        .stAlert, 
-        div[role="alert"],
-        div[data-testid="stNotificationV2"] {
-            background-color: #222226 !important; /* 沉穩低調深灰底 */
-            border: 1px solid #444444 !important;  /* 灰色精細外框 */
-            border-left: 5px solid #FF3333 !important; /* 專業台股紅左邊條 */
-            border-radius: 6px !important;
-        }
+        .stButton>button { background-color: #262626 !important; color: #E0E0E0 !important; border: 1px solid #444444 !important; }
 
-        /* 🌟 大絕招：強制把 AI 框內的所有子元件、任何標籤文字，通通轉為純白 */
-        div[data-testid="stNotification"] *, 
-        div[data-testid="stNotificationV2"] *,
-        .stAlert *, 
-        div[role="alert"] * {
-            color: #FFFFFF !important;
-        }
-
-        /* 額外修正：確保點點清單（Bullets）前面的小圓點和數字，在暗色系下也是清晰的柔和白 */
-        div[data-testid="stNotification"] li::marker,
-        div[data-testid="stNotificationV2"] li::marker {
-            color: #FFFFFF !important;
-        }
+        /* 🤖 AI 智慧投資解說（st.info）全面護眼白字化 */
+        div[data-testid="stNotification"] *, div[data-testid="stNotificationV2"] *, .stAlert *, div[role="alert"] * { color: #FFFFFF !important; }
+        div[data-testid="stNotification"] li::marker, div[data-testid="stNotificationV2"] li::marker { color: #FFFFFF !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 💡 永久儲存自選股功能 ---
+# --- 密碼鎖防護機制 ---
+if "password_correct" not in st.session_state: 
+    st.session_state["password_correct"] = False 
+ 
+if not st.session_state["password_correct"]: 
+    st.title("私人智慧看盤系統 V5.7") 
+    user_input = st.text_input("帳號 (Username)") 
+    pass_input = st.text_input("密碼 (Password)", type="password") 
+    if st.button("確認登入"): 
+        if user_input == st.secrets["credentials"]["username"] and pass_input == st.secrets["credentials"]["password"]: 
+            st.session_state["password_correct"] = True 
+            st.rerun()
+        else:
+            st.error("帳號或密碼錯誤！")
+            st.stop()
+    st.stop()
+
+# --- 💡 自選股永久存檔功能 ---
 SAVE_FILE = "watchlist.json"
 if "watchlist_dict" not in st.session_state:
     if os.path.exists(SAVE_FILE):
@@ -133,7 +79,7 @@ def save_my_watchlist():
     with open(SAVE_FILE, "w", encoding="utf-8") as f:
         json.dump(st.session_state["watchlist_dict"], f, ensure_ascii=False, indent=4)
 
-# 內建台灣常見股票中文名稱快查字典
+# 台灣股票中文快查字典
 TAIWAN_STOCK_DICT = {
     "2330": "台積電", "2317": "鴻海", "2454": "聯發科", "2882": "國泰金",
     "2881": "富邦金", "2303": "聯電", "2603": "長榮", "2609": "陽明",
@@ -144,7 +90,8 @@ TAIWAN_STOCK_DICT = {
     "2357": "華碩", "3231": "緯創", "2324": "仁寶", "2356": "英業達"
 }
 
-st.cache_data(ttl=60)
+# --- 數據安全抓取函式 ---
+@st.cache_data(ttl=60)
 def fetch_safe_stock_data(ticker): 
     session = requests.Session() 
     session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}) 
@@ -153,7 +100,8 @@ def fetch_safe_stock_data(ticker):
     info = stock.info 
     return df, info 
 
-# --- AI 投資解說邏輯 ---
+# --- AI 投資解說邏輯 (10分鐘防爆快取) ---
+@st.cache_data(ttl=600)
 def get_ai_analysis(stock_name, price, change, pct, ma5, k_val, d_val): 
     try: 
         client = genai.Client(api_key=st.secrets["api_keys"]["gemini"]) 
@@ -164,7 +112,7 @@ def get_ai_analysis(stock_name, price, change, pct, ma5, k_val, d_val):
         return f"AI 暫時繁忙中。錯誤訊息: {e}" 
 
 # ==================================================================== 
-# 🛠️ 1. 處理「新增股票與刪除」的側邊欄功能
+# 🛠️ 側邊欄自選股管理面版
 # ==================================================================== 
 st.sidebar.header("🔧 我的自選股管理面版") 
 
@@ -203,7 +151,6 @@ if st.sidebar.button("❌ 從清單中刪除目前股票"):
         del st.session_state["watchlist_dict"][selected_display] 
         save_my_watchlist()
         st.session_state["current_selected_idx"] = 0
-        st.sidebar.success("已成功移出自選清單！")
         st.rerun() 
     else: 
         st.sidebar.warning("清單內至少需保留一檔股票！") 
@@ -226,26 +173,21 @@ except Exception as e:
 # ==================================================================== 
 # 📊 XQ 仿真四宮格主排版控制
 # ==================================================================== 
-# 🌟 2. 解決切換連動問題：統一由主畫面的中央選單當作樞紐控制
 st.markdown(f"### 📊 XQ 操盤模擬器 | 當前關注：<span style='color:{color_text};'>{selected_display}</span>", unsafe_allow_html=True)
 
 row1_col1, row1_col2 = st.columns(2)
 
+# --- 左上格：報價組合 ---
 with row1_col1:
     st.markdown("🧱 **【看盤重點/報價組合】**")
     
-    # 🌟 修正點 1：拔掉原先會造成互咬卡死的 st.selectbox，完全以按鈕點擊為主樞紐
-    watchlist_keys = list(st.session_state["watchlist_dict"].keys())
-    
-    # 🌟 修正點 2：手動建立表格的最上方欄位說明（欄位標題）
     h_col1, h_col2, h_col3, h_col4 = st.columns([2, 1.2, 1, 1.2])
-    with h_col1: st.markdown("<p style='text-align:center; font-weight:bold; color:#666; font-size:14px; margin-bottom:2px;'>商品名稱</p>", unsafe_allow_html=True)
-    with h_col2: st.markdown("<p style='text-align:center; font-weight:bold; color:#666; font-size:14px; margin-bottom:2px;'>成交價</p>", unsafe_allow_html=True)
-    with h_col3: st.markdown("<p style='text-align:center; font-weight:bold; color:#666; font-size:14px; margin-bottom:2px;'>漲跌</p>", unsafe_allow_html=True)
-    with h_col4: st.markdown("<p style='text-align:center; font-weight:bold; color:#666; font-size:14px; margin-bottom:2px;'>漲幅(%)</p>", unsafe_allow_html=True)
-    st.markdown("<hr style='margin:4px 0px; border-top:2px solid #ccc;'>", unsafe_allow_html=True)
+    with h_col1: st.markdown("<p style='text-align:center; font-weight:bold; color:#888; font-size:13px; margin-bottom:2px;'>商品名稱</p>", unsafe_allow_html=True)
+    with h_col2: st.markdown("<p style='text-align:center; font-weight:bold; color:#888; font-size:13px; margin-bottom:2px;'>成交價</p>", unsafe_allow_html=True)
+    with h_col3: st.markdown("<p style='text-align:center; font-weight:bold; color:#888; font-size:13px; margin-bottom:2px;'>漲跌</p>", unsafe_allow_html=True)
+    with h_col4: st.markdown("<p style='text-align:center; font-weight:bold; color:#888; font-size:13px; margin-bottom:2px;'>漲幅(%)</p>", unsafe_allow_html=True)
+    st.markdown("<hr style='margin:4px 0px; border-top:2px solid #444;'>", unsafe_allow_html=True)
 
-    # 循環渲染每檔自選股按鈕與數據
     for idx, (name, code) in enumerate(st.session_state["watchlist_dict"].items()):
         try:
             s_df, s_info = fetch_safe_stock_data(code)
@@ -256,203 +198,13 @@ with row1_col1:
         except:
             c_p, chg, pct = 0.0, 0.0, 0.0
             
-        if chg > 0:
-            color = "#FF3333"  # 紅
-            sign = "+"
-        elif chg < 0:
-            color = "#00AA00"  # 綠
-            sign = ""
-        else:
-            color = "#333333"  # 灰
-            sign = "+"
+        css_class = "stock-up" if chg > 0 else ("stock-down" if chg < 0 else "")
+        b_sign = "+" if chg >= 0 else ""
 
         b_col1, b_col2, b_col3, b_col4 = st.columns([2, 1.2, 1, 1.2])
-        
         with b_col1:
-            # 🌟 修正點 3：點擊按鈕時，直接重設 current_selected_idx 並立刻觸發重整，其餘圖表 100% 同步連動
             if st.button(f"📌 {name}", key=f"btn_{code}_{idx}", use_container_width=True):
                 st.session_state["current_selected_idx"] = watchlist_keys.index(name)
                 st.rerun()
                 
-        with b_col2:
-            st.markdown(f"<p style='text-align:center; padding-top:6px; font-family:monospace; font-size:13px;'>{c_p:,.2f}</p>", unsafe_allow_html=True)
-        # 根據漲跌動態套用剛剛寫好的 stock-up 或 stock-down 樣式類別
-        css_class = "stock-up" if chg > 0 else ("stock-down" if chg < 0 else "")
-
-        with b_col3:
-            st.markdown(f"<p style='text-align:center; padding-top:6px; font-family:monospace; font-size:13px;' class='{css_class}'>{sign}{chg:,.2f}</p>", unsafe_allow_html=True)
-        with b_col4:
-            st.markdown(f"<p style='text-align:center; padding-top:6px; font-family:monospace; font-size:13px;' class='{css_class}'>{sign}{pct:.2f}%</p>", unsafe_allow_html=True)
-
-        st.markdown("<hr style='margin:2px 0px; border-top:1px solid #eee;'>", unsafe_allow_html=True)
-
-with row1_col2:
-    st.markdown("📈 **【技術分析】**")
-    time_frame = st.segmented_control("時間區間", ["當日", "近月", "一年", "五年"], default="一年", key="tech_tf")
-    df['MA5'] = df['Close'].rolling(window=5).mean()
-    plot_df = df.tail(60) if time_frame == "一年" else df.tail(15)
-    
-    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.65, 0.35])
-    fig.add_trace(go.Candlestick(
-        x=plot_df.index, open=plot_df['Open'], high=plot_df['High'], low=plot_df['Low'], close=plot_df['Close'], 
-        name="K線", 
-        increasing_line_color='#FF3333', increasing_fillcolor='#FF3333', 
-        decreasing_line_color='#00AA00', decreasing_fillcolor='#00AA00'
-    ), row=1, col=1)
-    
-    fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA5'], mode='lines', line=dict(color='#1A73E8', width=1.5)), row=1, col=1)
-    
-    vol_colors = ['#FF3333' if c >= o else '#00AA00' for o, c in zip(plot_df['Open'], plot_df['Close'])]
-    fig.add_trace(go.Bar(x=plot_df.index, y=plot_df['Volume'], marker_color=vol_colors), row=2, col=1)
-        # 將原本的 template="plotly_white" 改為 "plotly_dark"
-    fig.update_layout(
-        template="plotly_dark", 
-        paper_bgcolor="#1E1E1E",  # 圖表外框底色
-        plot_bgcolor="#121212",   # K線圖主體底色
-        xaxis_rangeslider_visible=False, 
-        height=210, 
-        margin=dict(l=10, r=40, t=5, b=5), 
-        showlegend=False
-    )
-    fig.update_yaxes(side="right", gridcolor="#2D2D2D") # 暗色系網格線
-    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-with row1_col2:
-    st.markdown("📈 **【技術分析】**")
-    
-    # 僅保留這個 100% 聽話、好辨識的 Radio 水平單選鈕
-    time_frame = st.radio(
-        "選擇時間區間", 
-        ["當日", "近月", "一年", "五年"], 
-        index=2, 
-        horizontal=True, 
-        key="tech_tf_radio"
-    )
-    
-    # 計算五日均線
-    df['MA5'] = df['Close'].rolling(window=5).mean()
-    latest_date = df.index[-1]
-    
-    # K 線時間區間過濾邏輯
-    if time_frame == "五年":
-        plot_df = df  
-    elif time_frame == "近月":
-        plot_df = df.loc[latest_date - pd.Timedelta(days=30):]
-    elif time_frame == "當日":
-        try:
-            plot_df = yf.Ticker(stock_code).history(period="1d", interval="5m")
-            if plot_df.empty: plot_df = df.tail(20) 
-        except:
-            plot_df = df.tail(20)
-    else: 
-        plot_df = df.loc[latest_date - pd.Timedelta(days=365):]
-    
-    # 建立主附圖 (K線 + 成交量)
-    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.65, 0.35])
-    
-    # 繪製台股紅漲綠跌 K 線
-    fig.add_trace(go.Candlestick(
-        x=plot_df.index, open=plot_df['Open'], high=plot_df['High'], low=plot_df['Low'], close=plot_df['Close'], 
-        name="K線", 
-        increasing_line_color='#FF3333', increasing_fillcolor='#FF3333', 
-        decreasing_line_color='#00AA00', decreasing_fillcolor='#00AA00'
-    ), row=1, col=1)
-    
-    # 只有在非「當日」模式下才畫五日均線
-    if 'MA5' in plot_df.columns and time_frame != "當日":
-        fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA5'], mode='lines', line=dict(color='#1A73E8', width=1.5), name='MA5'), row=1, col=1)
-    
-    # 成交量紅漲綠跌柱狀圖
-    vol_colors = ['#FF3333' if c >= o else '#00AA00' for o, c in zip(plot_df['Open'], plot_df['Close'])]
-    fig.add_trace(go.Bar(x=plot_df.index, y=plot_df['Volume'], marker_color=vol_colors, name="成交量"), row=2, col=1)
-    
-    # 圖表黑化外觀設定
-    fig.update_layout(
-        template="plotly_dark", 
-        paper_bgcolor="#121212", 
-        plot_bgcolor="#121212",
-        xaxis_rangeslider_visible=False, 
-        height=210, 
-        margin=dict(l=10, r=40, t=5, b=5), 
-        showlegend=False
-    )
-    fig.update_yaxes(side="right", gridcolor="#2D2D2D")
-    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-
-
-# 定義第二橫列 (Row 2)
-row2_col1, row2_col2 = st.columns(2)
-
-with row2_col1:
-    st.markdown(f"🕒 **【市場焦點動態】** <span style='color:{color_text}; font-weight:bold;'>{current_price:,.2f} ({sign}{price_change_pct:.2f}%)</span>", unsafe_allow_html=True)
-    tab_trend, tab_ticks = st.tabs(["📉 當日分時走勢", "📋 即時成交明細"])
-    
-    with tab_trend:
-        try:
-            intra_df = yf.Ticker(stock_code).history(period="1d", interval="5m")
-            if intra_df.empty: intra_df = df.tail(30)
-            fig_line = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.6, 0.4])
-            fig_line.add_trace(go.Scatter(x=intra_df.index, y=intra_df['Close'], mode='lines', line=dict(color='blue', width=1.5)), row=1, col=1)
-            fig_line.add_trace(go.Bar(x=intra_df.index, y=intra_df['Volume'], marker_color='lightblue'), row=2, col=1)
-                        # 將原本的 template="plotly_white" 改為 "plotly_dark"
-            fig_line.update_layout(
-                template="plotly_dark", 
-                paper_bgcolor="#1E1E1E",
-                plot_bgcolor="#121212",
-                height=200, 
-                margin=dict(l=10, r=40, t=5, b=5), 
-                showlegend=False
-            )
-            fig_line.update_yaxes(side="right", gridcolor="#2D2D2D")
-            st.plotly_chart(fig_line, use_container_width=True, config={'displayModeBar': False})
-
-        except:
-            st.info("走勢圖載入中...")
-
-    with tab_ticks:
-        try:
-            # 確保抓取即時數據
-            intra_df = yf.Ticker(stock_code).history(period="1d", interval="5m")
-            if intra_df.empty: 
-                intra_df = df.tail(20)
-            
-            tick_df = intra_df.tail(6).copy().sort_index(ascending=False)
-            
-            # 建立表格
-            html_table = "<table style='width:100%; border-collapse: collapse; font-size:12px; text-align:center;'>"
-            html_table += "<tr><th>時間</th><th>價格</th><th>單量</th><th>總量</th></tr>"
-
-
-            
-            for idx, r in tick_df.iterrows():
-                t_class = "stock-up" if r['Close'] >= r['Open'] else "stock-down"
-                html_table += f"<tr style='border-bottom:1px solid #eee;'><td>{idx.strftime('%H:%M')}</td><td>{r['Close']:,.2f}</td><td class='{t_class}'>{int(r['Volume']):,}</td><td>{int(r['Volume']*2):,}</td></tr>"
-
-            
-            html_table += "</table>"
-            st.write(html_table, unsafe_allow_html=True)
-        except Exception as ticks_err:
-            st.info("成交明細載入中...")
-
-with row2_col2:
-    tab_news, tab_ai = st.tabs(["📰 相關即時新聞", "🤖 AI 智慧投資解說"])
-    
-    with tab_news:
-        try:
-            news_list = info.get('news', [])
-            if news_list and len(news_list) > 0:
-                for item in news_list[:3]:
-                    st.markdown(f"📌 [{item.get('title', '新聞')}]({item.get('link', '#')})")
-            else:
-                st.caption("⏱️ 非交易日，為您聯播大盤近期財經焦點：")
-                market_news = yf.Ticker("^TWII").info.get('news', [])[:3]
-                for m_item in market_news:
-                    st.markdown(f"📰 [{m_item.get('title')}]({m_item.get('link')})")
-        except Exception as news_err:
-            st.caption("暫無即時新聞")
-            
-    with tab_ai:
-        st.write(f"當前分析：**{selected_display}**")
-        if st.button("🚀 啟動 AI 深度策略分析", key="ai_btn_final"):
-            with st.spinner("AI 正在解析多空力道..."):
-                ai_report = get_ai_analysis(selected_display, current_price, price_change, price_change_pct, df['Close'].iloc[-1], 50, 50)
-                st.info(ai_report)
+        with b_col2: st.markdown(f"<p style='text-align:center; padding-top:6px; font-family:monospace; font-size:13px;'>{c_p:,.2f}</p>", unsafe_allow_html=True)
