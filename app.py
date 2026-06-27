@@ -29,7 +29,10 @@ st.markdown("""
         /* 側邊欄折疊鈕與輸入框黑化 */
         .stExpander, [data-testid="stExpander"] { background-color: #222224 !important; border: 1px solid #444444 !important; border-radius: 6px !important; }
         .stExpander summary, .stExpander button, [data-testid="stExpander"] summary { background-color: #26262B !important; color: #FFFFFF !important; }
+        
+        /* 🌟 文字輸入框與提示字全面白化 */
         input[type="text"], .stTextInput>div>div>input { background-color: #121212 !important; color: #FFFFFF !important; border: 1px solid #555555 !important; }
+        input[type="text"]::placeholder, .stTextInput>div>div>input::placeholder { color: #BBBBBB !important; opacity: 1 !important; }
         
         /* 通知提示框黑化 */
         [data-testid="stNotification"], div[data-testid="stNotificationV2"] { background-color: #222224 !important; color: #FFFFFF !important; }
@@ -100,7 +103,7 @@ def fetch_safe_stock_data(ticker):
     info = stock.info 
     return df, info 
 
-# --- AI 投資解說邏輯 (10分鐘防爆快取) ---
+# --- AI 投資解說邏輯 (優化優雅防崩潰版) ---
 @st.cache_data(ttl=600)
 def get_ai_analysis(stock_name, price, change, pct, ma5, k_val, d_val): 
     try: 
@@ -109,7 +112,11 @@ def get_ai_analysis(stock_name, price, change, pct, ma5, k_val, d_val):
         response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt) 
         return response.text 
     except Exception as e: 
+        # 🌟 優化處：當今天免費額度用完時，顯示更人性化的提示，不噴大串難看英文
+        if "429" in str(e) or "quota" in str(e).lower():
+            return "💡 【系統提示】目前您的 Gemini 帳戶今日免費流量已達上限。請更換 API 金鑰或靜候跨日解鎖。"
         return f"AI 暫時繁忙中。錯誤訊息: {e}" 
+
 
 # ==================================================================== 
 # 🛠️ 側邊欄自選股管理面版
