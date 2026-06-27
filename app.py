@@ -140,9 +140,30 @@ st.markdown(f"### 📊 XQ 操盤模擬器 | 當前關注：{selected_display}")
 row1_col1, row1_col2 = st.columns(2)
 
 with row1_col1:
-    st.markdown("🧱 **【看盤重點/報價組合】**(點擊下方任一列可切換圖表)")
+    st.markdown("🧱 **【看盤重點/報價組合】**")
     
-    # 建立報價清單
+    # 🌟 舊版相容終極方案：用下拉選單放在表格正上方，作為切換樞紐
+    watchlist_keys = list(st.session_state["watchlist_dict"].keys())
+    
+    # 檢查目前選取的個股是否在清單中，防止索引錯位
+    if "current_selected_idx" not in st.session_state or st.session_state["current_selected_idx"] >= len(watchlist_keys):
+        st.session_state["current_selected_idx"] = 0
+        
+    selected_display = st.selectbox(
+        "🔍 快速點擊切換關注商品", 
+        watchlist_keys, 
+        index=st.session_state["current_selected_idx"],
+        key="main_grid_select"
+    )
+    
+    # 如果使用者手動切換選單，立刻同步全域索引並重整
+    if watchlist_keys.index(selected_display) != st.session_state["current_selected_idx"]:
+        st.session_state["current_selected_idx"] = watchlist_keys.index(selected_display)
+        st.rerun()
+        
+    stock_code = st.session_state["watchlist_dict"][selected_display]
+
+    # 下方維持原本漂亮的專業報價組合表格
     quote_data = []
     for name, code in st.session_state["watchlist_dict"].items():
         try:
@@ -151,28 +172,24 @@ with row1_col1:
             p_c = s_info.get("previousClose", s_df['Close'].iloc[-2])
             chg = c_p - p_c
             pct = (chg / p_c) * 100
-            quote_data.append({"商品名稱": name, "成交價": f"{c_p:,.2f}", "漲跌": f"{chg:+,.2f}", "漲幅(%)": f"{pct:+.2f}%"})
+            quote_data.append({
+                "商品名稱": name, 
+                "成交價": f"{c_p:,.2f}", 
+                "漲跌": f"{chg:+,.2f}", 
+                "漲幅(%)": f"{pct:+.2f}%"
+            })
         except:
             quote_data.append({"商品名稱": name, "成交價": "載入中...", "漲跌": "-", "漲幅(%)": "-"})
             
     quote_df = pd.DataFrame(quote_data)
     
-    # 🌟 核心升級：將表格改為互動式可選取表格 (Selection Mode)
-    selection = st.dataframe(
+    # 🌟 移除會導致舊版本崩潰的 on_select 與 selection_mode
+    st.dataframe(
         quote_df, 
         use_container_width=True, 
         hide_index=True, 
-        height=250,
-        on_select="rerun",  # 點擊時觸發頁面刷新
-        selection_mode="single_row"  # 單選列模式
+        height=180
     )
-    
-    # 🌟 核心連動邏輯：檢查使用者是否有點擊表格中的某一列
-    if selection and selection.get("rows"):
-        clicked_row_idx = selection["rows"][0]
-        if clicked_row_idx != st.session_state["current_selected_idx"]:
-            st.session_state["current_selected_idx"] = clicked_row_idx
-            st.rerun()
 
 with row1_col2:
     st.markdown("📈 **【技術分析】**")
