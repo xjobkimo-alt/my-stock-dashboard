@@ -316,6 +316,71 @@ with row1_col2:
     )
     fig.update_yaxes(side="right", gridcolor="#2D2D2D") # 暗色系網格線
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+with row1_col2:
+    st.markdown("📈 **【技術分析】**")
+    
+    # 🌟 升級點 1：改用 100% 支援深色、絕不出錯的水平 Radio 單選鈕，預設選中「一年」(index=2)
+    time_frame = st.radio(
+        "選擇時間區間", 
+        ["當日", "近月", "一年", "五年"], 
+        index=2, 
+        horizontal=True, 
+        key="tech_tf_radio"
+    )
+    
+    # 計算五日均線
+    df['MA5'] = df['Close'].rolling(window=5).mean()
+    
+    # 🌟 升級點 2：完整補齊 K 線時間區間過濾邏輯，解決圖表怪怪的問題
+    latest_date = df.index[-1]
+    
+    if time_frame == "五年":
+        plot_df = df  # 顯示全部 5 年的資料
+    elif time_frame == "近月":
+        # 僅顯示最近 30 天的 K 線
+        plot_df = df.loc[latest_date - pd.Timedelta(days=30):]
+    elif time_frame == "當日":
+        # 抓取當日 5 分鐘即時線
+        try:
+            plot_df = yf.Ticker(stock_code).history(period="1d", interval="5m")
+            if plot_df.empty: plot_df = df.tail(20) # 備用
+        except:
+            plot_df = df.tail(20)
+    else: 
+        # 一年：顯示最近 365 天的 K 線
+        plot_df = df.loc[latest_date - pd.Timedelta(days=365):]
+    
+    # 建立主附圖 (K線 + 成交量)
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.65, 0.35])
+    
+    # 繪製台股紅漲綠跌 K 線
+    fig.add_trace(go.Candlestick(
+        x=plot_df.index, open=plot_df['Open'], high=plot_df['High'], low=plot_df['Low'], close=plot_df['Close'], 
+        name="K線", 
+        increasing_line_color='#FF3333', increasing_fillcolor='#FF3333', 
+        decreasing_line_color='#00AA00', decreasing_fillcolor='#00AA00'
+    ), row=1, col=1)
+    
+    # 只有在非「當日」模式下才畫五日均線
+    if 'MA5' in plot_df.columns and time_frame != "當日":
+        fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA5'], mode='lines', line=dict(color='#1A73E8', width=1.5), name='MA5'), row=1, col=1)
+    
+    # 成交量紅漲綠跌柱狀圖
+    vol_colors = ['#FF3333' if c >= o else '#00AA00' for o, c in zip(plot_df['Open'], plot_df['Close'])]
+    fig.add_trace(go.Bar(x=plot_df.index, y=plot_df['Volume'], marker_color=vol_colors, name="成交量"), row=2, col=1)
+    
+    # 圖表黑化外觀設定
+    fig.update_layout(
+        template="plotly_dark", 
+        paper_bgcolor="#121212", 
+        plot_bgcolor="#121212",
+        xaxis_rangeslider_visible=False, 
+        height=210, 
+        margin=dict(l=10, r=40, t=5, b=5), 
+        showlegend=False
+    )
+    fig.update_yaxes(side="right", gridcolor="#2D2D2D")
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
 # 定義第二橫列 (Row 2)
 row2_col1, row2_col2 = st.columns(2)
