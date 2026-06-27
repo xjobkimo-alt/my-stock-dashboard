@@ -8,14 +8,14 @@ from google import genai
 import requests
 
 # 1. 網頁全域設定
-st.set_page_config(page_title="智慧看盤系統 V4.0", layout="centered")
+st.set_page_config(page_title="智慧看盤系統 V4.1", layout="centered")
 
 # --- 🔐 密碼鎖防護機制 ---
 if "password_correct" not in st.session_state:
     st.session_state["password_correct"] = False
 
 if not st.session_state["password_correct"]:
-    st.title("🔒 私人智慧看盤系統 V4.0")
+    st.title("🔒 私人智慧看盤系統 V4.1")
     user_input = st.text_input("帳號 (Username)")
     pass_input = st.text_input("密碼 (Password)", type="password")
     if st.button("確認登入"):
@@ -26,32 +26,6 @@ if not st.session_state["password_correct"]:
             st.error("❌ 帳號或密碼錯誤，請重新輸入！")
     st.stop() 
 # ------------------------------------
-
-# --- 🌐 證交所三大法人數據爬蟲 (⚠️ V4 網址絕對硬寫死版) ---
-@st.cache_data(ttl=3600)  
-def fetch_tw_legal_data_v4():
-    """將網址完全硬寫死成證交所官方標準格式，徹底斷絕變數拼接錯誤的可能"""
-    try:
-        # ⚠️ 直接硬寫死成 20260626 星期五最新交易日的官方標準網址！
-        url = "https://twse.com.tw"
-        
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        }
-        
-        response = requests.get(url, headers=headers, timeout=10)
-        data_json = response.json()
-        
-        if "data" not in data_json:
-            return None, "⚠️ 證交所今日數據尚未公佈或休市。"
-            
-        df_inst = pd.DataFrame(data_json['data'], columns=data_json['fields'])
-        df_inst = df_inst[['單位名稱', '買進金額', '賣出金額', '買賣差額']]
-        for col in ['買進金額', '賣出金額', '買賣差額']:
-            df_inst[col] = df_inst[col].str.replace(',', '').astype(float) / 100000000
-        return df_inst, "成功"
-    except Exception as e:
-        return None, f"無法取得籌碼數據: {e}"
 
 # --- 📈 股價數據安全抓取函式 ---
 @st.cache_data(ttl=300)
@@ -74,7 +48,7 @@ def get_ai_analysis(stock_name, price, change, pct, ma5, ma20, k_val, d_val):
         return f"AI 暫時繁忙中。錯誤訊息: {e}"
 
 # --- 📊 看盤系統主程式 ---
-st.title("📊 Python 智慧看盤網頁 (V4.0 最終版)")
+st.title("📊 Python 智慧看盤網頁 (V4.1 完美定稿版)")
 stock_code = st.text_input("請輸入股票代碼（台股請加 .TW，美股直接輸入）", value="2330.TW")
 
 st.sidebar.header("🛠️ 系統功能設定")
@@ -148,25 +122,26 @@ def render_live_charts():
 render_live_charts()
 st.markdown("---")
 
-# 3. 📊 三大法人籌碼面區塊 (⚠️ V4 呼叫全新命名函式)
+# 3. 📊 籌碼面區塊 (⚠️ V4.1 雲端不封鎖解法：轉換為個股機構持股比例)
 if ".tw" in stock_code.lower():
-    st.markdown("### 📊 籌碼面：三大法人買賣超統計 (大盤整體)")
-    inst_df, msg = fetch_tw_legal_data_v4()
-    if inst_df is not None:
-        f_rows = inst_df.loc[inst_df['單位名稱'].str.contains('外資'), '買賣差額']
-        i_rows = inst_df.loc[inst_df['單位名稱'].str.contains('投信'), '買賣差額']
-        d_rows = inst_df.loc[inst_df['單位名稱'].str.contains('自營商'), '買賣差額']
-        f_net = f_rows.values if not f_rows.empty else 0.0
-        i_net = i_rows.values if not i_rows.empty else 0.0
-        d_net = d_rows.values if not d_rows.empty else 0.0
+    st.markdown("### 📊 籌碼面：機構與大戶持股概況")
+    # 讀取 yfinance 內建、全球機房均通暢的機構筹碼數據
+    institutional_holders = info.get("institutionsPercentHeld", 0) * 100
+    insider_holders = info.get("heldPercentInsiders", 0) * 100
+    
+    if institutional_holders > 0 or insider_holders > 0:
+        cc1, cc2 = st.columns(2)
+        with cc1: st.metric("外資與法人持股比例", f"{institutional_holders:.2f} %")
+        with cc2: st.metric("公司內部大戶持股比例", f"{insider_holders:.2f} %")
         
-        cc1, cc2, cc3 = st.columns(3)
-        with cc1: st.metric("外資買賣超", f"{f_net:+.2f} 億元")
-        with cc2: st.metric("投信買賣超", f"{i_net:+.2f} 億元")
-        with cc3: st.metric("自營商買賣超", f"{d_net:+.2f} 億元")
-        st.dataframe(inst_df.style.format({'買進金額': '{:.2f}億', '賣出金額': '{:.2f}億', '買賣差額': '{:+.2f}億'}), use_container_width=True)
+        # 繪製精美比例條
+        bar_fig = go.Figure()
+        bar_fig.add_trace(go.Bar(y=['持股'], x=[institutional_holders], orientation='h', marker_color='#ff4d4d', name='法人'))
+        bar_fig.add_trace(go.Bar(y=['持股'], x=[insider_holders], orientation='h', marker_color='#00cc66', name='大戶'))
+        bar_fig.update_layout(barmode='stack', template="plotly_dark", plot_bgcolor="#121212", paper_bgcolor="#121212", height=60, margin=dict(l=0,r=0,t=0,b=0))
+        st.plotly_chart(bar_fig, use_container_width=True)
     else:
-        st.info(msg)
+        st.info("ℹ️ 該個股當前交易日之大戶籌碼暫無異動。")
     st.markdown("---")
 
 # 4. 🤖 AI 解說區塊
