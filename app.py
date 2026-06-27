@@ -4,60 +4,74 @@ import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from google import genai  # 導入新版 Google GenAI 套件
 
 # 1. 網頁全域設定
-st.set_page_config(page_title="智慧看盤系統", layout="centered")
+st.set_page_config(page_title="智慧看盤系統 V2", layout="centered")
 
 # --- 🔐 密碼鎖防護邏輯 ---
 def check_password():
-    """如果帳號密碼正確，返回 True。"""
+    if "password_correct" not in st.session_state:
+        st.session_state["password_correct"] = False
+    if st.session_state["password_correct"]:
+        return True
+
     def password_entered():
-        """檢查輸入的帳號密碼是否符合雲端 Secrets 設定"""
-        # 這裡會去讀取我們在第一步設定的雲端 Secrets
-        if (
-            st.session_state["username"] == st.secrets["credentials"]["username"]
-            and st.session_state["password"] == st.secrets["credentials"]["password"]
-        ):
+        if (st.session_state["username"] == st.secrets["credentials"]["username"]
+                and st.session_state["password"] == st.secrets["credentials"]["password"]):
             st.session_state["password_correct"] = True
-            # 清除暫存密碼避免安全隱憂
             del st.session_state["password"]
             del st.session_state["username"]
         else:
             st.session_state["password_correct"] = False
 
-    # 第一次進網頁，初始化狀態
-    if "password_correct" not in st.session_state:
-        st.session_state["password_correct"] = False
-
-    # 如果已經登入成功，直接返回 True
-    if st.session_state["password_correct"]:
-        return True
-
-    # 秀出登入介面
-    st.title("🔒 私人智慧看盤系統")
-    st.markdown("本網站已啟動安全防護，請輸入憑證以繼續瀏覽。")
-    
+    st.title("🔒 私人智慧看盤系統 V2")
     st.text_input("帳號 (Username)", key="username")
     st.text_input("密碼 (Password)", type="password", key="password", on_change=password_entered)
-    
     if "password_correct" in st.session_state and not st.session_state["password_correct"]:
-        # 如果有輸入過但失敗，顯示紅字警告
         if st.session_state["username"] != "":
-            st.error("❌ 帳號或密碼錯誤，請重新輸入！")
-            
+            st.error("❌ 帳號或密碼錯誤！")
     return False
 
-# 執行檢查，如果沒通過，就停止執行後續的看盤程式碼
 if not check_password():
     st.stop()
 # ------------------------------------
 
-# --- 📊 以下為原本的看盤系統主程式 (只有登入成功才會執行到這裡) ---
+# --- 🤖 AI 投資解說邏輯 ---
+def get_ai_analysis(stock_name, price, change, pct, ma5, ma20, k_val, d_val):
+    """將目前的技術指標組合成提示詞，丟給 Gemini 生成看盤短評"""
+    try:
+        # 初始化新版 Gemini 客戶端
+        client = genai.Client(api_key=st.secrets["api_keys"]["gemini"])
+        
+        prompt = f"""
+        你是一位專業的台股美股技術分析師。請針對以下股票當前的即時數據與技術指標，提供一段大約 150 字內的繁體中文短評，分析其短線走勢並給出投資策略。
+        
+        股票名稱: {stock_name}
+        當前價格: {price}
+        今日漲跌: {change} ({pct}%)
+        5日均線(MA5): {ma5:.2f}
+        20日均線(MA20): {ma20:.2f}
+        KD指標: K={k_val:.2f}, D={d_val:.2f}
+        
+        請條理分明、語氣客觀，直接給出核心結論（例如：偏多、偏空、觀望），並說明原因。
+        """
+        
+        # 使用主流、速度最快且免費的 gemini-2.5-flash 模型
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+        )
+        return response.text
+    except Exception as e:
+        return f"AI 診斷失敗，請確認 Secrets 中的 API Key 是否設定正確。錯誤訊息: {e}"
+# ------------------------------------
 
-st.title("📊 Python 智慧看盤網頁 (即時自動重新整理版)")
+# --- 📊 看盤系統主程式 ---
+st.title("📊 Python 智慧看盤網頁 (V2 AI 解說版)")
 stock_code = st.text_input("請輸入股票代碼（台股請加 .TW，美股直接輸入）", value="2330.TW")
 
-# ⚙️ 側邊欄：技術指標與重新整理設定
+# ⚙️ 側邊欄設定
 st.sidebar.header("🛠️ 系統功能設定")
 refresh_rate = st.sidebar.slider("🔄 即時報價刷新頻率 (秒)", min_value=5, max_value=60, value=10, step=5)
 st.sidebar.markdown("---")
@@ -99,7 +113,8 @@ def render_stock_dashboard(ticker):
         price_change_pct = (price_change / prev_close) * 100
         color_light = "#ff4d4d" if price_change >= 0 else "#00cc66"
         
-        st.markdown(f"### {info.get('longName', ticker)} [{ticker.split('.')}]")
+        stock_name = info.get('longName', ticker)
+        st.markdown(f"### {stock_name} [{ticker.split('.')}]")
         
         c1, c2, c3 = st.columns(3)
         with c1: st.metric("即時價", f"{current_price:,.2f}")
@@ -161,6 +176,24 @@ def render_stock_dashboard(ticker):
         fig.update_yaxes(gridcolor="#2c2c2e", side="right")
         
         st.plotly_chart(fig, use_container_width=True)
+        st.markdown("---")
+        
+        # 💡 【🧠 新增：AI 智能看盤解說區塊】 💡
+        st.markdown("### 🤖 AI 智慧投資解說")
+        with st.expander("✨ 展開 AI 即時盤勢分析建議", expanded=False):
+            if st.button("🚀 啟動 AI 分析當前策略（需消耗 API 額度）"):
+                with st.spinner("AI 正在分析價量結構與技術指標，請稍候..."):
+                    ai_report = get_ai_analysis(
+                        stock_name=stock_name,
+                        price=current_price,
+                        change=price_change,
+                        pct=price_change_pct,
+                        ma5=df['MA5'].iloc[-1],
+                        ma20=df['MA20'].iloc[-1],
+                        k_val=df['K'].iloc[-1],
+                        d_val=df['D'].iloc[-1]
+                    )
+                    st.info(ai_report)
         st.markdown("---")
         
         # 詳細報價
