@@ -13,15 +13,17 @@ import os
 st.set_page_config(page_title="智慧看盤系統 V5.6 - XQ 完美中文化版", layout="wide") 
 
 # 🌟 升級版：全方位黑化與細節微調 CSS
+# 🌟 最終完結版：全網頁、側邊欄、輸入框、按鈕組全方位黑化 CSS
 st.markdown("""
     <style>
-        /* 1. 網頁全域與基本文字黑化 */
+        /* 1. 網頁主體與側邊欄底色徹底變黑 */
         .stApp {
             background-color: #121212 !important;
             color: #E0E0E0 !important;
         }
-        [data-testid="stSidebar"], .stTabs, [data-testid="stExpander"] {
-            background-color: #1E1E1E !important;
+        /* 讓左側側邊欄背景變成內斂的深灰色 */
+        [data-testid="stSidebar"], section[data-testid="stSidebarViewPort"] {
+            background-color: #1C1C1E !important;
         }
         p, span, label, th, td, h1, h2, h3, .stMarkdown {
             color: #E0E0E0 !important;
@@ -29,65 +31,57 @@ st.markdown("""
         hr {
             border-top: 1px solid #333333 !important;
         }
-        .stButton>button {
-            background-color: #262626 !important;
-            color: #E0E0E0 !important;
+        
+        /* 2. ➕ 徹底解決「新增自選股」展開元件與文字輸入框的白底 */
+        /* 讓摺疊卡片 st.expander 變深灰 */
+        [data-testid="stExpander"], .streamlit-expanderHeader {
+            background-color: #2C2C2E !important;
             border: 1px solid #444444 !important;
         }
-        
-        /* 2. 🧱 地毯式全面抹除右上角時間區間的白底黑字 */
-        .stSegmentedControl, 
-        [data-testid="stSegmentedControl"], 
-        [role="radiogroup"],
-        div[class*="stSegmentedControl"] {
+        /* 強制將股票代碼「文字輸入框」染成純黑底、白字，消滅慘白 */
+        input[type="text"], .stTextInput>div>div>input {
+            background-color: #121212 !important;
+            color: #FFFFFF !important;
+            border: 1px solid #555555 !important;
+            border-radius: 4px !important;
+        }
+        /* 當滑鼠點擊輸入框時的邊框發光微調 */
+        input[type="text"]:focus {
+            border-color: #FF3333 !important;
+            box-shadow: 0 0 0 1px #FF3333 !important;
+        }
+
+        /* 3. 🧱 地毯式全面抹除右上角時間區間的白底 */
+        .stSegmentedControl, [data-testid="stSegmentedControl"], [role="radiogroup"], div[class*="stSegmentedControl"] {
             background-color: #1E1E1E !important;
             border: 1px solid #444444 !important;
             border-radius: 6px !important;
             padding: 3px !important;
         }
-
-        /* 強制將裏面所有的按鈕與文字全部變暗、字體轉灰白 */
-        .stSegmentedControl button, 
-        [data-testid="stSegmentedControl"] button,
-        div[class*="stSegmentedControl"] button,
-        [role="radiogroup"] button,
-        [role="radiogroup"] div {
+        .stSegmentedControl button, [data-testid="stSegmentedControl"] button, div[class*="stSegmentedControl"] button, [role="radiogroup"] button {
             background-color: #262626 !important;
             color: #BBBBBB !important;
             border: none !important;
-            background: #262626 !important;
             box-shadow: none !important;
         }
-
-        /* 強制規定被選中的那顆按鈕（一年）必須是台股紅色、字體純白 */
-        .stSegmentedControl button[aria-checked="true"],
-        [data-testid="stSegmentedControl"] button[aria-checked="true"],
-        div[class*="stSegmentedControl"] button[aria-checked="true"],
-        [role="radiogroup"] button[aria-checked="true"],
-        [aria-checked="true"] {
+        .stSegmentedControl button[aria-checked="true"], [data-testid="stSegmentedControl"] button[aria-checked="true"], [role="radiogroup"] button[aria-checked="true"], [aria-checked="true"] {
             background-color: #FF3333 !important;
             color: #FFFFFF !important;
-            background: #FF3333 !important;
             font-weight: bold !important;
         }
 
-
-        /* 3. 📋 強制修正自訂 HTML 表格在暗色系下的顯色 */
-        table {
-            background-color: #121212 !important;
+        /* 4. 📋 修正自訂 HTML 表格與按鈕外觀 */
+        table { background-color: #121212 !important; color: #E0E0E0 !important; }
+        tr { background-color: #121212 !important; border-bottom: 1px solid #2D2D2D !important; }
+        th { background-color: #1E1E1E !important; color: #FFFFFF !important; }
+        .stButton>button {
+            background-color: #262626 !important;
             color: #E0E0E0 !important;
-        }
-        tr {
-            background-color: #121212 !important;
-            border-bottom: 1px solid #2D2D2D !important;
-        }
-        th {
-            background-color: #1E1E1E !important;
-            color: #FFFFFF !important;
-            border-bottom: 2px solid #444444 !important;
+            border: 1px solid #444444 !important;
         }
     </style>
 """, unsafe_allow_html=True)
+
 
 
 # --- 💡 永久儲存自選股功能 ---
