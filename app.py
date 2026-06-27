@@ -28,10 +28,10 @@ if not st.session_state["password_correct"]:
     st.stop() 
 # ------------------------------------
 
-# --- 🌐 證交所三大法人數據爬蟲 (網址字串拼接修正版) ---
-@st.cache_data(ttl=3600)  
-def fetch_tw_legal_data():
-    """自動判斷週末休市，若為週六日則自動往前抓取週五的最新交易數據"""
+# --- 🌐 證交所三大法人數據爬蟲 (⚠️ 全新更名破除暫存版) ---
+@st.cache_data(ttl=3600)  # 這裡的快取會因為下面名稱改變而重新建立
+def fetch_tw_legal_data_v2():
+    """強制更換函式名稱，100% 逼迫 Streamlit 丟掉死卡住的舊網址"""
     try:
         today = datetime.datetime.now()
         weekday = today.weekday() # 0是週一, 5是週六, 6是週日
@@ -46,12 +46,10 @@ def fetch_tw_legal_data():
             
         today_str = target_date.strftime("%Y%m%d")
         
-        # ⚠️ 【關鍵修正】請確認這行網址的中間路徑完全包含 /rwd/zh/fund/BFI82U?date=
+        # 🛡️ 正確的證交所官方 RWD 接口路徑
         url = f"https://twse.com.tw{today_str}&response=json"
-        
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         
-        # ⚠️ 【關鍵修正】確認 requests 抓取的是我們剛剛修正好、有帶完整路徑的 url 變數！
         response = requests.get(url, headers=headers, timeout=10)
         data_json = response.json()
         
@@ -173,7 +171,7 @@ st.markdown("---")
 # 3. 📊 三大法人籌碼面區塊 (⚠️ 移除大小寫限制，確保 100% 秀出)
 if ".tw" in stock_code.lower():
     st.markdown("### 📊 籌碼面：三大法人買賣超統計 (大盤整體)")
-    inst_df, msg = fetch_tw_legal_data()
+    inst_df, msg = fetch_tw_legal_data_v2()
     if inst_df is not None:
         f_rows = inst_df.loc[inst_df['單位名稱'].str.contains('外資'), '買賣差額']
         i_rows = inst_df.loc[inst_df['單位名稱'].str.contains('投信'), '買賣差額']
