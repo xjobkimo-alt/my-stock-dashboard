@@ -59,57 +59,18 @@ def get_ai_analysis(stock_name, price, change, pct, ma5, k_val, d_val):
     except Exception as e: 
         return f"AI 暫時繁忙中。錯誤訊息: {e}" 
 
-# --- 側邊欄管理區塊 ---
-st.sidebar.header("我的自訂追蹤清單") 
-
-with st.sidebar.expander("➕ 新增自選股"): 
-    new_code = st.text_input("輸入股票代碼", placeholder="例如: 2882").strip() 
-    if st.button("確認加入自選"): 
-        if new_code: 
-            target_code = new_code.upper()
-            pure_number = target_code.split('.')[0]
-            if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
-                target_code = f"{pure_number}.TW"
-            try:
-                test_stock = yf.Ticker(target_code)
-                test_df = test_stock.history(period="1d")
-                if test_df.empty:
-                    st.session_state["add_stock_error"] = f"❌ 查無此代碼 [{target_code}]"
-                else:
-                    detected_name = TAIWAN_STOCK_DICT.get(pure_number, test_stock.info.get('shortName', pure_number))
-                    display_key = f"{detected_name} ({target_code})" if "(" not in detected_name else detected_name
-                    st.session_state["watchlist_dict"][display_key] = target_code
-                    save_my_watchlist()
-                    if "add_stock_error" in st.session_state: del st.session_state["add_stock_error"]
-                    st.rerun()
-            except:
-                st.session_state["add_stock_error"] = "❌ 無法連線驗證。"
-        else:
-            st.sidebar.warning("請先輸入代碼！")
-
-if "add_stock_error" in st.session_state:
-    st.sidebar.error(st.session_state["add_stock_error"])
-
-# 初始化目前選取的股票索引
+# ==================================================================== 
+# 🛠️ 側邊欄自選股管理 (已清理多餘選單)
+# ==================================================================== 
+# 取得目前全域選定的股票名稱與代碼
 watchlist_keys = list(st.session_state["watchlist_dict"].keys())
-if "current_selected_idx" not in st.session_state:
+if "current_selected_idx" not in st.session_state or st.session_state["current_selected_idx"] >= len(watchlist_keys):
     st.session_state["current_selected_idx"] = 0
 
-# 側邊欄下拉選單連動
-selected_display = st.sidebar.selectbox(
-    "點擊切換當前關注股票", 
-    watchlist_keys, 
-    index=st.session_state["current_selected_idx"],
-    key="sidebar_select"
-)
-
-# 當側邊欄有手動切換時，同步更新索引
-if watchlist_keys.index(selected_display) != st.session_state["current_selected_idx"]:
-    st.session_state["current_selected_idx"] = watchlist_keys.index(selected_display)
-    st.rerun()
-
+selected_display = watchlist_keys[st.session_state["current_selected_idx"]]
 stock_code = st.session_state["watchlist_dict"][selected_display]
 
+# 側邊欄僅保留刪除按鈕與刷新頻率，功能更專一
 if st.sidebar.button("❌ 從清單中刪除目前股票"): 
     if len(st.session_state["watchlist_dict"]) > 1: 
         del st.session_state["watchlist_dict"][selected_display] 
@@ -118,6 +79,8 @@ if st.sidebar.button("❌ 從清單中刪除目前股票"):
         st.rerun() 
     else: 
         st.sidebar.warning("清單內至少需保留一檔股票！") 
+
+refresh_rate = st.sidebar.slider("即時報價刷新頻率 (秒)", min_value=5, max_value=60, value=10, step=5) 
 
 # 加載核心數據
 try:
@@ -142,13 +105,7 @@ row1_col1, row1_col2 = st.columns(2)
 with row1_col1:
     st.markdown("🧱 **【看盤重點/報價組合】**")
     
-    # 🌟 舊版相容終極方案：用下拉選單放在表格正上方，作為切換樞紐
-    watchlist_keys = list(st.session_state["watchlist_dict"].keys())
-    
-    # 檢查目前選取的個股是否在清單中，防止索引錯位
-    if "current_selected_idx" not in st.session_state or st.session_state["current_selected_idx"] >= len(watchlist_keys):
-        st.session_state["current_selected_idx"] = 0
-        
+    # 主畫面核心切換樞紐
     selected_display = st.selectbox(
         "🔍 快速點擊切換關注商品", 
         watchlist_keys, 
@@ -156,14 +113,12 @@ with row1_col1:
         key="main_grid_select"
     )
     
-    # 如果使用者手動切換選單，立刻同步全域索引並重整
     if watchlist_keys.index(selected_display) != st.session_state["current_selected_idx"]:
         st.session_state["current_selected_idx"] = watchlist_keys.index(selected_display)
         st.rerun()
         
     stock_code = st.session_state["watchlist_dict"][selected_display]
 
-    # 下方維持原本漂亮的專業報價組合表格
     quote_data = []
     for name, code in st.session_state["watchlist_dict"].items():
         try:
@@ -172,35 +127,56 @@ with row1_col1:
             p_c = s_info.get("previousClose", s_df['Close'].iloc[-2])
             chg = c_p - p_c
             pct = (chg / p_c) * 100
-            quote_data.append({
-                "商品名稱": name, 
-                "成交價": f"{c_p:,.2f}", 
-                "漲跌": f"{chg:+,.2f}", 
-                "漲幅(%)": f"{pct:+.2f}%"
-            })
+            quote_data.append({"商品名稱": name, "成交價": f"{c_p:,.2f}", "漲跌": f"{chg:+,.2f}", "漲幅(%)": f"{pct:+.2f}%"})
         except:
             quote_data.append({"商品名稱": name, "成交價": "載入中...", "漲跌": "-", "漲幅(%)": "-"})
             
     quote_df = pd.DataFrame(quote_data)
-    
-    # 🌟 移除會導致舊版本崩潰的 on_select 與 selection_mode
-    st.dataframe(
-        quote_df, 
-        use_container_width=True, 
-        hide_index=True, 
-        height=180
-    )
+    st.dataframe(quote_df, use_container_width=True, hide_index=True, height=180)
 
 with row1_col2:
     st.markdown("📈 **【技術分析】**")
     time_frame = st.segmented_control("時間區間", ["當日", "近月", "一年", "五年"], default="一年", key="tech_tf")
+    
+    # 計算五日均線
     df['MA5'] = df['Close'].rolling(window=5).mean()
     plot_df = df.tail(60) if time_frame == "一年" else df.tail(15)
     
+    # 建立主附圖 (K線 + 成交量)
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.65, 0.35])
-    fig.add_trace(go.Candlestick(x=plot_df.index, open=plot_df['Open'], high=plot_df['High'], low=plot_df['Low'], close=plot_df['Close'], name="K線", increasing_line_color='red', increasing_fillcolor='red', decreasing_line_color='green', decreasing_fillcolor='green'), row=1, col=1)
-    fig.add_trace(go.Bar(x=plot_df.index, y=plot_df['Volume'], marker_color='gray'), row=2, col=1)
-    fig.update_layout(template="plotly_white", xaxis_rangeslider_visible=False, height=210, margin=dict(l=10, r=40, t=5, b=5), showlegend=False)
+    
+    # 🌟 升級處：精準客製台股「紅漲綠跌」實心 K 線配色
+    fig.add_trace(go.Candlestick(
+        x=plot_df.index, 
+        open=plot_df['Open'], high=plot_df['High'], low=plot_df['Low'], close=plot_df['Close'], 
+        name="K線", 
+        increasing_line_color='#FF3333',   # 漲：亮紅色線條
+        increasing_fillcolor='#FF3333',   # 漲：紅色實心填滿
+        decreasing_line_color='#00AA00',   # 跌：亮綠色線條
+        decreasing_fillcolor='#00AA00'    # 跌：綠色實心填滿
+    ), row=1, col=1)
+    
+    # 加入均線折線
+    fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA5'], mode='lines', line=dict(color='#1A73E8', width=1.5), name='MA5'), row=1, col=1)
+    
+    # 🌟 升級處：讓成交量柱狀圖也同步呈現「紅漲綠跌」配色
+    vol_colors = ['#FF3333' if c >= o else '#00AA00' for o, c in zip(plot_df['Open'], plot_df['Close'])]
+    fig.add_trace(go.Bar(
+        x=plot_df.index, 
+        y=plot_df['Volume'], 
+        marker_color=vol_colors, 
+        name="成交量"
+    ), row=2, col=1)
+    
+    # 圖表外觀優化 (白底與單邊右側座標軸)
+    fig.update_layout(
+        template="plotly_white", 
+        xaxis_rangeslider_visible=False, 
+        height=210, 
+        margin=dict(l=10, r=40, t=5, b=5), 
+        showlegend=False
+    )
+    fig.update_yaxes(side="right", gridcolor="#e5e5e5")
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
 # 定義第二橫列 (Row 2)
