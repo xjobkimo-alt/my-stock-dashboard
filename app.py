@@ -111,6 +111,9 @@ try:
     # 核心數據加載
     df, info = fetch_safe_stock_data(stock_code)
 
+    # 🎯 【精準加回主要大標題】放在行情快報與K線圖的正中間！
+    st.markdown(f"## 🎯 當前關注：{selected_display}")
+
     df['MA5'] = df['Close'].rolling(window=5).mean()
     df['MA20'] = df['Close'].rolling(window=20).mean()
     df['MA60'] = df['Close'].rolling(window=60).mean()
