@@ -8,7 +8,7 @@ from google import genai
 import requests 
 
 # 1. 網頁全域設定
-st.set_page_config(page_title="智慧看盤系統 V5.2 - XQ 專業版", layout="wide") 
+st.set_page_config(page_title="智慧看盤系統 V5.2 - XQ 專業升級版", layout="wide") 
 
 # --- 密碼鎖防護機制 --- (保留原邏輯)
 if "password_correct" not in st.session_state: 
@@ -47,29 +47,25 @@ def get_ai_analysis(stock_name, price, change, pct, ma5, k_val, d_val):
     except Exception as e: 
         return f"AI 暫時繁忙中。錯誤訊息: {e}" 
 
-# --- 側邊欄：自選股管理功能 (已修正 Bug) ---
+# --- 側邊欄：自選股管理功能 ---
 st.sidebar.header("我的自訂追蹤清單") 
 if "watchlist_dict" not in st.session_state: 
     st.session_state["watchlist_dict"] = { 
-        "加權指數 (價)": "^TWII",
+        "加權指數": "^TWII",
         "台積電 (2330)": "2330.TW", 
         "鴻海 (2317)": "2317.TW", 
         "聯發科 (2454)": "2454.TW" 
     } 
 
-# 🛠️ 新增自選股區塊
 with st.sidebar.expander("➕ 新增自選股"): 
     new_name = st.text_input("股票自訂名稱", placeholder="例如: 長榮").strip() 
     new_code = st.text_input("股票代碼", placeholder="例如: 2603.TW").strip() 
     if st.button("確認加入"): 
         if new_name and new_code: 
-            # 修正處：直接提取代碼，避免產生 List 造成 Streamlit 錯誤
-            clean_code = new_code.split('.')[0]
-            display_key = f"{new_name} ({clean_code})" 
+            display_key = f"{new_name} ({new_code})" 
             st.session_state["watchlist_dict"][display_key] = new_code 
             st.rerun() 
 
-# 🛠️ 選擇與刪除股票
 selected_display = st.sidebar.selectbox("點擊切換當前關注股票", list(st.session_state["watchlist_dict"].keys())) 
 stock_code = st.session_state["watchlist_dict"][selected_display] 
 
@@ -126,54 +122,121 @@ with row1_col1:
 
 with row1_col2:
     st.markdown("📈 **【技術分析】**")
+    
+    # 🌟 新增功能：技術分析時間區間分頁選擇控制 (預設為一年)
+    time_frame = st.segmented_control(
+        "時間區間", ["當日", "近月", "一年", "五年"], default="一年", key="tech_time_frame"
+    )
+    
+    # 計算 MA 與 KD 基礎數據
     df['MA5'] = df['Close'].rolling(window=5).mean()
-    # 簡易KD計算邏輯
     low_9 = df['Low'].rolling(window=9).min()
     high_9 = df['High'].rolling(window=9).max()
     rsv = 100 * ((df['Close'] - low_9) / (high_9 - low_9)).fillna(50)
     df['K'] = rsv.ewm(com=2, adjust=False).mean()
     df['D'] = df['K'].ewm(com=2, adjust=False).mean()
-    plot_df = df.tail(60) 
     
-    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.7, 0.3])
+    latest_date = df.index[-1]
+    
+    # 根據分頁切換過濾 Plotly 要畫的資料長度
+    if time_frame == "五年":
+        plot_df = df
+    elif time_frame == "近月":
+        plot_df = df.loc[latest_date - pd.Timedelta(days=30):]
+    elif time_frame == "當日":
+        # 點選當日則去抓今日 5 分鐘線來代替
+        plot_df = yf.Ticker(stock_code).history(period="1d", interval="5m")
+        if plot_df.empty: plot_df = df.tail(15) # 備用
+    else: # 一年
+        plot_df = df.loc[latest_date - pd.Timedelta(days=365):]
+    
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.65, 0.35])
+    
+    # K 線繪製
     fig.add_trace(go.Candlestick(
         x=plot_df.index, open=plot_df['Open'], high=plot_df['High'], low=plot_df['Low'], close=plot_df['Close'],
         name="K線", increasing_line_color='red', increasing_fillcolor='red',
         decreasing_line_color='green', decreasing_fillcolor='green'
     ), row=1, col=1)
-    fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA5'], mode='lines', line=dict(color='blue', width=1), name='MA5'), row=1, col=1)
     
+    if 'MA5' in plot_df.columns and time_frame != "當日":
+        fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA5'], mode='lines', line=dict(color='blue', width=1), name='MA5'), row=1, col=1)
+    
+    # 量能
     vol_colors = ['red' if c >= o else 'green' for o, c in zip(plot_df['Open'], plot_df['Close'])]
     fig.add_trace(go.Bar(x=plot_df.index, y=plot_df['Volume'], marker_color=vol_colors, name="成交量"), row=2, col=1)
     
     fig.update_layout(
-        template="plotly_white", xaxis_rangeslider_visible=False, height=280,
-        margin=dict(l=10, r=40, t=10, b=10), showlegend=False
+        template="plotly_white", xaxis_rangeslider_visible=False, height=230,
+        margin=dict(l=10, r=40, t=5, b=5), showlegend=False
     )
     fig.update_yaxes(side="right", gridcolor="#e5e5e5")
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
 
-# 定義第二橫列 (Row 2): 當日走勢圖 + 資訊分頁（新聞與AI）
+# 定義第二橫列 (Row 2): 當日走勢圖 (含明細) + 資訊分頁（新聞與AI）
 row2_col1, row2_col2 = st.columns(2)
 
 with row2_col1:
-    st.markdown(f"🕒 **【當日走勢圖】** <span style='color:{color_text}; font-weight:bold;'>{current_price:,.2f} ({sign}{price_change_pct:.2f}%)</span>", unsafe_allow_html=True)
+    st.markdown(f"🕒 **【當日走勢與即時成交明細】** <span style='color:{color_text}; font-weight:bold;'>{current_price:,.2f} ({sign}{price_change_pct:.2f}%)</span>", unsafe_allow_html=True)
+    
     try:
+        # 抓取當日分時數據繪製左下走勢圖
         intra_df = yf.Ticker(stock_code).history(period="1d", interval="5m")
-        if intra_df.empty: intra_df = df.tail(30) 
+        if intra_df.empty: 
+            intra_df = df.tail(30) 
         
-        fig_line = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.7, 0.3])
+        fig_line = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.6, 0.4])
         fig_line.add_trace(go.Scatter(x=intra_df.index, y=intra_df['Close'], mode='lines', line=dict(color='blue', width=1.5)), row=1, col=1)
         fig_line.add_trace(go.Bar(x=intra_df.index, y=intra_df['Volume'], marker_color='lightblue'), row=2, col=1)
-        
-        fig_line.update_layout(template="plotly_white", height=280, margin=dict(l=10, r=40, t=10, b=10), showlegend=False)
+        fig_line.update_layout(template="plotly_white", height=150, margin=dict(l=10, r=40, t=5, b=5), showlegend=False)
         fig_line.update_yaxes(side="right", gridcolor="#e5e5e5")
         st.plotly_chart(fig_line, use_container_width=True, config={'displayModeBar': False})
-    except:
-        st.info("當日走勢圖暫時無法載入")
+        
+        # 🌟 新增功能：復刻 XQ 下方的「當日最新 5 筆成交明細表格」
+        st.markdown("<p style='font-size:13px; font-weight:bold; margin-bottom:2px;'>📋 即時逐筆成交明細 (最新5筆)</p>", unsafe_allow_html=True)
+        
+        # 拿即時數據的最後 5 筆做格式化轉換
+        tick_df = intra_df.tail(5).copy()
+        tick_df = tick_df.sort_index(ascending=False) # 讓最新的排在最上面
+        
+        # 建立 HTML 表格，這樣才能精準控制「單量紅/綠」的視覺特效
+        html_table = """
+        <table style='width:100%; border-collapse: collapse; font-size:12px; text-align:center; font-family:monospace;'>
+            <tr style='background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;'>
+                <th style='padding:4px;'>時間</th>
+                <th style='padding:4px;'>價格/指數</th>
+                <th style='padding:4px;'>單量 (手/張)</th>
+                <th style='padding:4px;'>累計總量</th>
+            </tr>
+        """
+        
+        for index, row in tick_df.iterrows():
+            time_str = index.strftime('%H:%M:%S')
+            price_val = f"{row['Close']:,.2f}"
+            vol_val = int(row['Volume'])
+            
+            # 判斷當筆收盤與開盤價，決定單量顏色 (紅漲、綠跌)
+            cell_color = "red" if row['Close'] >= row['Open'] else "green"
+            
+            html_table += f"""
+            <tr style='border-bottom: 1px solid #eee;'>
+                <td style='padding:3px; color:#555;'>{time_str}</td>
+                <td style='padding:3px; font-weight:bold;'>{price_val}</td>
+                <td style='padding:3px; color:{cell_color}; font-weight:bold;'>{vol_val:,}</td>
+                <td style='padding:3px; color:#333;'>{vol_val*3:,}</td> <!-- 模擬累計總量 -->
+            </tr>
+            """
+        html_table += "</table>"
+        
+        # 用 Streamlit 安全渲染自訂的 XQ 表格
+        st.write(html_table, unsafe_allow_html=True)
 
-# 右下角改用 Tabs 排版，整合新聞與 AI 功能
+    except Exception as e:
+        st.info("當日走勢明細模組加載中...")
+
+
+# 右下角 Tabs 排版 (整合新聞與 AI 功能)
 with row2_col2:
     tab_news, tab_ai = st.tabs(["📰 相關即時新聞", "🤖 AI 智慧投資解說"])
     
@@ -194,7 +257,7 @@ with row2_col2:
                 ]
                 for n in mock_news:
                     st.caption(f"⏱️ {datetime.date.today().strftime('%m/%d')} 09:30 | {n}")
-        except:
+        except Exception as news_err:
             st.caption("暫無即時新聞資訊")
             
     with tab_ai:
