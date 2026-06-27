@@ -35,22 +35,29 @@ st.markdown("""
             border: 1px solid #444444 !important;
         }
         
-        /* 2. 🧱 徹底消滅右上角時間區間（st.segmented_control）的白底 */
-        div[data-testid="stSegmentedControl"] {
+                /* 2. 🧱 終極消滅右上角時間區間按鈕組的所有白色區塊 */
+        div.stSegmentedControl, [data-baseweb="segmented-control"] {
             background-color: #1E1E1E !important;
             border: 1px solid #444444 !important;
-            border-radius: 4px;
-            padding: 2px;
+            border-radius: 6px !important;
+            padding: 3px !important;
         }
-        div[data-testid="stSegmentedControl"] button {
+        
+        /* 規定按鈕組裡面所有未選中按鈕的樣式：深灰底、灰字 */
+        div.stSegmentedControl button, [data-baseweb="segmented-control"] button {
             background-color: #262626 !important;
-            color: #AAAAAA !important;
+            color: #BBBBBB !important;
             border: none !important;
+            box-shadow: none !important;
         }
-        div[data-testid="stSegmentedControl"] button[aria-checked="true"] {
-            background-color: #FF3333 !important; /* 選中的按鈕變成台股紅 */
+        
+        /* 規定被滑鼠點選（選中）的那顆按鈕：亮紅色背景、純白字 */
+        div.stSegmentedControl button[aria-checked="true"], 
+        [data-baseweb="segmented-control"] button[aria-checked="true"],
+        div.stSegmentedControl button[data-checked="true"] {
+            background-color: #FF3333 !important;
             color: #FFFFFF !important;
-            font-weight: bold;
+            font-weight: bold !important;
         }
 
         /* 3. 📋 強制修正自訂 HTML 表格在暗色系下的顯色 */
