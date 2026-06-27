@@ -8,14 +8,14 @@ from google import genai
 import requests
 
 # 1. 網頁全域設定
-st.set_page_config(page_title="智慧看盤系統 V3.6", layout="centered")
+st.set_page_config(page_title="智慧看盤系統 V3.7", layout="centered")
 
-# --- 🔐 官方推薦：最穩定的防閃退密碼防護機制 ---
+# --- 🔐 密碼鎖防護機制 ---
 if "password_correct" not in st.session_state:
     st.session_state["password_correct"] = False
 
 if not st.session_state["password_correct"]:
-    st.title("🔒 私人智慧看盤系統 V3.6")
+    st.title("🔒 私人智慧看盤系統 V3.7")
     st.markdown("本網站已啟動安全防護，請輸入憑證以繼續瀏覽。")
     user_input = st.text_input("帳號 (Username)")
     pass_input = st.text_input("密碼 (Password)", type="password")
@@ -28,18 +28,31 @@ if not st.session_state["password_correct"]:
     st.stop() 
 # ------------------------------------
 
-# --- 🌐 證交所三大法人數據爬蟲 ---
+# --- 🌐 證交所三大法人數據爬蟲 (自動回溯週五交易日優化版) ---
 @st.cache_data(ttl=3600)  
 def fetch_tw_legal_data():
+    """自動判斷週末休市，若為週六日則自動往前抓取週五的最新交易數據"""
     try:
-        today_str = datetime.datetime.now().strftime("%Y%m%d")
+        today = datetime.datetime.now()
+        weekday = today.weekday() # 0是週一, 5是週六, 6是週日
+        
+        # 如果是週末，自動退回到上週五
+        if weekday == 5:
+            target_date = today - datetime.timedelta(days=1)
+        elif weekday == 6:
+            target_date = today - datetime.timedelta(days=2)
+        else:
+            target_date = today
+            
+        today_str = target_date.strftime("%Y%m%d")
         url = f"https://twse.com.tw{today_str}&response=json"
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        
         response = requests.get(url, headers=headers, timeout=10)
         data_json = response.json()
         
         if "data" not in data_json:
-            return None, "尚未開盤或證交所今日籌碼數據尚未公佈 (通常於 15:00 前公佈)。"
+            return None, f"⚠️ 證交所今日 ({target_date.strftime('%Y-%m-%d')}) 籌碼數據尚未公佈或休市。"
             
         df_inst = pd.DataFrame(data_json['data'], columns=data_json['fields'])
         df_inst = df_inst[['單位名稱', '買進金額', '賣出金額', '買賣差額']]
@@ -49,15 +62,11 @@ def fetch_tw_legal_data():
     except Exception as e:
         return None, f"無法取得籌碼數據: {e}"
 
-# --- 📈 股價數據安全抓取函式 (新增：偽裝 Session 與 5 分鐘快取，防 429 流量鎖定) ---
+# --- 📈 股價數據安全抓取函式 ---
 @st.cache_data(ttl=300)
 def fetch_safe_stock_data(ticker):
-    # 建立偽裝成 Chrome 瀏覽器的 Session
     session = requests.Session()
-    session.headers.update({
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    })
-    # 帶入 Session 請求股價
+    session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
     stock = yf.Ticker(ticker, session=session)
     df = stock.history(period="5y")
     info = stock.info
@@ -78,7 +87,7 @@ def get_ai_analysis(stock_name, price, change, pct, ma5, ma20, k_val, d_val):
         return f"AI 暫時繁忙中，請稍候再點擊。錯誤訊息: {e}"
 
 # --- 📊 看盤系統主程式 ---
-st.title("📊 Python 智慧看盤網頁 (V3.6 終極版)")
+st.title("📊 Python 智慧看盤網頁 (V3.7 終極定稿版)")
 stock_code = st.text_input("請輸入股票代碼（台股請加 .TW，美股直接輸入）", value="2330.TW")
 
 st.sidebar.header("🛠️ 系統功能設定")
@@ -87,7 +96,7 @@ st.sidebar.markdown("---")
 show_ma = st.sidebar.checkbox("顯示均線 (MA5 / MA20 / MA60)", value=True)
 sub_indicator = st.sidebar.selectbox("下方副圖指標", ["無", "KD (9, 3, 3)", "MACD (12, 26, 9)"])
 
-# 呼叫安全抓取函式
+# 數據加載
 df, info = fetch_safe_stock_data(stock_code)
 
 df['MA5'] = df['Close'].rolling(window=5).mean()
@@ -157,42 +166,26 @@ def render_live_charts():
 render_live_charts()
 st.markdown("---")
 
-# --- 🌐 證交所三大法人數據爬蟲 (自動回溯週五版) ---
-@st.cache_data(ttl=3600)  
-def fetch_tw_legal_data():
-    """自動判斷週末休市，若為週六日則自動往前抓取週五的最新交易數據"""
-    try:
-        # 取得今天日期與星期幾 (0是週一, 5是週六, 6是週日)
-        today = datetime.datetime.now()
-        weekday = today.weekday()
+# 3. 📊 三大法人籌碼面區塊 (⚠️ 移除大小寫限制，確保 100% 秀出)
+if ".tw" in stock_code.lower():
+    st.markdown("### 📊 籌碼面：三大法人買賣超統計 (大盤整體)")
+    inst_df, msg = fetch_tw_legal_data()
+    if inst_df is not None:
+        f_rows = inst_df.loc[inst_df['單位名稱'].str.contains('外資'), '買賣差額']
+        i_rows = inst_df.loc[inst_df['單位名稱'].str.contains('投信'), '買賣差額']
+        d_rows = inst_df.loc[inst_df['單位名稱'].str.contains('自營商'), '買賣差額']
+        f_net = f_rows.values if not f_rows.empty else 0.0
+        i_net = i_rows.values if not i_rows.empty else 0.0
+        d_net = d_rows.values if not d_rows.empty else 0.0
         
-        # ⚙️ 關鍵邏輯：如果是週末，自動推算回上週五
-        if weekday == 5:    # 星期六，往前推 1 天到週五
-            target_date = today - datetime.timedelta(days=1)
-        elif weekday == 6:  # 星期日，往前推 2 天到週五
-            target_date = today - datetime.timedelta(days=2)
-        else:
-            target_date = today
-            
-        today_str = target_date.strftime("%Y%m%d")
-        
-        # 🛡️ 標準官方 API 接口
-        url = f"https://twse.com.tw{today_str}&response=json"
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-        
-        response = requests.get(url, headers=headers, timeout=10)
-        data_json = response.json()
-        
-        if "data" not in data_json:
-            return None, f"⚠️ 證交所今日 ({target_date.strftime('%Y-%m-%d')}) 籌碼數據尚未公佈或休市。"
-            
-        df_inst = pd.DataFrame(data_json['data'], columns=data_json['fields'])
-        df_inst = df_inst[['單位名稱', '買進金額', '賣出金額', '買賣差額']]
-        for col in ['買進金額', '賣出金額', '買賣差額']:
-            df_inst[col] = df_inst[col].str.replace(',', '').astype(float) / 100000000
-        return df_inst, "成功"
-    except Exception as e:
-        return None, f"無法取得籌碼數據: {e}"
+        cc1, cc2, cc3 = st.columns(3)
+        with cc1: st.metric("外資買賣超", f"{f_net:+.2f} 億元")
+        with cc2: st.metric("投信買賣超", f"{i_net:+.2f} 億元")
+        with cc3: st.metric("自營商買賣超", f"{d_net:+.2f} 億元")
+        st.dataframe(inst_df.style.format({'買進金額': '{:.2f}億', '賣出金額': '{:.2f}億', '買賣差額': '{:+.2f}億'}), use_container_width=True)
+    else:
+        st.info(msg)
+    st.markdown("---")
 
 # 4. 🤖 AI 解說區塊
 st.markdown("### 🤖 AI 智慧投資解說")
