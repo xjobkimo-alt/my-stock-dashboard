@@ -224,18 +224,21 @@ with row1_col2:
 
 
 # ==================================================================== 
-# 定義第二橫列 (Row 2): 走勢明細 + 資訊分頁 (新聞與AI)
+# 定義第二橫列 (Row 2) - 徹底清空殘留舊程式碼版
 # ==================================================================== 
 row2_col1, row2_col2 = st.columns(2)
 
 with row2_col1:
     st.markdown(f"🕒 **【市場焦點動態】** <span style='color:{color_text}; font-weight:bold;'>{current_price:,.2f} ({sign}{price_change_pct:.2f}%)</span>", unsafe_allow_html=True)
+    
+    # 建立左下角分頁
     tab_trend, tab_ticks = st.tabs(["📉 當日分時走勢", "📋 即時成交明細"])
     
     with tab_trend:
         try:
             intra_df = yf.Ticker(stock_code).history(period="1d", interval="5m")
-            if intra_df.empty: intra_df = df.tail(30) 
+            if intra_df.empty: 
+                intra_df = df.tail(30) 
             
             fig_line = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.6, 0.4])
             fig_line.add_trace(go.Scatter(x=intra_df.index, y=intra_df['Close'], mode='lines', line=dict(color='blue', width=1.5)), row=1, col=1)
@@ -244,20 +247,17 @@ with row2_col1:
             fig_line.update_layout(template="plotly_white", height=220, margin=dict(l=10, r=40, t=5, b=5), showlegend=False)
             fig_line.update_yaxes(side="right", gridcolor="#e5e5e5")
             st.plotly_chart(fig_line, use_container_width=True, config={'displayModeBar': False})
-        except Exception as e:
+        except:
             st.info("當日走勢圖加載中...")
 
     with tab_ticks:
         try:
-            # 抓取即時數據
             intra_df = yf.Ticker(stock_code).history(period="1d", interval="5m")
             if intra_df.empty: 
                 intra_df = df.tail(30)
                 
-            # 拿即時數據的最後 8 筆做格式化轉換
             tick_df = intra_df.tail(8).copy().sort_index(ascending=False)
             
-            # 建立完整的 HTML 表格字串
             html_table = """
             <table style='width:100%; border-collapse: collapse; font-size:13px; text-align:center; font-family:monospace;'>
                 <tr style='background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; color: #333;'>
@@ -272,8 +272,6 @@ with row2_col1:
                 time_str = index.strftime('%H:%M:%S')
                 price_val = f"{row['Close']:,.2f}"
                 vol_val = int(row['Volume'])
-                
-                # 判斷當筆收盤與開盤價，決定單量顏色
                 cell_color = "red" if row['Close'] >= row['Open'] else "green"
                 
                 html_table += f"""
@@ -285,14 +283,13 @@ with row2_col1:
                 </tr>
                 """
             html_table += "</table>"
-            
-            # 🌟 核心關鍵：將這行補回去！告訴 Streamlit 必須渲染 HTML，而不是直接當文字印出來
             st.write(html_table, unsafe_allow_html=True)
             
-        except Exception as ticks_err:
+        except:
             st.info("即時成交明細加載中...")
 
 with row2_col2:
+    # 建立右下角分頁
     tab_news, tab_ai = st.tabs(["📰 相關即時新聞", "🤖 AI 智慧投資解說"])
     
     with tab_news:
@@ -309,7 +306,7 @@ with row2_col2:
                 mock_news = [f"兩岸三地指數最新報價", f"外資在集中市場動態關注 {selected_display}"]
                 for n in mock_news: 
                     st.caption(f"⏱️ {datetime.date.today().strftime('%m/%d')} | {n}")
-        except Exception as news_err:
+        except:
             st.caption("暫無即時新聞資訊")
             
     with tab_ai:
