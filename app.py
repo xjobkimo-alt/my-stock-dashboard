@@ -8,14 +8,15 @@ from google import genai
 import requests
 
 # 1. 網頁全域設定
-st.set_page_config(page_title="智慧看盤系統 V3.5", layout="centered")
+st.set_page_config(page_title="智慧看盤系統 V3.6", layout="centered")
 
-# --- 🔐 密碼鎖防護機制 ---
+# --- 🔐 官方推薦：最穩定的防閃退密碼防護機制 ---
 if "password_correct" not in st.session_state:
     st.session_state["password_correct"] = False
 
 if not st.session_state["password_correct"]:
-    st.title("🔒 私人智慧看盤系統 V3.5")
+    st.title("🔒 私人智慧看盤系統 V3.6")
+    st.markdown("本網站已啟動安全防護，請輸入憑證以繼續瀏覽。")
     user_input = st.text_input("帳號 (Username)")
     pass_input = st.text_input("密碼 (Password)", type="password")
     if st.button("確認登入"):
@@ -23,14 +24,13 @@ if not st.session_state["password_correct"]:
             st.session_state["password_correct"] = True
             st.rerun() 
         else:
-            st.error("❌ 帳號或密碼錯誤！")
+            st.error("❌ 帳號或密碼錯誤，請重新輸入！")
     st.stop() 
 # ------------------------------------
 
-# --- 🌐 證交所三大法人數據爬蟲 (⚠️ 更名破除舊快取記憶) ---
+# --- 🌐 證交所三大法人數據爬蟲 ---
 @st.cache_data(ttl=3600)  
 def fetch_tw_legal_data():
-    """強制更換函式名稱，逼迫 Streamlit 丟掉卡住的舊網址暫存"""
     try:
         today_str = datetime.datetime.now().strftime("%Y%m%d")
         url = f"https://twse.com.tw{today_str}&response=json"
@@ -49,6 +49,20 @@ def fetch_tw_legal_data():
     except Exception as e:
         return None, f"無法取得籌碼數據: {e}"
 
+# --- 📈 股價數據安全抓取函式 (新增：偽裝 Session 與 5 分鐘快取，防 429 流量鎖定) ---
+@st.cache_data(ttl=300)
+def fetch_safe_stock_data(ticker):
+    # 建立偽裝成 Chrome 瀏覽器的 Session
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    })
+    # 帶入 Session 請求股價
+    stock = yf.Ticker(ticker, session=session)
+    df = stock.history(period="5y")
+    info = stock.info
+    return df, info
+
 # --- 🤖 AI 投資解說邏輯 ---
 def get_ai_analysis(stock_name, price, change, pct, ma5, ma20, k_val, d_val):
     try:
@@ -64,7 +78,7 @@ def get_ai_analysis(stock_name, price, change, pct, ma5, ma20, k_val, d_val):
         return f"AI 暫時繁忙中，請稍候再點擊。錯誤訊息: {e}"
 
 # --- 📊 看盤系統主程式 ---
-st.title("📊 Python 智慧看盤網頁 (V3.5 最終版)")
+st.title("📊 Python 智慧看盤網頁 (V3.6 終極版)")
 stock_code = st.text_input("請輸入股票代碼（台股請加 .TW，美股直接輸入）", value="2330.TW")
 
 st.sidebar.header("🛠️ 系統功能設定")
@@ -73,9 +87,8 @@ st.sidebar.markdown("---")
 show_ma = st.sidebar.checkbox("顯示均線 (MA5 / MA20 / MA60)", value=True)
 sub_indicator = st.sidebar.selectbox("下方副圖指標", ["無", "KD (9, 3, 3)", "MACD (12, 26, 9)"])
 
-stock = yf.Ticker(stock_code)
-df = stock.history(period="5y")
-info = stock.info
+# 呼叫安全抓取函式
+df, info = fetch_safe_stock_data(stock_code)
 
 df['MA5'] = df['Close'].rolling(window=5).mean()
 df['MA20'] = df['Close'].rolling(window=20).mean()
@@ -132,7 +145,6 @@ def render_live_charts():
     volume_colors = ['#ff4d4d' if c >= o else '#00cc66' for o, c in zip(plot_df['Open'], plot_df['Close'])]
     fig.add_trace(go.Bar(x=plot_df.index, y=plot_df['Volume'], marker_color=volume_colors, name="成交量", opacity=0.7), row=2, col=1)
 
-    # ⚠️ 【圖例優化】強制把說明文字放在圖表上方，並讓文字變成白色，防止隱形
     fig.update_layout(
         template="plotly_dark", plot_bgcolor="#1c1c1e", paper_bgcolor="#121212", 
         margin=dict(l=20, r=20, t=30, b=10), xaxis_rangeslider_visible=False, height=450,
@@ -145,7 +157,7 @@ def render_live_charts():
 render_live_charts()
 st.markdown("---")
 
-# 3. 📊 三大法人籌碼面區塊 (更換為 fetch_tw_legal_data 破除舊暫存)
+# 3. 📊 三大法人籌碼面區塊
 if ".TW" in stock_code:
     st.markdown("### 📊 籌碼面：三大法人買賣超統計 (大盤整體)")
     inst_df, msg = fetch_tw_legal_data()
