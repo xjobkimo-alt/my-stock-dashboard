@@ -179,7 +179,7 @@ if not df.empty:
         fig.add_trace(go.Candlestick( 
             x=plot_df.index, open=plot_df['Open'], high=plot_df['High'], low=plot_df['Low'], close=plot_df['Close'], 
             name="K 線", increasing_line_color='#ff4d4d', increasing_fillcolor='#ff4d4d', 
-            decreasing_line_color='#00cc66', decreasing_fillcolor='#00cc66' 
+            decreasing_line_color='#00cc66', decreasing_fillcolor='#00cc66'
         ), row=1, col=1) 
      
         if show_ma and time_frame != "當日": 
@@ -210,14 +210,14 @@ if not df.empty:
     with row1_3: st.markdown(f"**幅度：** <span style='color:{color_light}; font-size:20px; font-weight:bold;'>{price_change_pct:+.2f}%</span>", unsafe_allow_html=True) 
     st.markdown("---") 
      
-    # 【4. 籌碼面區塊】 
+    # 【4. 籌碼面區塊（精準對齊安全保護版）】 
     if ".tw" in stock_code.lower(): 
-        st.markdown("### 📊 籌碼面：機構與大戶持股概況") 
-        institutional_holders = info.get("institutionsPercentHeld", 0) * 100 if info.get("institutionsPercentHeld") else 0
-        insider_holders = info.get("heldPercentInsiders", 0) * 100 if info.get("heldPercentInsiders") else 0
-     
-        if institutional_holders > 0 or insider_holders > 0: 
-            cc1, cc2 = st.columns(2) 
-            with cc1: st.metric("外資與法人持股比例", f"{institutional_holders:.2f} %") 
-            with cc2: st.metric("公司內部大戶持股比例", f"{insider_holders:.2f} %") 
-     
+            st.markdown("### 📊 籌碼面：機構與大戶持股概況") 
+            raw_inst = info.get("institutionsPercentHeld", 0)
+            raw_insider = info.get("heldPercentInsiders", 0)
+            
+            institutional_holders = float(raw_inst) * 100 if raw_inst is not None else 0.0
+            insider_holders = float(raw_insider) * 100 if raw_insider is not None else 0.0
+         
+            if institutional_holders > 0 or insider_holders > 0: 
+                cc1, cc2 = st.columns(2) 
