@@ -55,20 +55,31 @@ if not check_password():
     st.stop()
 # ------------------------------------
 
-# --# --- 🌐 證交所三大法人數據爬蟲 ---
+# --- 🌐 證交所三大法人數據爬蟲 (防擋升級版) ---
+import requests  # ⚠️ 務必確認最上方或這裡有導入 requests
+
 @st.cache_data(ttl=3600)  
 def get_tw_inst_data():
-    """直接爬取台灣證券交易所當日三大法人買賣超整體數據"""
+    """使用偽裝瀏覽器標頭，防止證交所防火牆阻擋美國雲端伺服器連線"""
     try:
         today_str = datetime.datetime.now().strftime("%Y%m%d")
-        # ⚠️ 請確保完整複製下面這一行標準網址
         url = f"https://twse.com.tw{today_str}&response=json"
         
-        raw_data = pd.read_json(url)
-        if "data" not in raw_data.columns:
-            return None, "尚未開盤或證交所今日籌碼數據尚未公佈(通常於15:00前公佈)。"
+        # 🛡️ 加入偽裝瀏覽器標頭 (User-Agent)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        
+        # 改用 requests 發送請求並帶上偽裝標頭
+        response = requests.get(url, headers=headers, timeout=10)
+        
+        # 解析 JSON 數據
+        data_json = response.json()
+        
+        if "data" not in data_json:
+            return None, "尚未開盤或證交所今日籌碼數據尚未公佈 (通常於 15:00 前公佈)。"
             
-        df_inst = pd.DataFrame(raw_data['data'], columns=raw_data['fields'])
+        df_inst = pd.DataFrame(data_json['data'], columns=data_json['fields'])
         df_inst = df_inst[['單位名稱', '買進金額', '賣出金額', '買賣差額']]
         
         for col in ['買進金額', '賣出金額', '買賣差額']:
@@ -77,21 +88,30 @@ def get_tw_inst_data():
         return df_inst, "成功"
     except Exception as e:
         return None, f"無法取得籌碼數據: {e}"
-# ------------------------------------
 
-# --- 🤖 AI 投資解說邏輯 ---
+# --- 🤖 AI 投資解說邏輯 (雙金鑰防 429 升級版) ---
 def get_ai_analysis(stock_name, price, change, pct, ma5, ma20, k_val, d_val):
+    prompt = f"""
+    你是一位專業的技術分析師。請針對以下股票當前的數據，提供一段大約 150 字內的繁體中文短評，分析其短線走勢並給出投資策略。
+    股票名稱: {stock_name}，當前價格: {price}，今日漲跌: {change} ({pct}%)，5日均線(MA5): {ma5:.2f}，20日均線(MA20): {ma20:.2f}，KD指標: K={k_val:.2f}, D={d_val:.2f}
+    請直接給出核心結論（偏多、偏空、觀望），並說明原因。
+    """
+    
+    # 嘗試第一組主要金鑰
     try:
         client = genai.Client(api_key=st.secrets["api_keys"]["gemini"])
-        prompt = f"""
-        你是一位專業的台股美股技術分析師。請針對以下股票當前的即時數據與技術指標，提供一段大約 150 字內的繁體中文短評，分析其短線走勢並給出投資策略。
-        股票名稱: {stock_name}，當前價格: {price}，今日漲跌: {change} ({pct}%)，5日均線(MA5): {ma5:.2f}，20日均線(MA20): {ma20:.2f}，KD指標: K={k_val:.2f}, D={d_val:.2f}
-        請條理分明、語氣客觀，直接給出核心結論（偏多、偏空、觀望），並說明原因。
-        """
         response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
         return response.text
-    except Exception as e:
-        return f"AI 診斷失敗。錯誤訊息: {e}"
+    except Exception as e1:
+        # 如果第一組遇到 429 塞車，自動切換到第二組備用金鑰
+        if "api_keys" in st.secrets and "gemini_backup" in st.secrets["api_keys"]:
+            try:
+                client = genai.Client(api_key=st.secrets["api_keys"]["gemini_backup"])
+                response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
+                return response.text + "\n\n*(備註：主要 AI 通道繁忙，已自動切換至備用通道)*"
+            except Exception as e2:
+                return f"兩組 AI 通道皆忙碌中，請等待 1 分鐘後再點擊。錯誤訊息: {e2}"
+        return f"AI 主要通道忙碌中 (429)，請等待 1 分鐘後再試一次！"
 # ------------------------------------
 
 # --- 📊 看盤系統主程式 ---
