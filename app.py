@@ -130,19 +130,18 @@ row1_col1, row1_col2 = st.columns(2)
 with row1_col1:
     st.markdown("🧱 **【看盤重點/報價組合】**")
     
-    # 這裡的下拉選單將全權引導整張網頁的其餘資訊同步更新
-    selected_display = st.selectbox(
-        "🔍 點擊下方下拉框，一鍵同步切換全部圖表", 
-        watchlist_keys, 
-        index=st.session_state["current_selected_idx"],
-        key="main_central_select"
-    )
+    # 🌟 修正點 1：拔掉原先會造成互咬卡死的 st.selectbox，完全以按鈕點擊為主樞紐
+    watchlist_keys = list(st.session_state["watchlist_dict"].keys())
     
-    if watchlist_keys.index(selected_display) != st.session_state["current_selected_idx"]:
-        st.session_state["current_selected_idx"] = watchlist_keys.index(selected_display)
-        st.rerun()
+    # 🌟 修正點 2：手動建立表格的最上方欄位說明（欄位標題）
+    h_col1, h_col2, h_col3, h_col4 = st.columns([2, 1.2, 1, 1.2])
+    with h_col1: st.markdown("<p style='text-align:center; font-weight:bold; color:#666; font-size:14px; margin-bottom:2px;'>商品名稱</p>", unsafe_allow_html=True)
+    with h_col2: st.markdown("<p style='text-align:center; font-weight:bold; color:#666; font-size:14px; margin-bottom:2px;'>成交價</p>", unsafe_allow_html=True)
+    with h_col3: st.markdown("<p style='text-align:center; font-weight:bold; color:#666; font-size:14px; margin-bottom:2px;'>漲跌</p>", unsafe_allow_html=True)
+    with h_col4: st.markdown("<p style='text-align:center; font-weight:bold; color:#666; font-size:14px; margin-bottom:2px;'>漲幅(%)</p>", unsafe_allow_html=True)
+    st.markdown("<hr style='margin:4px 0px; border-top:2px solid #ccc;'>", unsafe_allow_html=True)
 
-        # 建立數據包
+    # 循環渲染每檔自選股按鈕與數據
     for idx, (name, code) in enumerate(st.session_state["watchlist_dict"].items()):
         try:
             s_df, s_info = fetch_safe_stock_data(code)
@@ -153,37 +152,32 @@ with row1_col1:
         except:
             c_p, chg, pct = 0.0, 0.0, 0.0
             
-        # 根據漲跌決定文字顏色
         if chg > 0:
-            color = "#FF3333"  # 紅色
+            color = "#FF3333"  # 紅
             sign = "+"
         elif chg < 0:
-            color = "#00AA00"  # 綠色
+            color = "#00AA00"  # 綠
             sign = ""
         else:
-            color = "#333333"  # 灰色
+            color = "#333333"  # 灰
             sign = "+"
 
-        # 🌟 核心創新：利用 Streamlit 的 columns 把每一列做成「按鈕 + 數據」的 XQ 仿實體表格
         b_col1, b_col2, b_col3, b_col4 = st.columns([2, 1.2, 1, 1.2])
         
         with b_col1:
-            # 商品名稱做成實體按鈕，點擊立刻改寫全域索引並重整網頁！
+            # 🌟 修正點 3：點擊按鈕時，直接重設 current_selected_idx 並立刻觸發重整，其餘圖表 100% 同步連動
             if st.button(f"📌 {name}", key=f"btn_{code}_{idx}", use_container_width=True):
-                watchlist_keys = list(st.session_state["watchlist_dict"].keys())
                 st.session_state["current_selected_idx"] = watchlist_keys.index(name)
                 st.rerun()
                 
         with b_col2:
-            st.markdown(f"<p style='text-align:center; padding-top:6px; font-family:monospace;'>{c_p:,.2f}</p>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align:center; padding-top:6px; font-family:monospace; font-size:13px;'>{c_p:,.2f}</p>", unsafe_allow_html=True)
         with b_col3:
-            st.markdown(f"<p style='text-align:center; padding-top:6px; color:{color}; font-weight:bold; font-family:monospace;'>{sign}{chg:,.2f}</p>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align:center; padding-top:6px; color:{color}; font-weight:bold; font-family:monospace; font-size:13px;'>{sign}{chg:,.2f}</p>", unsafe_allow_html=True)
         with b_col4:
-            st.markdown(f"<p style='text-align:center; padding-top:6px; color:{color}; font-weight:bold; font-family:monospace;'>{sign}{pct:.2f}%</p>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align:center; padding-top:6px; color:{color}; font-weight:bold; font-family:monospace; font-size:13px;'>{sign}{pct:.2f}%</p>", unsafe_allow_html=True)
         
         st.markdown("<hr style='margin:2px 0px; border-top:1px solid #eee;'>", unsafe_allow_html=True)
-
-
 
 with row1_col2:
     st.markdown("📈 **【技術分析】**")
