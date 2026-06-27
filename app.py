@@ -319,7 +319,7 @@ with row1_col2:
 with row1_col2:
     st.markdown("📈 **【技術分析】**")
     
-    # 🌟 升級點 1：改用 100% 支援深色、絕不出錯的水平 Radio 單選鈕，預設選中「一年」(index=2)
+    # 僅保留這個 100% 聽話、好辨識的 Radio 水平單選鈕
     time_frame = st.radio(
         "選擇時間區間", 
         ["當日", "近月", "一年", "五年"], 
@@ -330,24 +330,20 @@ with row1_col2:
     
     # 計算五日均線
     df['MA5'] = df['Close'].rolling(window=5).mean()
-    
-    # 🌟 升級點 2：完整補齊 K 線時間區間過濾邏輯，解決圖表怪怪的問題
     latest_date = df.index[-1]
     
+    # K 線時間區間過濾邏輯
     if time_frame == "五年":
-        plot_df = df  # 顯示全部 5 年的資料
+        plot_df = df  
     elif time_frame == "近月":
-        # 僅顯示最近 30 天的 K 線
         plot_df = df.loc[latest_date - pd.Timedelta(days=30):]
     elif time_frame == "當日":
-        # 抓取當日 5 分鐘即時線
         try:
             plot_df = yf.Ticker(stock_code).history(period="1d", interval="5m")
-            if plot_df.empty: plot_df = df.tail(20) # 備用
+            if plot_df.empty: plot_df = df.tail(20) 
         except:
             plot_df = df.tail(20)
     else: 
-        # 一年：顯示最近 365 天的 K 線
         plot_df = df.loc[latest_date - pd.Timedelta(days=365):]
     
     # 建立主附圖 (K線 + 成交量)
@@ -381,6 +377,7 @@ with row1_col2:
     )
     fig.update_yaxes(side="right", gridcolor="#2D2D2D")
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+
 
 # 定義第二橫列 (Row 2)
 row2_col1, row2_col2 = st.columns(2)
