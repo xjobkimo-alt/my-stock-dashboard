@@ -90,24 +90,28 @@ st.markdown("""
             border: 1px solid #444444 !important;
         }
         
-        /* 6. 🤖 徹底消滅 AI 智慧投資解說（st.info）的刺眼藍底藍字 */
+        /* 6. 🤖 終極無死角：消滅 AI 智慧投資解說內部的所有殘留藍色文字 */
         div[data-testid="stNotification"], 
         .stAlert, 
-        div[role="alert"] {
-            background-color: #222226 !important; /* 換成低調舒適的深灰底 */
-            color: #FFFFFF !important;            /* 文字強制轉為純白 */
-            border: 1px solid #444444 !important;  /* 加上細緻的灰色外框 */
-            border-left: 5px solid #FF3333 !important; /* 左側留一條象徵專業的台股紅邊條 */
+        div[role="alert"],
+        div[data-testid="stNotificationV2"] {
+            background-color: #222226 !important; /* 沉穩低調深灰底 */
+            border: 1px solid #444444 !important;  /* 灰色精細外框 */
+            border-left: 5px solid #FF3333 !important; /* 專業台股紅左邊條 */
             border-radius: 6px !important;
         }
 
-        /* 強制將 AI 提示框內的所有文字、標題、超連結與點點列表（li）全部轉白 */
-        div[data-testid="stNotification"] p,
-        div[data-testid="stNotification"] li,
-        div[data-testid="stNotification"] span,
-        div[data-testid="stNotification"] h1,
-        div[data-testid="stNotification"] h2,
-        div[data-testid="stNotification"] h3 {
+        /* 🌟 大絕招：強制把 AI 框內的所有子元件、任何標籤文字，通通轉為純白 */
+        div[data-testid="stNotification"] *, 
+        div[data-testid="stNotificationV2"] *,
+        .stAlert *, 
+        div[role="alert"] * {
+            color: #FFFFFF !important;
+        }
+
+        /* 額外修正：確保點點清單（Bullets）前面的小圓點和數字，在暗色系下也是清晰的柔和白 */
+        div[data-testid="stNotification"] li::marker,
+        div[data-testid="stNotificationV2"] li::marker {
             color: #FFFFFF !important;
         }
     </style>
