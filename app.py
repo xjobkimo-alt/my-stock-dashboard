@@ -9,30 +9,48 @@ from google import genai
 # 1. 網頁全域設定
 st.set_page_config(page_title="智慧看盤系統 V3", layout="centered")
 
-# --- 🔐 密碼鎖防護邏輯 ---
+# --- 🔐 密碼鎖防護邏輯 (防閃退優化版) ---
 def check_password():
+    """如果帳號密碼正確，返回 True。"""
+    
+    # 第一次進網頁，初始化狀態
     if "password_correct" not in st.session_state:
         st.session_state["password_correct"] = False
+
+    # 如果已經登入成功，直接返回 True
     if st.session_state["password_correct"]:
         return True
 
     def password_entered():
-        if (st.session_state["username"] == st.secrets["credentials"]["username"]
-                and st.session_state["password"] == st.secrets["credentials"]["password"]):
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]
-            del st.session_state["username"]
-        else:
-            st.session_state["password_correct"] = False
+        """檢查輸入的帳號密碼是否符合雲端 Secrets 設定"""
+        # ⚠️ 【新增防錯判斷】：確保 session_state 裡真的有這兩個欄位才做檢查
+        if "username" in st.session_state and "password" in st.session_state:
+            if (
+                st.session_state["username"] == st.secrets["credentials"]["username"]
+                and st.session_state["password"] == st.secrets["credentials"]["password"]
+            ):
+                st.session_state["password_correct"] = True
+                # 清除暫存避免安全隱憂
+                del st.session_state["password"]
+                del st.session_state["username"]
+            else:
+                st.session_state["password_correct"] = False
 
+    # 顯示登入介面
     st.title("🔒 私人智慧看盤系統 V3")
+    st.markdown("本網站已啟動安全防護，請輸入憑證以繼續瀏覽。")
+    
     st.text_input("帳號 (Username)", key="username")
     st.text_input("密碼 (Password)", type="password", key="password", on_change=password_entered)
+    
     if "password_correct" in st.session_state and not st.session_state["password_correct"]:
-        if st.session_state["username"] != "":
-            st.error("❌ 帳號或密碼錯誤！")
+        # 確保有輸入內容才顯示錯誤訊息
+        if "username" in st.session_state and st.session_state["username"] != "":
+            st.error("❌ 帳號或密碼錯誤，請重新輸入！")
+            
     return False
 
+# 執行檢查，未通過則停止後續程式
 if not check_password():
     st.stop()
 # ------------------------------------
