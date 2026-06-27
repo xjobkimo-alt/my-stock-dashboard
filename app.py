@@ -12,20 +12,24 @@ st.set_page_config(page_title="智慧看盤系統 V5.3", layout="wide")
  
 # --- 🔒 密碼鎖防護機制 --- 
 if "password_correct" not in st.session_state: 
- st.session_state["password_correct"] = False 
+    st.session_state["password_correct"] = False 
  
 if not st.session_state["password_correct"]: 
- st.title("🔒 私人智慧看盤系統 V5.3") 
- st.markdown("本網站已啟動安全防護，請輸入憑證以繼續瀏覽。") 
- user_input = st.text_input("帳號 (Username)") 
- pass_input = st.text_input("密碼 (Password)", type="password") 
- if st.button("確認登入"): 
-     if user_input == st.secrets["credentials"]["username"] and pass_input == st.secrets["credentials"]["password"]: 
-         st.session_state["password_correct"] = True 
-         st.rerun() 
-     else: 
-         st.error("❌ 帳號或密碼錯誤，請重新輸入！") 
-         st.stop() 
+    st.title("🔒 私人智慧看盤系統 V5.3") 
+    st.markdown("本網站已啟動安全防護，請輸入憑證以繼續瀏覽。") 
+    user_input = st.text_input("帳號 (Username)") 
+    pass_input = st.text_input("密碼 (Password)", type="password") 
+    if st.button("確認登入"): 
+        if user_input == st.secrets["credentials"]["username"] and pass_input == st.secrets["credentials"]["password"]: 
+            st.session_state["password_correct"] = True 
+            st.rerun() 
+        else: 
+            st.error("❌ 帳號或密碼錯誤，請重新輸入！") 
+            # 這裡原本有攔截
+            
+    # 📢 關鍵修正：在這個 if not st.session_state["password_correct"]: 區塊的最末端
+    # 💡 縮排請務必空「4個空格」，與上面的 user_input、pass_input 垂直對齊！
+    st.stop()  # 🛑 強制在此中斷程式，沒登入成功絕對不允許往下執行！
 # ------------------------------------ 
  
 # --- 📊 股價數據安全抓取函式 --- 
