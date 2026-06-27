@@ -12,6 +12,35 @@ import os
 # 1. 網頁全域設定
 st.set_page_config(page_title="智慧看盤系統 V5.6 - XQ 完美中文化版", layout="wide") 
 
+# 🌟 核心新增：利用 HTML/CSS 語法，強行將網頁所有區塊（包含左上、右下、按鈕、Tabs）全部黑化！
+st.markdown("""
+    <style>
+        /* 網頁主體背景黑化 */
+        .stApp {
+            background-color: #121212 !important;
+            color: #E0E0E0 !important;
+        }
+        /* 讓所有卡片、側邊欄與分頁元件變成 XQ 經典深灰 */
+        [data-testid="stSidebar"], .stTabs, [data-testid="stExpander"] {
+            background-color: #1E1E1E !important;
+        }
+        /* 修正標籤文字與普通文字顏色為柔和白 */
+        p, span, label, th, td, h1, h2, h3, .stMarkdown {
+            color: #E0E0E0 !important;
+        }
+        /* 微調分隔線顏色 */
+        hr {
+            border-top: 1px solid #333333 !important;
+        }
+        /* 保持按鈕外框在暗色系下的清晰度 */
+        .stButton>button {
+            background-color: #262626 !important;
+            color: #E0E0E0 !important;
+            border: 1px solid #444444 !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 # --- 💡 永久儲存自選股功能 ---
 SAVE_FILE = "watchlist.json"
 if "watchlist_dict" not in st.session_state:
