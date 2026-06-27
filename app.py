@@ -249,10 +249,15 @@ with row2_col1:
 
     with tab_ticks:
         try:
+            # 抓取即時數據
             intra_df = yf.Ticker(stock_code).history(period="1d", interval="5m")
-            if intra_df.empty: intra_df = df.tail(30)
+            if intra_df.empty: 
+                intra_df = df.tail(30)
+                
+            # 拿即時數據的最後 8 筆做格式化轉換
             tick_df = intra_df.tail(8).copy().sort_index(ascending=False)
             
+            # 建立完整的 HTML 表格字串
             html_table = """
             <table style='width:100%; border-collapse: collapse; font-size:13px; text-align:center; font-family:monospace;'>
                 <tr style='background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; color: #333;'>
@@ -262,11 +267,15 @@ with row2_col1:
                     <th style='padding:6px;'>累計總量</th>
                 </tr>
             """
+            
             for index, row in tick_df.iterrows():
                 time_str = index.strftime('%H:%M:%S')
                 price_val = f"{row['Close']:,.2f}"
                 vol_val = int(row['Volume'])
+                
+                # 判斷當筆收盤與開盤價，決定單量顏色
                 cell_color = "red" if row['Close'] >= row['Open'] else "green"
+                
                 html_table += f"""
                 <tr style='border-bottom: 1px solid #eee;'>
                     <td style='padding:5px; color:#555;'>{time_str}</td>
@@ -276,8 +285,11 @@ with row2_col1:
                 </tr>
                 """
             html_table += "</table>"
+            
+            # 🌟 核心關鍵：將這行補回去！告訴 Streamlit 必須渲染 HTML，而不是直接當文字印出來
             st.write(html_table, unsafe_allow_html=True)
-        except Exception as e:
+            
+        except Exception as ticks_err:
             st.info("即時成交明細加載中...")
 
 with row2_col2:
