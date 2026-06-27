@@ -12,34 +12,64 @@ import os
 # 1. 網頁全域設定
 st.set_page_config(page_title="智慧看盤系統 V5.6 - XQ 完美中文化版", layout="wide") 
 
-# 🌟 核心新增：利用 HTML/CSS 語法，強行將網頁所有區塊（包含左上、右下、按鈕、Tabs）全部黑化！
+# 🌟 升級版：全方位黑化與細節微調 CSS
 st.markdown("""
     <style>
-        /* 網頁主體背景黑化 */
+        /* 1. 網頁全域與基本文字黑化 */
         .stApp {
             background-color: #121212 !important;
             color: #E0E0E0 !important;
         }
-        /* 讓所有卡片、側邊欄與分頁元件變成 XQ 經典深灰 */
         [data-testid="stSidebar"], .stTabs, [data-testid="stExpander"] {
             background-color: #1E1E1E !important;
         }
-        /* 修正標籤文字與普通文字顏色為柔和白 */
         p, span, label, th, td, h1, h2, h3, .stMarkdown {
             color: #E0E0E0 !important;
         }
-        /* 微調分隔線顏色 */
         hr {
             border-top: 1px solid #333333 !important;
         }
-        /* 保持按鈕外框在暗色系下的清晰度 */
         .stButton>button {
             background-color: #262626 !important;
             color: #E0E0E0 !important;
             border: 1px solid #444444 !important;
         }
+        
+        /* 2. 🧱 徹底消滅右上角時間區間（st.segmented_control）的白底 */
+        div[data-testid="stSegmentedControl"] {
+            background-color: #1E1E1E !important;
+            border: 1px solid #444444 !important;
+            border-radius: 4px;
+            padding: 2px;
+        }
+        div[data-testid="stSegmentedControl"] button {
+            background-color: #262626 !important;
+            color: #AAAAAA !important;
+            border: none !important;
+        }
+        div[data-testid="stSegmentedControl"] button[aria-checked="true"] {
+            background-color: #FF3333 !important; /* 選中的按鈕變成台股紅 */
+            color: #FFFFFF !important;
+            font-weight: bold;
+        }
+
+        /* 3. 📋 強制修正自訂 HTML 表格在暗色系下的顯色 */
+        table {
+            background-color: #121212 !important;
+            color: #E0E0E0 !important;
+        }
+        tr {
+            background-color: #121212 !important;
+            border-bottom: 1px solid #2D2D2D !important;
+        }
+        th {
+            background-color: #1E1E1E !important;
+            color: #FFFFFF !important;
+            border-bottom: 2px solid #444444 !important;
+        }
     </style>
 """, unsafe_allow_html=True)
+
 
 # --- 💡 永久儲存自選股功能 ---
 SAVE_FILE = "watchlist.json"
@@ -279,7 +309,9 @@ with row2_col1:
             
             # 建立表格
             html_table = "<table style='width:100%; border-collapse: collapse; font-size:12px; text-align:center;'>"
-            html_table += "<tr style='background:#f8f9fa; border-bottom:2px solid #ddd;'><th>時間</th><th>價格</th><th>單量</th><th>總量</th></tr>"
+            html_table += "<tr><th>時間</th><th>價格</th><th>單量</th><th>總量</th></tr>"
+
+
             
             for idx, r in tick_df.iterrows():
                 c_color = "red" if r['Close'] >= r['Open'] else "green"
