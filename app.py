@@ -142,40 +142,47 @@ with row1_col1:
         st.session_state["current_selected_idx"] = watchlist_keys.index(selected_display)
         st.rerun()
 
-    # 建立數據包
-    quote_data = []
-    for name, code in st.session_state["watchlist_dict"].items():
+        # 建立數據包
+    for idx, (name, code) in enumerate(st.session_state["watchlist_dict"].items()):
         try:
             s_df, s_info = fetch_safe_stock_data(code)
             c_p = s_info.get("currentPrice", s_df['Close'].iloc[-1])
             p_c = s_info.get("previousClose", s_df['Close'].iloc[-2])
             chg = c_p - p_c
             pct = (chg / p_c) * 100
-            quote_data.append({"商品名稱": name, "成交價": c_p, "漲跌": chg, "漲幅(%)": pct})
         except:
-            quote_data.append({"商品名稱": name, "成交價": 0.0, "漲跌": 0.0, "漲幅(%)": 0.0})
+            c_p, chg, pct = 0.0, 0.0, 0.0
             
-    quote_df = pd.DataFrame(quote_data)
+        # 根據漲跌決定文字顏色
+        if chg > 0:
+            color = "#FF3333"  # 紅色
+            sign = "+"
+        elif chg < 0:
+            color = "#00AA00"  # 綠色
+            sign = ""
+        else:
+            color = "#333333"  # 灰色
+            sign = "+"
 
-    # 🌟 修正處：將原本的 .applymap 改為支援新版 Pandas 的寫法
-    def color_picker(val):
-        if isinstance(val, (int, float)):
-            if val > 0: return 'color: #FF3333; font-weight: bold;' # 紅色
-            elif val < 0: return 'color: #00AA00; font-weight: bold;' # 綠色
-        return 'color: #333333;'
+        # 🌟 核心創新：利用 Streamlit 的 columns 把每一列做成「按鈕 + 數據」的 XQ 仿實體表格
+        b_col1, b_col2, b_col3, b_col4 = st.columns([2, 1.2, 1, 1.2])
+        
+        with b_col1:
+            # 商品名稱做成實體按鈕，點擊立刻改寫全域索引並重整網頁！
+            if st.button(f"📌 {name}", key=f"btn_{code}_{idx}", use_container_width=True):
+                watchlist_keys = list(st.session_state["watchlist_dict"].keys())
+                st.session_state["current_selected_idx"] = watchlist_keys.index(name)
+                st.rerun()
+                
+        with b_col2:
+            st.markdown(f"<p style='text-align:center; padding-top:6px; font-family:monospace;'>{c_p:,.2f}</p>", unsafe_allow_html=True)
+        with b_col3:
+            st.markdown(f"<p style='text-align:center; padding-top:6px; color:{color}; font-weight:bold; font-family:monospace;'>{sign}{chg:,.2f}</p>", unsafe_allow_html=True)
+        with b_col4:
+            st.markdown(f"<p style='text-align:center; padding-top:6px; color:{color}; font-weight:bold; font-family:monospace;'>{sign}{pct:.2f}%</p>", unsafe_allow_html=True)
+        
+        st.markdown("<hr style='margin:2px 0px; border-top:1px solid #eee;'>", unsafe_allow_html=True)
 
-    # 這裡將原本的 .applymap 改成全新的 .map 語法，徹底消除 AttributeError
-    styled_html = (
-        quote_df.style
-        .format({"成交價": "{:,.2f}", "漲跌": "{:+,.2f}", "漲幅(%)": "{:+.2f}%"})
-        .map(color_picker, subset=["漲跌", "漲幅(%)"])  # 🌟 核心修正點
-        .hide(axis="index")
-        .set_properties(**{'text-align': 'center', 'padding': '6px', 'border-bottom': '1px solid #eee'})
-        .to_html()
-    )
-    
-    # 將客製化的紅綠報價表格以 HTML 渲染出來
-    st.write(styled_html, unsafe_allow_html=True)
 
 
 with row1_col2:
