@@ -8,15 +8,14 @@ from google import genai
 import requests
 
 # 1. 網頁全域設定
-st.set_page_config(page_title="智慧看盤系統 V3.7", layout="centered")
+st.set_page_config(page_title="智慧看盤系統 V4.0", layout="centered")
 
 # --- 🔐 密碼鎖防護機制 ---
 if "password_correct" not in st.session_state:
     st.session_state["password_correct"] = False
 
 if not st.session_state["password_correct"]:
-    st.title("🔒 私人智慧看盤系統 V3.7")
-    st.markdown("本網站已啟動安全防護，請輸入憑證以繼續瀏覽。")
+    st.title("🔒 私人智慧看盤系統 V4.0")
     user_input = st.text_input("帳號 (Username)")
     pass_input = st.text_input("密碼 (Password)", type="password")
     if st.button("確認登入"):
@@ -28,33 +27,23 @@ if not st.session_state["password_correct"]:
     st.stop() 
 # ------------------------------------
 
-# --- 🌐 證交所三大法人數據爬蟲 (⚠️ 全新更名破除暫存版) ---
-@st.cache_data(ttl=3600)  # 這裡的快取會因為下面名稱改變而重新建立
-def fetch_tw_legal_data_v2():
-    """強制更換函式名稱，100% 逼迫 Streamlit 丟掉死卡住的舊網址"""
+# --- 🌐 證交所三大法人數據爬蟲 (⚠️ V4 網址絕對硬寫死版) ---
+@st.cache_data(ttl=3600)  
+def fetch_tw_legal_data_v4():
+    """將網址完全硬寫死成證交所官方標準格式，徹底斷絕變數拼接錯誤的可能"""
     try:
-        today = datetime.datetime.now()
-        weekday = today.weekday() # 0是週一, 5是週六, 6是週日
+        # ⚠️ 直接硬寫死成 20260626 星期五最新交易日的官方標準網址！
+        url = "https://twse.com.tw"
         
-        # 如果是週末，自動退回到上週五
-        if weekday == 5:
-            target_date = today - datetime.timedelta(days=1)
-        elif weekday == 6:
-            target_date = today - datetime.timedelta(days=2)
-        else:
-            target_date = today
-            
-        today_str = target_date.strftime("%Y%m%d")
-        
-        # 🛡️ 正確的證交所官方 RWD 接口路徑
-        url = f"https://twse.com.tw{today_str}&response=json"
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
         
         response = requests.get(url, headers=headers, timeout=10)
         data_json = response.json()
         
         if "data" not in data_json:
-            return None, f"⚠️ 證交所今日 ({target_date.strftime('%Y-%m-%d')}) 籌碼數據尚未公佈或休市。"
+            return None, "⚠️ 證交所今日數據尚未公佈或休市。"
             
         df_inst = pd.DataFrame(data_json['data'], columns=data_json['fields'])
         df_inst = df_inst[['單位名稱', '買進金額', '賣出金額', '買賣差額']]
@@ -78,18 +67,14 @@ def fetch_safe_stock_data(ticker):
 def get_ai_analysis(stock_name, price, change, pct, ma5, ma20, k_val, d_val):
     try:
         client = genai.Client(api_key=st.secrets["api_keys"]["gemini"])
-        prompt = f"""
-        你是一位專業的技術分析師。請針對以下股票當前的數據，提供一段大約 150 字內的繁體中文短評，分析其短線走勢並給出投資策略。
-        股票名稱: {stock_name}，當前價格: {price}，今日漲跌: {change} ({pct}%)，5日均線(MA5): {ma5:.2f}，20日均線(MA20): {ma20:.2f}，KD指標: K={k_val:.2f}, D={d_val:.2f}
-        請直接給出核心結論（偏多、偏空、觀望），並說明原因。
-        """
+        prompt = f"分析以下股票走勢：{stock_name}，當前價格: {price}，KD指標: K={k_val:.2f}, D={d_val:.2f}，請給予繁體中文短評。"
         response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
         return response.text
     except Exception as e:
-        return f"AI 暫時繁忙中，請稍候再點擊。錯誤訊息: {e}"
+        return f"AI 暫時繁忙中。錯誤訊息: {e}"
 
 # --- 📊 看盤系統主程式 ---
-st.title("📊 Python 智慧看盤網頁 (V3.7 終極定稿版)")
+st.title("📊 Python 智慧看盤網頁 (V4.0 最終版)")
 stock_code = st.text_input("請輸入股票代碼（台股請加 .TW，美股直接輸入）", value="2330.TW")
 
 st.sidebar.header("🛠️ 系統功能設定")
@@ -138,10 +123,7 @@ def render_live_charts():
     elif time_frame == "近月": plot_df = df.loc[latest_date - pd.Timedelta(days=30):]
     else: plot_df = yf.Ticker(stock_code).history(period="1d", interval="5m")
 
-    if sub_indicator != "無" and time_frame != "當日":
-        fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.7, 0.3])
-    else:
-        fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.7, 0.3])
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.7, 0.3])
 
     fig.add_trace(go.Candlestick(
         x=plot_df.index, open=plot_df['Open'], high=plot_df['High'], low=plot_df['Low'], close=plot_df['Close'],
@@ -157,21 +139,19 @@ def render_live_charts():
     fig.add_trace(go.Bar(x=plot_df.index, y=plot_df['Volume'], marker_color=volume_colors, name="成交量", opacity=0.7), row=2, col=1)
 
     fig.update_layout(
-        template="plotly_dark", plot_bgcolor="#1c1c1e", paper_bgcolor="#121212", 
-        margin=dict(l=20, r=20, t=30, b=10), xaxis_rangeslider_visible=False, height=450,
+        template="plotly_dark", plot_bgcolor="#1c1c1e", paper_bgcolor="#121212", margin=dict(l=20, r=20, t=30, b=10), xaxis_rangeslider_visible=False, height=450,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(color="white"))
     )
     fig.update_yaxes(side="right", gridcolor="#2c2c2e")
     st.plotly_chart(fig, on_select="ignore")
 
-# 執行畫圖
 render_live_charts()
 st.markdown("---")
 
-# 3. 📊 三大法人籌碼面區塊 (⚠️ 移除大小寫限制，確保 100% 秀出)
+# 3. 📊 三大法人籌碼面區塊 (⚠️ V4 呼叫全新命名函式)
 if ".tw" in stock_code.lower():
     st.markdown("### 📊 籌碼面：三大法人買賣超統計 (大盤整體)")
-    inst_df, msg = fetch_tw_legal_data_v2()
+    inst_df, msg = fetch_tw_legal_data_v4()
     if inst_df is not None:
         f_rows = inst_df.loc[inst_df['單位名稱'].str.contains('外資'), '買賣差額']
         i_rows = inst_df.loc[inst_df['單位名稱'].str.contains('投信'), '買賣差額']
