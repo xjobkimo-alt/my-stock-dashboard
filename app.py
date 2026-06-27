@@ -47,8 +47,10 @@ def get_ai_analysis(stock_name, price, change, pct, ma5, k_val, d_val):
     except Exception as e: 
         return f"AI 暫時繁忙中。錯誤訊息: {e}" 
 
-# --- 側邊欄：自選股管理功能 ---
+# --- 側邊欄：自選股管理功能（自動中文化與嚴格防錯版） ---
 st.sidebar.header("我的自訂追蹤清單") 
+
+# 初始清單 (預設為中文)
 if "watchlist_dict" not in st.session_state: 
     st.session_state["watchlist_dict"] = { 
         "加權指數": "^TWII",
@@ -57,44 +59,65 @@ if "watchlist_dict" not in st.session_state:
         "聯發科 (2454)": "2454.TW" 
     } 
 
-# 🌟 修改處：全新升級的自動偵測名稱加入功能
+# 內建台灣常見股票中文名稱快查字典
+TAIWAN_STOCK_DICT = {
+    "2330": "台積電", "2317": "鴻海", "2454": "聯發科", "2882": "國泰金",
+    "2881": "富邦金", "2303": "聯電", "2603": "長榮", "2609": "陽明",
+    "2615": "萬海", "2002": "中鋼", "2412": "中華電", "2308": "台達電",
+    "2891": "中信金", "2886": "兆豐金", "2884": "玉山金", "2892": "第一金",
+    "5880": "合庫金", "2880": "華南金", "2883": "開發金", "2885": "元大金",
+    "2887": "台新金", "2890": "永豐金", "3008": "大立光", "2382": "廣達",
+    "2357": "華碩", "3231": "緯創", "2324": "仁寶", "2356": "英業達"
+}
+
 with st.sidebar.expander("➕ 新增自選股"): 
-    new_code = st.text_input("輸入股票代碼", placeholder="例如: 2603.TW 或 AAPL").strip() 
+    new_code = st.text_input("輸入股票代碼", placeholder="例如: 2882 或 AAPL").strip() 
     
     if st.button("確認加入自選"): 
         if new_code: 
-            # 將輸入轉換為大寫以防萬一
+            # 1. 智慧補全邏輯：如果輸入純數字，自動補上台灣市場後綴 .TW
             target_code = new_code.upper()
+            pure_number = target_code.split('.')[0] # 提取純數字部分
             
-            with st.spinner("正在向交易所辨識股票名稱..."):
+            if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
+                target_code = f"{pure_number}.TW"
+            
+            with st.spinner("正在驗證股票代碼並獲取中文名稱..."):
                 try:
-                    # 暫時利用現有安全抓取函式抓取該代碼的 info
-                    _, test_info = fetch_safe_stock_data(target_code)
+                    # 2. 嚴格驗證：向 yfinance 發出輕量請求，確認該代碼是否真的存在
+                    test_stock = yf.Ticker(target_code)
+                    test_df = test_stock.history(period="1d")
                     
-                    # 依序抓取最有可能包含名稱的欄位
-                    detected_name = test_info.get('longName') or test_info.get('shortName') or test_info.get('symbol')
+                    # 如果回傳的歷史 K 線是空的，代表交易所根本沒這檔股票
+                    if test_df.empty:
+                        st.sidebar.error(f"❌ 查無此代碼 [{target_code}]，請重新確認！")
+                        st.stop()
                     
-                    if not detected_name:
-                        detected_name = "未知名稱股"
+                    # 3. 帶出中文名稱邏輯
+                    # 優先看字典裡有沒有登記的台股中文名
+                    if pure_number in TAIWAN_STOCK_DICT:
+                        detected_name = TAIWAN_STOCK_DICT[pure_number]
+                    else:
+                        # 字典沒有，則嘗試從 yahoo 獲取官方簡稱或全稱
+                        test_info = test_stock.info
+                        detected_name = test_info.get('shortName') or test_info.get('longName') or pure_number
+                        
+                        # 如果拿到的是落落長的英文，切掉後面的 Corporation 或 Inc
+                        if len(detected_name) > 12:
+                            detected_name = detected_name.split(' ')[0]
                     
-                    # 美化台股名稱展示：若長名稱太長且包含英文，進行基礎剪裁優化
-                    if len(detected_name) > 15 and "Corporation" in detected_name:
-                        detected_name = detected_name.replace("Corporation", "").strip()
-                    
-                    # 組合出最終的 XQ 格式： "股票名稱 (代碼)"
+                    # 4. 寫入清單並重新整理網頁
                     display_key = f"{detected_name} ({target_code})"
-                    
-                    # 寫入 Session 暫存清單並刷新
                     st.session_state["watchlist_dict"][display_key] = target_code
-                    st.sidebar.success(f"成功識別並加入：{detected_name}")
+                    st.sidebar.success(f"已加入：{detected_name}")
                     st.rerun()
                     
                 except Exception as e:
-                    st.sidebar.error(f"代碼無效或查無此股票，請確認後再試。")
+                    st.sidebar.error("❌ 無法連線至交易所或代碼格式錯誤，請再試一次。")
         else:
             st.sidebar.warning("請先輸入代碼！")
 
-# 選擇與刪除股票
+# 選擇與刪除股票 (保留原邏輯)
 selected_display = st.sidebar.selectbox("點擊切換當前關注股票", list(st.session_state["watchlist_dict"].keys())) 
 stock_code = st.session_state["watchlist_dict"][selected_display] 
 
