@@ -8,14 +8,14 @@ from google import genai
 import requests 
 
 # 1. 網頁全域設定
-st.set_page_config(page_title="智慧看盤系統 V5.2 - XQ 專業升級版", layout="wide") 
+st.set_page_config(page_title="智慧看盤系統 V5.3 - XQ 自動偵測版", layout="wide") 
 
 # --- 密碼鎖防護機制 --- (保留原邏輯)
 if "password_correct" not in st.session_state: 
     st.session_state["password_correct"] = False 
  
 if not st.session_state["password_correct"]: 
-    st.title("私人智慧看盤系統 V5.2") 
+    st.title("私人智慧看盤系統 V5.3") 
     user_input = st.text_input("帳號 (Username)") 
     pass_input = st.text_input("密碼 (Password)", type="password") 
     if st.button("確認登入"): 
@@ -57,15 +57,44 @@ if "watchlist_dict" not in st.session_state:
         "聯發科 (2454)": "2454.TW" 
     } 
 
+# 🌟 修改處：全新升級的自動偵測名稱加入功能
 with st.sidebar.expander("➕ 新增自選股"): 
-    new_name = st.text_input("股票自訂名稱", placeholder="例如: 長榮").strip() 
-    new_code = st.text_input("股票代碼", placeholder="例如: 2603.TW").strip() 
-    if st.button("確認加入"): 
-        if new_name and new_code: 
-            display_key = f"{new_name} ({new_code})" 
-            st.session_state["watchlist_dict"][display_key] = new_code 
-            st.rerun() 
+    new_code = st.text_input("輸入股票代碼", placeholder="例如: 2603.TW 或 AAPL").strip() 
+    
+    if st.button("確認加入自選"): 
+        if new_code: 
+            # 將輸入轉換為大寫以防萬一
+            target_code = new_code.upper()
+            
+            with st.spinner("正在向交易所辨識股票名稱..."):
+                try:
+                    # 暫時利用現有安全抓取函式抓取該代碼的 info
+                    _, test_info = fetch_safe_stock_data(target_code)
+                    
+                    # 依序抓取最有可能包含名稱的欄位
+                    detected_name = test_info.get('longName') or test_info.get('shortName') or test_info.get('symbol')
+                    
+                    if not detected_name:
+                        detected_name = "未知名稱股"
+                    
+                    # 美化台股名稱展示：若長名稱太長且包含英文，進行基礎剪裁優化
+                    if len(detected_name) > 15 and "Corporation" in detected_name:
+                        detected_name = detected_name.replace("Corporation", "").strip()
+                    
+                    # 組合出最終的 XQ 格式： "股票名稱 (代碼)"
+                    display_key = f"{detected_name} ({target_code})"
+                    
+                    # 寫入 Session 暫存清單並刷新
+                    st.session_state["watchlist_dict"][display_key] = target_code
+                    st.sidebar.success(f"成功識別並加入：{detected_name}")
+                    st.rerun()
+                    
+                except Exception as e:
+                    st.sidebar.error(f"代碼無效或查無此股票，請確認後再試。")
+        else:
+            st.sidebar.warning("請先輸入代碼！")
 
+# 選擇與刪除股票
 selected_display = st.sidebar.selectbox("點擊切換當前關注股票", list(st.session_state["watchlist_dict"].keys())) 
 stock_code = st.session_state["watchlist_dict"][selected_display] 
 
@@ -94,7 +123,7 @@ except Exception as e:
 # ==================================================================== 
 # XQ 仿真四宮格主排版控制
 # ==================================================================== 
-st.markdown(f"### 📊 XQ 操盤模擬器 | 當前關注：{selected_display} ({stock_code})")
+st.markdown(f"### 📊 XQ 操盤模擬器 | 當前關注：{selected_display}")
 
 # 定義第一橫列 (Row 1): 報價組合 + 技術分析
 row1_col1, row1_col2 = st.columns(2)
@@ -110,25 +139,22 @@ with row1_col1:
             chg = c_p - p_c
             pct = (chg / p_c) * 100
             quote_data.append({
-                "商品名稱": name, "代碼": code, 
+                "商品名稱": name, 
                 "成交價": f"{c_p:,.2f}", 
                 "漲跌": f"{chg:+,.2f}", "漲幅(%)": f"{pct:+.2f}%"
             })
         except:
-            quote_data.append({"商品名稱": name, "代碼": code, "成交價": "載入中...", "漲跌": "-", "漲幅(%)": "-"})
+            quote_data.append({"商品名稱": name, "成交價": "載入中...", "漲跌": "-", "漲幅(%)": "-"})
     
     st.dataframe(pd.DataFrame(quote_data), use_container_width=True, hide_index=True, height=280)
 
 
 with row1_col2:
     st.markdown("📈 **【技術分析】**")
-    
-    # 🌟 新增功能：技術分析時間區間分頁選擇控制 (預設為一年)
     time_frame = st.segmented_control(
         "時間區間", ["當日", "近月", "一年", "五年"], default="一年", key="tech_time_frame"
     )
     
-    # 計算 MA 與 KD 基礎數據
     df['MA5'] = df['Close'].rolling(window=5).mean()
     low_9 = df['Low'].rolling(window=9).min()
     high_9 = df['High'].rolling(window=9).max()
@@ -138,21 +164,18 @@ with row1_col2:
     
     latest_date = df.index[-1]
     
-    # 根據分頁切換過濾 Plotly 要畫的資料長度
     if time_frame == "五年":
         plot_df = df
     elif time_frame == "近月":
         plot_df = df.loc[latest_date - pd.Timedelta(days=30):]
     elif time_frame == "當日":
-        # 點選當日則去抓今日 5 分鐘線來代替
         plot_df = yf.Ticker(stock_code).history(period="1d", interval="5m")
-        if plot_df.empty: plot_df = df.tail(15) # 備用
-    else: # 一年
+        if plot_df.empty: plot_df = df.tail(15)
+    else: 
         plot_df = df.loc[latest_date - pd.Timedelta(days=365):]
     
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.65, 0.35])
     
-    # K 線繪製
     fig.add_trace(go.Candlestick(
         x=plot_df.index, open=plot_df['Open'], high=plot_df['High'], low=plot_df['Low'], close=plot_df['Close'],
         name="K線", increasing_line_color='red', increasing_fillcolor='red',
@@ -162,7 +185,6 @@ with row1_col2:
     if 'MA5' in plot_df.columns and time_frame != "當日":
         fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA5'], mode='lines', line=dict(color='blue', width=1), name='MA5'), row=1, col=1)
     
-    # 量能
     vol_colors = ['red' if c >= o else 'green' for o, c in zip(plot_df['Open'], plot_df['Close'])]
     fig.add_trace(go.Bar(x=plot_df.index, y=plot_df['Volume'], marker_color=vol_colors, name="成交量"), row=2, col=1)
     
@@ -174,63 +196,50 @@ with row1_col2:
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
 
-# 定義第二橫列 (Row 2): 走勢/明細分頁 + 資訊分頁（新聞與AI）
+# ==================================================================== 
+# 定義第二橫列 (Row 2): 走勢明細 + 資訊分頁 (新聞與AI)
+# ==================================================================== 
 row2_col1, row2_col2 = st.columns(2)
 
 with row2_col1:
     st.markdown(f"🕒 **【市場焦點動態】** <span style='color:{color_text}; font-weight:bold;'>{current_price:,.2f} ({sign}{price_change_pct:.2f}%)</span>", unsafe_allow_html=True)
-    
-    # 🌟 修改處：在左下角引入 st.tabs 進行功能分頁
     tab_trend, tab_ticks = st.tabs(["📉 當日分時走勢", "📋 即時成交明細"])
     
     with tab_trend:
         try:
-            # 抓取當日分時數據
             intra_df = yf.Ticker(stock_code).history(period="1d", interval="5m")
-            if intra_df.empty: 
-                intra_df = df.tail(30) 
+            if intra_df.empty: intra_df = df.tail(30) 
             
             fig_line = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.6, 0.4])
             fig_line.add_trace(go.Scatter(x=intra_df.index, y=intra_df['Close'], mode='lines', line=dict(color='blue', width=1.5)), row=1, col=1)
             fig_line.add_trace(go.Bar(x=intra_df.index, y=intra_df['Volume'], marker_color='lightblue'), row=2, col=1)
             
-            # 放寬分頁內圖表的高度到 220，視覺更清晰
             fig_line.update_layout(template="plotly_white", height=220, margin=dict(l=10, r=40, t=5, b=5), showlegend=False)
             fig_line.update_yaxes(side="right", gridcolor="#e5e5e5")
             st.plotly_chart(fig_line, use_container_width=True, config={'displayModeBar': False})
-        except Exception as trend_err:
+        except Exception as e:
             st.info("當日走勢圖加載中...")
 
     with tab_ticks:
         try:
-            # 抓取即時數據
             intra_df = yf.Ticker(stock_code).history(period="1d", interval="5m")
-            if intra_df.empty: 
-                intra_df = df.tail(30)
-                
-            # 拿即時數據的最後 8 筆做格式化轉換 (改成分頁後空間變大，增加至 8 筆)
-            tick_df = intra_df.tail(8).copy()
-            tick_df = tick_df.sort_index(ascending=False) # 最新排最前
+            if intra_df.empty: intra_df = df.tail(30)
+            tick_df = intra_df.tail(8).copy().sort_index(ascending=False)
             
-            # 建立 HTML 表格，精準控制「單量紅/綠」
             html_table = """
             <table style='width:100%; border-collapse: collapse; font-size:13px; text-align:center; font-family:monospace;'>
-                <tr style='background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;'>
+                <tr style='background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; color: #333;'>
                     <th style='padding:6px;'>成交時間</th>
                     <th style='padding:6px;'>價格/指數</th>
                     <th style='padding:6px;'>單量 (手/張)</th>
                     <th style='padding:6px;'>累計總量</th>
                 </tr>
             """
-            
             for index, row in tick_df.iterrows():
                 time_str = index.strftime('%H:%M:%S')
                 price_val = f"{row['Close']:,.2f}"
                 vol_val = int(row['Volume'])
-                
-                # 判斷當筆收盤與開盤價，決定單量顏色
                 cell_color = "red" if row['Close'] >= row['Open'] else "green"
-                
                 html_table += f"""
                 <tr style='border-bottom: 1px solid #eee;'>
                     <td style='padding:5px; color:#555;'>{time_str}</td>
@@ -240,14 +249,10 @@ with row2_col1:
                 </tr>
                 """
             html_table += "</table>"
-            
             st.write(html_table, unsafe_allow_html=True)
-        except Exception as ticks_err:
+        except Exception as e:
             st.info("即時成交明細加載中...")
 
-
-
-# 右下角 Tabs 排版 (整合新聞與 AI 功能)
 with row2_col2:
     tab_news, tab_ai = st.tabs(["📰 相關即時新聞", "🤖 AI 智慧投資解說"])
     
@@ -262,12 +267,9 @@ with row2_col2:
                     st.markdown(f"📌 [{title}]({link})  \n<small style='color:gray;'>來源: {publisher}</small>", unsafe_allow_html=True)
                     st.markdown("<hr style='margin:4px 0px; border-top:1px dashed #eee;'>", unsafe_allow_html=True)
             else:
-                mock_news = [
-                    f"兩岸三地指數最新報價 13:15", f"外資在集中市場買超擴大，買進{selected_display}", 
-                    f"{selected_display} 臨時董事會決議召開股東常會"
-                ]
-                for n in mock_news:
-                    st.caption(f"⏱️ {datetime.date.today().strftime('%m/%d')} 09:30 | {n}")
+                mock_news = [f"兩岸三地指數最新報價", f"外資在集中市場動態關注 {selected_display}"]
+                for n in mock_news: 
+                    st.caption(f"⏱️ {datetime.date.today().strftime('%m/%d')} | {n}")
         except Exception as news_err:
             st.caption("暫無即時新聞資訊")
             
