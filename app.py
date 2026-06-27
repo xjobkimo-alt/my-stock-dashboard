@@ -8,36 +8,27 @@ from google import genai
 import requests
 
 # 1. 網頁全域設定
-st.set_page_config(page_title="智慧看盤系統 V3.2", layout="centered")
+st.set_page_config(page_title="智慧看盤系統 V3.3", layout="centered")
 
-# --- 🔐 密碼鎖防護邏輯 ---
-def check_password():
-    if "password_correct" not in st.session_state:
-        st.session_state["password_correct"] = False
-    if st.session_state["password_correct"]:
-        return True
+# --- 🔐 官方推薦：最穩定的防閃退密碼防護機制 ---
+if "password_correct" not in st.session_state:
+    st.session_state["password_correct"] = False
 
-    def password_entered():
-        if "username" in st.session_state and "password" in st.session_state:
-            if (st.session_state["username"] == st.secrets["credentials"]["username"]
-                    and st.session_state["password"] == st.secrets["credentials"]["password"]):
-                st.session_state["password_correct"] = True
-                del st.session_state["password"]
-                del st.session_state["username"]
-            else:
-                st.session_state["password_correct"] = False
-
-    st.title("🔒 私人智慧看盤系統 V3.2")
+# 如果尚未登入成功，強制停在登入畫面
+if not st.session_state["password_correct"]:
+    st.title("🔒 私人智慧看盤系統 V3.3")
     st.markdown("本網站已啟動安全防護，請輸入憑證以繼續瀏覽。")
-    st.text_input("帳號 (Username)", key="username")
-    st.text_input("密碼 (Password)", type="password", key="password", on_change=password_entered)
-    if "password_correct" in st.session_state and not st.session_state["password_correct"]:
-        if "username" in st.session_state and st.session_state["username"] != "":
+    
+    user_input = st.text_input("帳號 (Username)")
+    pass_input = st.text_input("密碼 (Password)", type="password")
+    
+    if st.button("確認登入"):
+        if user_input == st.secrets["credentials"]["username"] and pass_input == st.secrets["credentials"]["password"]:
+            st.session_state["password_correct"] = True
+            st.rerun() 
+        else:
             st.error("❌ 帳號或密碼錯誤，請重新輸入！")
-    return False
-
-if not check_password():
-    st.stop()
+    st.stop() 
 # ------------------------------------
 
 # --- 🌐 證交所三大法人數據爬蟲 ---
@@ -46,11 +37,7 @@ def get_tw_inst_data():
     try:
         today_str = datetime.datetime.now().strftime("%Y%m%d")
         url = f"https://twse.com.tw{today_str}&response=json"
-        
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        }
-        
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         response = requests.get(url, headers=headers, timeout=10)
         data_json = response.json()
         
@@ -59,14 +46,11 @@ def get_tw_inst_data():
             
         df_inst = pd.DataFrame(data_json['data'], columns=data_json['fields'])
         df_inst = df_inst[['單位名稱', '買進金額', '賣出金額', '買賣差額']]
-        
         for col in ['買進金額', '賣出金額', '買賣差額']:
             df_inst[col] = df_inst[col].str.replace(',', '').astype(float) / 100000000
-            
         return df_inst, "成功"
     except Exception as e:
         return None, f"無法取得籌碼數據: {e}"
-# ------------------------------------
 
 # --- 🤖 AI 投資解說邏輯 ---
 def get_ai_analysis(stock_name, price, change, pct, ma5, ma20, k_val, d_val):
@@ -81,10 +65,9 @@ def get_ai_analysis(stock_name, price, change, pct, ma5, ma20, k_val, d_val):
         return response.text
     except Exception as e:
         return f"AI 暫時繁忙中，請稍候再點擊。錯誤訊息: {e}"
-# ------------------------------------
 
 # --- 📊 看盤系統主程式 ---
-st.title("📊 Python 智慧看盤網頁 (V3.2 穩定版)")
+st.title("📊 Python 智慧看盤網頁 (V3.3 完美版)")
 stock_code = st.text_input("請輸入股票代碼（台股請加 .TW，美股直接輸入）", value="2330.TW")
 
 st.sidebar.header("🛠️ 系統功能設定")
@@ -98,7 +81,7 @@ def render_stock_dashboard(ticker):
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     st.caption(f"🕒 數據最後更新時間: {now} (每 {refresh_rate} 秒自動刷新)")
     
-    # ⚠️ 【關鍵修正】以下所有看盤繪圖核心程式碼，縮排均已與原本的 try 完全切開，確保 Streamlit 順利執行
+    # ⚙️ 核心數據抓取與指標計算（免 try 且已自動靠左對齊）
     stock = yf.Ticker(ticker)
     df = stock.history(period="5y")
     info = stock.info
@@ -174,7 +157,7 @@ def render_stock_dashboard(ticker):
 
     fig.update_layout(template="plotly_dark", plot_bgcolor="#1c1c1e", paper_bgcolor="#121212", margin=dict(l=20, r=20, t=10, b=10), xaxis_rangeslider_visible=False, height=480 if (sub_indicator == "無" or time_frame == "當日") else 600)
     fig.update_yaxes(side="right", gridcolor="#2c2c2e")
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, on_select="ignore")
     
     st.markdown("---")
     
@@ -186,7 +169,7 @@ def render_stock_dashboard(ticker):
         if inst_df is not None:
             f_rows = inst_df.loc[inst_df['單位名稱'].str.contains('外資'), '買賣差額']
             i_rows = inst_df.loc[inst_df['單位名稱'].str.contains('投信'), '買賣差額']
-            d_rows = inst_df.loc[inst_df['單位名稱'].str.contains('自營商'), '買賣差超'] # 這裡修正拼字
+            d_rows = inst_df.loc[inst_df['單位名稱'].str.contains('自營商'), '買賣差額']
             
             f_net = f_rows.values if not f_rows.empty else 0.0
             i_net = i_rows.values if not i_rows.empty else 0.0
@@ -204,17 +187,19 @@ def render_stock_dashboard(ticker):
         
     # AI 解說區塊
     st.markdown("### 🤖 AI 智慧投資解說")
-    with st.expander("✨ 展開 AI 即時盤勢分析建議"):
+    with st.expander("✨ 展開 AI 即時盤勢 analysis 建議"):
         if st.button("🚀 啟動 AI 分析當前策略"):
             with st.spinner("AI 正在分析中..."):
-                # ⚠️ 這裡要比 with 再多推一格 Tab 縮排！
                 ai_report = get_ai_analysis(stock_name, current_price, price_change, price_change_pct, df['MA5'].iloc[-1], df['MA20'].iloc[-1], df['K'].iloc[-1], df['D'].iloc[-1])
                 st.info(ai_report)
-                
-    # ⚠️ 記得把最下方的詳細報價也補回來：
     st.markdown("---")
+    
+    # 詳細報價
     st.markdown("### 📋 詳細報價")
     row1_1, row1_2, row1_3 = st.columns(3)
     with row1_1: st.markdown(f"**成交：** <span style='color:{color_light}; font-size:20px; font-weight:bold;'>{current_price:,.2f}</span>", unsafe_allow_html=True)
     with row1_2: st.markdown(f"**漲跌：** <span style='color:{color_light}; font-size:20px; font-weight:bold;'>{price_change:+,.2f}</span>", unsafe_allow_html=True)
     with row1_3: st.markdown(f"**幅度：** <span style='color:{color_light}; font-size:20px; font-weight:bold;'>{price_change_pct:+.2f}%</span>", unsafe_allow_html=True)
+
+# 執行看盤主程式
+render_stock_dashboard(stock_code)
