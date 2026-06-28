@@ -564,6 +564,7 @@ def run_real_stock_picker(strategy_name):
         key="strategy_select_box"
     )
     
+    # ❌ 請把這整段舊 V6.6 的殘留代碼全部刪除，一字不留！
     # 2. 核心按鈕 (跟著 selectbox 縮排對齊，不再受 def 函式干擾)
     if st.button("🚀 開始全市場 AI 掃描", use_container_width=True, key="pick_btn"):
         with st.spinner("正在連線永豐金撈取全市場資料並由 AI 診斷..."):
@@ -571,6 +572,7 @@ def run_real_stock_picker(strategy_name):
             real_picked_list = run_real_stock_picker(pick_strategy)
             # 直接呼叫最上方宣告好的全域彈出視窗
             show_picked_report(real_picked_list, pick_strategy)
+
 
 # ==================================================================== 
 # 📊 XQ 仿真四宮格主排版控制
@@ -816,6 +818,3 @@ with row2_col2:
                             stock["reason"] += f"\n\n📰 **最新市場輿情聯播：**\n{news_bulletins}"
                     # 🟢 只有這裡呼叫一次普通股視窗，後面絕不重複！
                     show_picked_report(real_picked_list, pick_strategy)
-                    
-# ⚠️ 請確保以上就是您整個 app.py 檔案的「最後一行」了！
-# ⚠️ 如果這段後面還有任何寫在最左邊或縮進的 show_picked_report(...)，請通通無情地刪除它！
