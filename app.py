@@ -548,10 +548,21 @@ with row1_col2:
     
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.08, row_heights=[0.7, 0.3])
     
+    # ====================================================================
+    # 關鍵修正：將漲跌顏色用 dict(color=...) 包裝，正確啟動台股「紅漲綠跌」雙色
+    # ====================================================================
     fig.add_trace(go.Candlestick(
-        x=plot_df.index, open=plot_df['Open'], high=plot_df['High'], low=plot_df['Low'], close=plot_df['Close'],
-        name="<b>K線圖</b>", increasing_line_color='#FF3333', increasing_fillcolor='#FF3333',
-        decreasing_line_color='#00AA00', decreasing_fillcolor='#00AA00', showlegend=True
+        x=plot_df.index, 
+        open=plot_df['Open'], 
+        high=plot_df['High'], 
+        low=plot_df['Low'], 
+        close=plot_df['Close'],
+        name="<b>K線圖</b>", 
+        # 上漲：實心紅棒與紅線
+        increasing=dict(line=dict(color='#FF3333'), fillcolor='#FF3333'),
+        # 下跌：實心綠棒與綠線
+        decreasing=dict(line=dict(color='#00AA00'), fillcolor='#00AA00'), 
+        showlegend=True
     ), row=1, col=1)
     
     fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA5'], mode='lines', line=dict(color='#00B0FF', width=2.0), name="<b>5MA</b>", showlegend=True), row=1, col=1)
