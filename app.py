@@ -425,11 +425,32 @@ with row1_col1:
     # 建立雙分頁控制，完美收納側邊欄管理功能
     tab_portfolio, tab_manage = st.tabs(["📊 報價組合清單", "🔧 自選股管理面版"])
     
-        # ----------------------------------------------------------------
-    # 【分頁一】：每頁固定 3 檔的股票清單（修正：欄位置中、新增右側一鍵刪除）
+    # ----------------------------------------------------------------
+    # 【分頁一】：每頁固定 3 檔的股票清單（大盤頂格鎖定 + 科技紅去邊框刪除鈕）
     # ----------------------------------------------------------------
     with tab_portfolio:
-        # 項目說明標題列（精準優化：加上 text-align:center 達成全體置中對齊）
+        # 🎨 用 CSS 注入把 Streamlit 的特定刪除按鈕漂白改裝成「科技感純紅去邊框樣式」
+        st.markdown("""
+        <style>
+        div.stButton > button[key^="del_fast_"] {
+            background-color: transparent !important;
+            color: #FF3333 !important;
+            border: none !important;
+            font-size: 16px !important;
+            box-shadow: none !important;
+            padding: 0px !important;
+            margin-top: 6px !important;
+        }
+        div.stButton > button[key^="del_fast_"]:hover {
+            color: #FF6666 !important;
+            background-color: transparent !important;
+            transform: scale(1.2);
+            transition: all 0.2s ease-in-out;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
+        # 項目說明標題列（維持全體置中）
         h_col1, h_col2, h_col3, h_col4, h_col5 = st.columns([1.8, 1.1, 0.9, 1.1, 0.6])
         h_col1.markdown("<p style='color:#BBBBBB; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:center;'>商品名稱</p>", unsafe_allow_html=True)
         h_col2.markdown("<p style='color:#BBBBBB; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:center;'>成交價</p>", unsafe_allow_html=True)
@@ -438,21 +459,60 @@ with row1_col1:
         h_col5.markdown("<p style='color:#BBBBBB; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:center;'>移除</p>", unsafe_allow_html=True)
         st.markdown("<hr style='margin:2px 0px; border-top:1px solid #555;'>", unsafe_allow_html=True)
         
-        ITEMS_PER_PAGE = 3
+        # 1. 提取自選股清單並進行「加權指數分離」
         watchlist_items = list(st.session_state["watchlist_dict"].items())
-        total_items = len(watchlist_items)
+        
+        # 找出加權指數（不論使用者把它存在哪，都先把它挑出來做置頂）
+        index_item = [item for item in watchlist_items if "^TWII" in item[1] or "加權指數" in item[0]]
+        # 剩下的才是普通個股與可轉債
+        stock_items = [item for item in watchlist_items if item not in index_item]
+        
+        # ============================================================
+        # 固定第一筆：大盤加權指數 (永遠頂格鎖定、不參與分頁、不放刪除鍵)
+        # ============================================================
+        if index_item:
+            idx_name, idx_code = index_item[0]
+            try:
+                idx_df, idx_info = fetch_safe_stock_data(idx_code)
+                i_cp = idx_info.get("currentPrice") if idx_info.get("currentPrice") is not None else idx_df['Close'].iloc[-1]
+                i_pc = idx_info.get("previousClose") if idx_info.get("previousClose") is not None else idx_df['Close'].iloc[-2]
+                i_chg = i_cp - i_pc
+                i_pct = (i_chg / i_pc) * 100
+            except:
+                i_cp, i_chg, i_pct = 0.0, 0.0, 0.0
+                
+            i_css = "stock-up" if i_chg > 0 else ("stock-down" if i_chg < 0 else "")
+            i_sign = "+" if i_chg >= 0 else ""
+            
+            b_col1, b_col2, b_col3, b_col4, b_col5 = st.columns([1.8, 1.1, 0.9, 1.1, 0.6])
+            with b_col1:
+                if st.button(f"📊 {idx_name}", key=f"btn_fixed_index", use_container_width=True):
+                    st.session_state["current_selected_idx"] = 0
+                    st.session_state["main_stock_selector"] = idx_name
+                    st.rerun()
+            with b_col2: st.markdown(f"<p style='text-align:center; padding-top:6px; font-weight:bold;'>{i_cp:,.2f}</p>", unsafe_allow_html=True)
+            with b_col3: st.markdown(f"<p style='text-align:center; padding-top:6px;' class='{i_css}'>{i_sign}{i_chg:,.2f}</p>", unsafe_allow_html=True)
+            with b_col4: st.markdown(f"<p style='text-align:center; padding-top:6px;' class='{i_css}'>{i_sign}{i_pct:.2f}%</p>", unsafe_allow_html=True)
+            with b_col5: st.markdown("<p style='text-align:center; padding-top:6px; color:#555555;'>-</p>", unsafe_allow_html=True) # 鎖定不給刪除鍵
+            st.markdown("<hr style='margin:1px 0px; border-top:1px solid #2D2D2D;'>", unsafe_allow_html=True)
+
+        # ============================================================
+        # 2. 剩餘個股的分頁顯示 (每頁固定放 2 檔，加上置頂的大盤剛好湊 3 列)
+        # ============================================================
+        ITEMS_PER_PAGE = 2 
+        total_stocks = len(stock_items)
         
         if "current_page" not in st.session_state:
             st.session_state["current_page"] = 0
             
-        max_page = (total_items - 1) // ITEMS_PER_PAGE
+        max_page = max(0, (total_stocks - 1) // ITEMS_PER_PAGE)
         if st.session_state["current_page"] > max_page:
             st.session_state["current_page"] = max_page
             
         start_idx = st.session_state["current_page"] * ITEMS_PER_PAGE
-        end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
+        end_idx = min(start_idx + ITEMS_PER_PAGE, total_stocks)
         
-        for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
+        for idx_offset, (name, code) in enumerate(stock_items[start_idx:end_idx]):
             global_idx = start_idx + idx_offset
             try:
                 s_df, s_info = fetch_safe_stock_data(code)
@@ -469,33 +529,26 @@ with row1_col1:
             css_class = "stock-up" if chg > 0 else ("stock-down" if chg < 0 else "")
             b_sign = "+" if chg >= 0 else ""
             
-            # 建立五列版面佈局，留最右邊給移除按鈕
             b_col1, b_col2, b_col3, b_col4, b_col5 = st.columns([1.8, 1.1, 0.9, 1.1, 0.6])
             with b_col1:
-                # 點擊商品切換主畫面
                 if st.button(f"🔍 {name}", key=f"btn_{code}_{global_idx}", use_container_width=True):
-                    st.session_state["current_selected_idx"] = global_idx
+                    # 為了不與大盤索引衝突，動態推算全域位置
+                    st.session_state["current_selected_idx"] = global_idx + 1
                     st.session_state["main_stock_selector"] = name
                     st.rerun()
-            with b_col2: 
-                st.markdown(f"<p style='text-align:center; padding-top:6px; font-weight:bold;'>{c_p:,.2f}</p>", unsafe_allow_html=True)
-            with b_col3: 
-                st.markdown(f"<p style='text-align:center; padding-top:6px;' class='{css_class}'>{b_sign}{chg:,.2f}</p>", unsafe_allow_html=True)
-            with b_col4: 
-                st.markdown(f"<p style='text-align:center; padding-top:6px;' class='{css_class}'>{b_sign}{pct:.2f}%</p>", unsafe_allow_html=True)
+            with b_col2: st.markdown(f"<p style='text-align:center; padding-top:6px; font-weight:bold;'>{c_p:,.2f}</p>", unsafe_allow_html=True)
+            with b_col3: st.markdown(f"<p style='text-align:center; padding-top:6px;' class='{css_class}'>{b_sign}{chg:,.2f}</p>", unsafe_allow_html=True)
+            with b_col4: st.markdown(f"<p style='text-align:center; padding-top:6px;' class='{css_class}'>{b_sign}{pct:.2f}%</p>", unsafe_allow_html=True)
             with b_col5:
-                # ❌ 一鍵刪除按鈕 (整合安全連動防禦機制)
-                if st.button("❌", key=f"del_fast_{code}_{global_idx}", use_container_width=True, help="點擊直接從自選清單移除"):
+                # ❌ 優化後的亮紅無邊框一鍵刪除鍵
+                if st.button("❌", key=f"del_fast_{code}_{global_idx}", use_container_width=True):
                     if len(st.session_state["watchlist_dict"]) > 1:
                         del st.session_state["watchlist_dict"][name]
                         save_my_watchlist()
-                        # 重設索引，防範刪除造成的越界錯誤
                         st.session_state["current_selected_idx"] = 0
                         if "main_stock_selector" in st.session_state:
                             del st.session_state["main_stock_selector"]
                         st.rerun()
-                    else:
-                        st.error("清單至少保留一檔！")
                 
         # 分頁按鈕控制列
         st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
