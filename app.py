@@ -476,10 +476,20 @@ with row1_col1:
             /* 2. 橫向區塊零縫隙修正：阻止 flex 撐開間距，並可視需求調整 gap */
             /* ================================================================= */
             div[data-testid="stHorizontalBlock"] {
-                gap: 0px !important;       /* 從 4px 直接壓縮到 0px，欄位間距完全對齊 */
+                gap: 4px !important;       /* 從 4px 直接壓縮到 0px，欄位間距完全對齊 */
                 margin-top: 0px !important;
                 margin-bottom: 0px !important;
                 padding: 0px !important;
+            }
+            
+            /* 💡 新增這段：強制解除藍色欄位說明字體被切一半的死角 */
+            div[data-testid="stHorizontalBlock"] p {
+            line-height: 1.5 !important;
+            height: auto !important;
+            margin: 0px !important;
+            padding-top: 3px !important;
+            padding-bottom: 3px !important;
+            display: inline-block !important;
             }
 
             /* ================================================================= */
@@ -491,9 +501,9 @@ with row1_col1:
             }
 
             div.element-container {
-                margin-bottom: 0px !important; 
-                margin-top: 0px !important;
-                padding: 0px !important;    /* 新增：抽乾元件容器內襯 */
+            margin-bottom: 4px !important; /* 💡 稍微放寬，標題和藍色字才不會被削頭 */
+            margin-top: 4px !important;    
+            padding: 0px !important;
             }
 
             /* ================================================================= */
