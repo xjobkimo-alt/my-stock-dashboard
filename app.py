@@ -463,8 +463,22 @@ with row1_col2:
     st.markdown("📈 **【技術分析 K 線與均線】**")
     time_frame = st.radio("選擇時間區間", ["當日", "近月", "一年", "五年"], index=1, horizontal=True, key="tech_radio")
     
+    # ====================================================================
+    # 防禦機制：若 df 為空或缺少必要欄位，自動補上安全假數據，防止 KeyError 崩潰
+    # ====================================================================
+    if df.empty or 'Close' not in df.columns:
+        # 建立一組 20 天的假數據，維持畫面不崩潰
+        dates = [pd.Timestamp(datetime.date.today() - datetime.timedelta(days=i)) for i in range(20)][::-1]
+        df = pd.DataFrame({
+            "Open": [100.0] * 20, "High": [101.0] * 20, "Low": [99.0] * 20, 
+            "Close": [100.0] * 20, "Volume": [1000] * 20
+        }, index=dates)
+        st.warning("⚠️ 當前商品數據獲取失敗（可能受到流量限制），已啟動防禦性安全面板。")
+
+    # 現在這裡 100% 安全，絕對不會再報 KeyError 了！
     df['MA5'] = df['Close'].rolling(window=5).mean()
     df['MA20'] = df['Close'].rolling(window=20).mean()
+
     plot_df = df.tail(30) if time_frame == "近月" else (df.tail(250) if time_frame == "一年" else df)
     
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.08, row_heights=[0.7, 0.3])
