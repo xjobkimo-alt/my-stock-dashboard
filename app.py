@@ -674,23 +674,44 @@ with row2_col2:
         else: 
             st.warning("⚠️ 永豐金 API 未啟動。請確保您的帳密與憑證已正確設定於祕密欄位中。") 
 
-    # --- 分頁 4：🤖 永豐全市場智慧選股 (完全獨立平級，8 個空格) ---
+        # --- 分頁 4：🤖 永豐全市場智慧選股 (與其他 with 平起平坐) ---
     with tab_picker: 
-        st.markdown("🔍 <h4 style='color: #FFFFFF; font-weight: bold; margin-top: 0px;'>永豐金量化大腦 × 全市場智慧選股</h4>", unsafe_allow_html=True) 
+        st.markdown("🔍 <h4 style='color: #FFFFFF; font-weight: bold; margin-top: 0px;'>永豐金量化大腦 × 新聞輿情與可轉債 (CB)</h4>", unsafe_allow_html=True) 
  
-        # 1. 策略選擇下拉選單
+        # 1. 🟢 修正：在清單中精準補上「主力低溢價可轉債 (CB 黃金池)」這行字！
         pick_strategy = st.selectbox( 
             "請選擇篩選核心策略：", 
-            ["外資投信同步買超股", "技術面均線多頭排列", "量價齊揚突破個股"], 
+            [
+                "外資投信同步買超股 (普通股)", 
+                "技術面均線多頭排列 (普通股)", 
+                "新聞輿情爆量突破股 (普通股)", 
+                "主力低溢價可轉債 (CB 黃金池)"  # <-- 確保這行文字與大腦判斷完全一致
+            ], 
             key="main_page_strategy_picker" 
         ) 
  
         st.write("") # 增加安全間距 
  
-        # 2. 🟢 終極解鎖：大火箭掃描按鈕強勢回歸！(固定縮排 8 個空格)
+        # 2. 大按鈕觸發 (維持原樣)
         if st.button("🚀 開始全市場 AI 智慧掃描", use_container_width=True, key="main_pick_btn_real"): 
-            with st.spinner("正在連線永豐金撈取全市場資料並由 AI 診斷..."): 
-                # 呼叫真實選股大腦
-                real_picked_list = run_real_stock_picker(pick_strategy) 
-                # 呼叫最上方的全域彈出視窗
-                show_picked_report(real_picked_list, pick_strategy)
+            with st.spinner("正在連線鉅亨網與櫃買中心數據庫，並由 Gemini AI 進行多空診斷..."): 
+                
+                # 判斷如果是可轉債
+                if "可轉債 (CB)" in pick_strategy:
+                    cb_list = fetch_real_cb_data()
+                    formatted_picked = []
+                    for cb in cb_list:
+                        formatted_picked.append({
+                            "code": cb["code"],
+                            "name": f"{cb['cb_name']} (標的:{cb['underlying']})",
+                            "reason": f"【現價:{cb['price']}元 | 溢價率:{cb['premium']}】\n{cb['reason']}"
+                        })
+                    show_picked_report(formatted_picked, pick_strategy)
+                else:
+                    real_picked_list = run_real_stock_picker(pick_strategy)
+                    for stock in real_picked_list:
+                        latest_news = fetch_cnyes_and_global_news(stock["code"])
+                        if latest_news:
+                            news_bulletins = "\n".join([f"• [{n['source']}] {n['title']}" for n in latest_news[:2]])
+                            stock["reason"] += f"\n\n📰 **最新市場輿情聯播：**\n{news_bulletins}"
+                    show_picked_report(real_picked_list, pick_strategy)
