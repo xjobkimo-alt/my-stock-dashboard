@@ -27,12 +27,13 @@ if "api" not in st.session_state:
         st.session_state["api_error"] = str(e)
 
 # ====================================================================
-# 2. 網頁全域設定與 CSS 科技黑化排版
+# 2. 網頁全域設定與 CSS 科技黑化排版 (精準優化：側邊欄收納箭頭黃金加亮版)
 # ====================================================================
-# 🟢 修正：移除 collapsed 參數，把控制權完全還給 Python 記憶體
+# 抽屜式自動縮進設定，一開網頁預設就是全螢幕
 st.set_page_config(
-    page_title="智慧看盤系統 V8.6 - 終極開關版", 
-    layout="wide"
+    page_title="智慧看盤系統 V8.3 - 箭頭導航版", 
+    layout="wide", 
+    initial_sidebar_state="collapsed"
 )
 
 st.markdown("""
@@ -286,69 +287,50 @@ def get_ai_analysis(stock_name, price, change, pct, ma5, k_val, d_val):
         return f"AI 暫時繁忙中。錯誤訊息: {e}"
     
 # ====================================================================
-# 7. 🔧 左側邊欄自選股管理面板 (🟢 V8.6 修正：記憶體雙向滑動解鎖)
+# 7. 🔧 左側邊欄自選股管理面板 (完全交給官方箭頭控制縮進)
 # ====================================================================
-# 1. 確保開關狀態完美初始化
-if "sidebar_toggle_state" not in st.session_state:
-    st.session_state["sidebar_toggle_state"] = True
+# 🟢 修正：移除 Checkbox，讓所有元件直接全域發動，交由官方自帶的箭頭控制展開與縮進
+st.sidebar.header("🔧 我的自選股管理面版")
+with st.sidebar.expander("➕ 新增自選股", expanded=True):
+    new_code = st.text_input("輸入股票代碼", placeholder="例如: 2882").strip()
+    if st.button("確認加入自選"):
+        if new_code:
+            target_code = new_code.upper()
+            pure_number = target_code.split('.')[0]
+            if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
+                target_code = f"{pure_number}.TW"
+            try:
+                test_stock = yf.Ticker(target_code)
+                test_df = test_stock.history(period="1d")
+                if test_df.empty:
+                    st.sidebar.error(f"❌ 查無此代碼 [{target_code}]")
+                else:
+                    detected_name = TAIWAN_STOCK_DICT.get(pure_number, test_stock.info.get('shortName', pure_number))
+                    display_key = f"{detected_name} ({target_code})" if "(" not in detected_name else detected_name
+                    st.session_state["watchlist_dict"][display_key] = target_code
+                    save_my_watchlist()
+                    st.sidebar.success(f"成功加入: {detected_name}")
+                    st.rerun()
+            except:
+                st.sidebar.error("❌ 無法連線驗證。")
 
-# 2. 讀取自選股基本變數
 watchlist_keys = list(st.session_state["watchlist_dict"].keys())
 if "current_selected_idx" not in st.session_state or st.session_state["current_selected_idx"] >= len(watchlist_keys):
     st.session_state["current_selected_idx"] = 0
 
-# 3. 🟢 核心解鎖：將記憶體狀態實時同步注入到 Streamlit 官方側邊欄的顯示機制中
-if not st.session_state["sidebar_toggle_state"]:
-    # 如果使用者點了關閉，透過 CSS 強制把左邊灰色側邊欄瞬間隱形縮進去，不留任何痕跡！
-    st.markdown("""
-        <style>
-            [data-testid="stSidebar"] { display: none !important; }
-            section[data-testid="stSidebarViewPort"] { display: none !important; }
-            .stApp [data-testid="stHeader"] { left: 0rem !important; }
-        </style>
-    """, unsafe_allow_html=True)
-    
-    selected_display = watchlist_keys[st.session_state["current_selected_idx"]]
-    stock_code = st.session_state["watchlist_dict"][selected_display]
-else:
-    # 如果使用者點了打開，正常渲染所有管理工具
-    st.sidebar.header("🔧 我的自選股管理面版")
-    with st.sidebar.expander("➕ 新增自選股", expanded=True):
-        new_code = st.text_input("輸入股票代碼", placeholder="例如: 2882").strip()
-        if st.button("確認加入自選"):
-            if new_code:
-                target_code = new_code.upper()
-                pure_number = target_code.split('.')
-                if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
-                    target_code = f"{pure_number}.TW"
-                try:
-                    test_stock = yf.Ticker(target_code)
-                    test_df = test_stock.history(period="1d")
-                    if test_df.empty:
-                        st.sidebar.error(f"❌ 查無此代碼 [{target_code}]")
-                    else:
-                        detected_name = TAIWAN_STOCK_DICT.get(pure_number, test_stock.info.get('shortName', pure_number))
-                        display_key = f"{detected_name} ({target_code})" if "(" not in detected_name else detected_name
-                        st.session_state["watchlist_dict"][display_key] = target_code
-                        save_my_watchlist()
-                        st.sidebar.success(f"成功加入: {detected_name}")
-                        st.rerun()
-                except:
-                    st.sidebar.error("❌ 無法連線驗證。")
+selected_display = watchlist_keys[st.session_state["current_selected_idx"]]
+stock_code = st.session_state["watchlist_dict"][selected_display]
 
-    selected_display = watchlist_keys[st.session_state["current_selected_idx"]]
-    stock_code = st.session_state["watchlist_dict"][selected_display]
+if st.sidebar.button("❌ 從清單中刪除目前股票"):
+    if len(st.session_state["watchlist_dict"]) > 1:
+        del st.session_state["watchlist_dict"][selected_display]
+        save_my_watchlist()
+        st.session_state["current_selected_idx"] = 0
+        st.rerun()
+    else:
+        st.sidebar.warning("清單內至少需保留一檔股票！")
 
-    if st.sidebar.button("❌ 從清單中刪除目前股票"):
-        if len(st.session_state["watchlist_dict"]) > 1:
-            del st.session_state["watchlist_dict"][selected_display]
-            save_my_watchlist()
-            st.session_state["current_selected_idx"] = 0
-            st.rerun()
-        else:
-            st.sidebar.warning("清單內至少需保留一檔股票！")
-
-    refresh_rate = st.sidebar.slider("即時報價刷新頻率 (秒)", min_value=5, max_value=60, value=10, step=5)
+refresh_rate = st.sidebar.slider("即時報價刷新頻率 (秒)", min_value=5, max_value=60, value=10, step=5)
 
 # ====================================================================
 # 8. 智慧分流加載大腦 (可轉債 5 碼/普通股 4 碼 安全不崩潰)
@@ -357,12 +339,16 @@ df = pd.DataFrame()
 info = {}
 is_cb_bond = False
 
+# 判斷是否為 5 碼可轉債
 pure_num_check = stock_code.split('.')[0]
 if len(pure_num_check) == 5 and pure_num_check.isdigit():
     is_cb_bond = True
     info = {"shortName": f"可轉債 {pure_num_check}", "currentPrice": 100.0, "previousClose": 100.0, "news": []}
+    # 補上完整的 20 天假 K 線數據，讓可轉債切換時不留白、不報錯
     dates = [pd.Timestamp(datetime.date.today() - datetime.timedelta(days=i)) for i in range(20)][::-1]
-    df = pd.DataFrame({"Open": [100.0]*20, "High": [102.0]*20, "Low": [99.5]*20, "Close": [100.5]*20, "Volume": [1000]*20}, index=dates)
+    df = pd.DataFrame({
+        "Open": [100.0]*20, "High": [102.0]*20, "Low": [99.5]*20, "Close": [100.5]*20, "Volume": [1000]*20
+    }, index=dates)
     current_price, price_change, price_change_pct, color_text, sign = 100.0, 0.0, 0.0, "#00E676", ""
 else:
     try:
@@ -378,31 +364,16 @@ else:
         st.stop()
 
 # ====================================================================
-# 9. XQ 仿真四宮格主排版控制 (V8.5 獨立優化版：導入智慧抽屜開關大鈕)
+# 9. XQ 仿真四宮格主排版控制 (自選股 3 檔分頁、橫向右上圖例)
 # ====================================================================
-# 🟢 修正：在主畫面最頂端建立一個左右分流橫條，左邊放自選開關大鈕，右邊放主要看盤標題
-col_toggle, col_title = st.columns([1, 4])
-
-with col_toggle:
-    # 智慧文字判定：根據當前 Session State 狀態顯示對應文字
-    btn_label = "❌ 關閉自選面板" if st.session_state.get("sidebar_toggle_state", True) else "🔧 打開自選面板"
-    # 畫出一顆 100% 絕對不會隱形、滿版且大顆的標準控制按鈕
-    if st.button(btn_label, use_container_width=True, key="global_sidebar_toggle_trigger_btn"):
-        # 點擊時，反轉側邊欄的記憶狀態
-        st.session_state["sidebar_toggle_state"] = not st.session_state.get("sidebar_toggle_state", True)
-        st.rerun()
-
-with col_title:
-    st.markdown(f"<h3 style='margin-top:0px; padding-top:2px;'>📊 XQ 操盤模擬器 | 當前關注：<span style='color:{color_text};'>{selected_display}</span></h3>", unsafe_allow_html=True)
-
-# 建立四宮格主要畫面的第一橫列欄位
+st.markdown(f"### 📊 XQ 操盤模擬器 | 當前關注：<span style='color:{color_text};'>{selected_display}</span>", unsafe_allow_html=True)
 row1_col1, row1_col2 = st.columns(2)
 
-# --- 左上格：商品報價組合 (每頁固定 4 筆，高度完美對稱) ---
+# --- 左上格：商品報價組合 (每頁固定 3 檔) ---
 with row1_col1:
     st.markdown("📈 **【看盤重點/報價組合】**")
     
-    # 補上項目說明標題列
+    # 項目說明標題列
     h_col1, h_col2, h_col3, h_col4 = st.columns([2, 1.2, 1, 1.2])
     h_col1.markdown("<p style='color:#BBBBBB; font-size:13px; font-weight:bold; margin-bottom:2px;'>商品名稱</p>", unsafe_allow_html=True)
     h_col2.markdown("<p style='color:#BBBBBB; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:center;'>成交價</p>", unsafe_allow_html=True)
@@ -410,7 +381,8 @@ with row1_col1:
     h_col4.markdown("<p style='color:#BBBBBB; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:center;'>漲跌幅</p>", unsafe_allow_html=True)
     st.markdown("<hr style='margin:2px 0px; border-top:1px solid #555;'>", unsafe_allow_html=True)
     
-    ITEMS_PER_PAGE = 4
+    # 修正：每頁固定放置 3 檔
+    ITEMS_PER_PAGE = 3
     watchlist_items = list(st.session_state["watchlist_dict"].items())
     total_items = len(watchlist_items)
     
@@ -433,7 +405,7 @@ with row1_col1:
             chg = c_p - p_c
             pct = (chg / p_c) * 100
         except: 
-            if len(code.split('.')) == 5:
+            if len(code.split('.')[0]) == 5:
                 c_p, chg, pct = 100.5, 0.5, 0.5
             else:
                 c_p, chg, pct = 0.0, 0.0, 0.0
@@ -448,7 +420,7 @@ with row1_col1:
         with b_col3: st.markdown(f"<p style='text-align:center; padding-top:6px;' class='{css_class}'>{b_sign}{chg:,.2f}</p>", unsafe_allow_html=True)
         with b_col4: st.markdown(f"<p style='text-align:center; padding-top:6px;' class='{css_class}'>{b_sign}{pct:.2f}%</p>", unsafe_allow_html=True)
 
-    # 分頁按鈕控制列
+    # 分頁按鈕控制列 (精準填入寬度參數)
     st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
     p_col1, p_col2, p_col3 = st.columns([1.2, 2, 1.2])
     with p_col1:
@@ -462,7 +434,7 @@ with row1_col1:
             st.session_state["current_page"] += 1
             st.rerun()
 
-# --- 右上格：技術分析 (圖例橫向靠右對齊) ---
+# --- 右上格：技術分析 (圖例改為右上角橫向橫排) ---
 with row1_col2:
     st.markdown("📈 **【技術分析 K 線與均線】**")
     time_frame = st.radio("選擇時間區間", ["當日", "近月", "一年", "五年"], index=1, horizontal=True, key="tech_radio")
@@ -485,22 +457,27 @@ with row1_col2:
     vol_colors = ['#FF3333' if c >= o else '#00AA00' for o, c in zip(plot_df['Open'], plot_df['Close'])]
     fig.add_trace(go.Bar(x=plot_df.index, y=plot_df['Volume'], marker_color=vol_colors, name="成交量", showlegend=False), row=2, col=1)
     
+    # 🟢 修正：加入 font 控制，強制將 5MA、20MA 橫向文字變大、變純白、變粗體！
     fig.update_layout(
         template="plotly_dark", paper_bgcolor="#121212", plot_bgcolor="#121212", 
         xaxis_rangeslider_visible=False, height=240, margin=dict(l=10, r=40, t=5, b=5),
         showlegend=True, 
         legend=dict(
-            orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1.0, bgcolor="rgba(0, 0, 0, 0)",
-            font=dict(size=12, color="#FFFFFF", family="Arial, sans-serif")
+            orientation="h",
+            yanchor="bottom", y=1.02,
+            xanchor="right", x=1.0,
+            bgcolor="rgba(0, 0, 0, 0)", 
+            # 👈 核心加強：字級放大到 13，顏色純白，強制加粗
+            font=dict(size=13, color="#FFFFFF", weight="bold", family="Arial, sans-serif")
         )
     )
     fig.update_yaxes(side="right", gridcolor="#2D2D2D")
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
-# 建立四宮格主要畫面的第二橫列欄位
+# 定義下方橫列欄位
 row2_col1, row2_col2 = st.columns(2)
 
-# --- 左下格：走勢與即時明細 (圖例橫向靠右對齊，純淨原生 DataFrame) ---
+# --- 左下格：走勢與即時明細 (圖例改為右上角橫向橫排，去原生成交明細) ---
 with row2_col1:
     st.markdown(f"🎯 **【市場焦點動態】** <span style='color:{color_text}; font-weight:bold;'>{current_price:,.2f} ({sign}{price_change_pct:.2f}%)</span>", unsafe_allow_html=True)
     tab_trend, tab_ticks = st.tabs(["📊 當日分時走勢", "🧾 即時成交明細"])
@@ -510,17 +487,23 @@ with row2_col1:
         fig_line.add_trace(go.Scatter(x=plot_df.index[-10:], y=plot_df['Close'].tail(10), mode='lines+markers', line=dict(color='#00E676', width=2.5), name="分時價格", showlegend=True), row=1, col=1)
         fig_line.add_trace(go.Bar(x=plot_df.index[-10:], y=plot_df['Volume'].tail(10), marker_color='#00B0FF', name="即時量能", showlegend=True), row=2, col=1)
         
+                # 🟢 修正：同步將分時價格、即時量能的圖例說明文字放大、變純白、加粗！
         fig_line.update_layout(
             template="plotly_dark", paper_bgcolor="#121212", plot_bgcolor="#121212", height=200, margin=dict(l=10, r=40, t=5, b=5),
             showlegend=True, 
             legend=dict(
-                orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1.0, bgcolor="rgba(0, 0, 0, 0)",
-                font=dict(size=12, color="#FFFFFF", family="Arial, sans-serif")
+                orientation="h",
+                yanchor="bottom", y=1.02,
+                xanchor="right", x=1.0,
+                bgcolor="rgba(0, 0, 0, 0)",
+                # 👈 核心加強
+                font=dict(size=13, color="#FFFFFF", weight="bold", family="Arial, sans-serif")
             )
         )
         st.plotly_chart(fig_line, use_container_width=True, config={'displayModeBar': False})
         
     with tab_ticks:
+        # 改用官方原生表格元件，絕不殘留未閉合網頁程式碼
         ticks_data = []
         i_end = max(2, min(5, len(df)))
         for i in range(1, i_end):
