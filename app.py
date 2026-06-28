@@ -148,13 +148,37 @@ TAIWAN_STOCK_DICT = {
 }
 
 @st.cache_data(ttl=60)
+def fetch_batch_stock_data(tickers_list):
+    """一次性下載所有自選股的歷史數據，避免被 yfinance 封鎖限制"""
+    if not tickers_list:
+        return pd.DataFrame()
+    try:
+        session = requests.Session()
+        session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
+        df_all = yf.download(
+            tickers_list, 
+            period="5y", 
+            session=session, 
+            group_by="ticker", 
+            threads=True
+        )
+        return df_all
+    except Exception as e:
+        return pd.DataFrame()
+
+# 💡 關鍵修正：保留並重寫這個函式，讓第 368 行與 415 行能正常呼叫不報錯！
 def fetch_safe_stock_data(ticker):
-    session = requests.Session()
-    session.headers.update({"User-Agent": "Mozilla/5.0"})
-    stock = yf.Ticker(ticker, session=session)
-    df = stock.history(period="5y")
-    info = stock.info
-    return df, info
+    """相容舊架構的單股查詢介面，背後自動調用單股機制或快取"""
+    try:
+        session = requests.Session()
+        session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
+        stock = yf.Ticker(ticker, session=session)
+        df = stock.history(period="5y")
+        info = stock.info if stock.info else {}
+        return df, info
+    except Exception as e:
+        # 回傳空的 DataFrame 與空字典，啟動系統自帶的防崩潰 fallback
+        return pd.DataFrame(), {}
 
 # --- 採集模組：新聞輿情大腦 ---
 @st.cache_data(ttl=1800)
