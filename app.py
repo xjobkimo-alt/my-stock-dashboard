@@ -321,6 +321,33 @@ def show_my_cb_report(stocks, strategy_name):
     div[data-testid="stDialog"] div[data-testid="stVerticalBlock"] { background-color: #121212 !important; }
     div[data-testid="stDialog"] p, div[data-testid="stDialog"] span, div[data-testid="stDialog"] label { color: #FFFFFF !important; }
     div[data-testid="stDialog"] button[aria-label="Close"] svg { fill: #FFFFFF !important; }
+    
+    /* ==================================================================== */
+    /* 【關鍵修正】強烈視覺對比：客製化 Dialog 內不同狀態的按鈕樣式 */
+    /* ==================================================================== */
+    /* 1. 尚未加入的按鈕：亮眼科技藍邊框 + 黃金星星，吸引點擊 */
+    div[data-testid="stDialog"] button[key^="ac_btn_"] {
+        background-color: #1A1A1E !important;
+        color: #FFD600 !important; /* 亮黃色字體 */
+        border: 1px solid #00B0FF !important; /* 藍色亮邊框 */
+        font-weight: bold !important;
+        box-shadow: 0px 0px 6px rgba(0, 176, 255, 0.2) !important;
+    }
+    div[data-testid="stDialog"] button[key^="ac_btn_"]:hover {
+        background-color: #00B0FF !important;
+        color: #000000 !important;
+        box-shadow: 0px 0px 12px #00B0FF !important;
+    }
+    
+    /* 2. 已經納入自選的按鈕：完全暗化、低調深灰，呈現不可點擊的高質感 */
+    div[data-testid="stDialog"] button[key^="dl_btn_"] {
+        background-color: #242427 !important;
+        color: #00E676 !important; /* 綠色字體 */
+        border: 1px solid #2D2D32 !important;
+        opacity: 0.8 !important;
+        cursor: not-allowed !important;
+    }
+    /* ==================================================================== */
     </style>
     """, unsafe_allow_html=True)
     
@@ -343,10 +370,14 @@ def show_my_cb_report(stocks, strategy_name):
         with col_action:
             st.write("")
             session_btn_key = f"has_added_{stock['code']}"
+            
+            # 【視覺強化修正】判斷是否已經在自選名單中
             if full_code in current_watchlist_codes or st.session_state.get(session_btn_key, False):
-                st.button(f" 已納入自選", key=f"dl_btn_{stock['code']}", disabled=True, use_container_width=True)
+                # 已經加入：文字補上明確的綠色大打勾 ✅
+                st.button(f"✅ 已納入自選", key=f"dl_btn_{stock['code']}", disabled=True, use_container_width=True)
             else:
-                if st.button(f" 納入自選", key=f"ac_btn_{stock['code']}", use_container_width=True):
+                # 尚未加入：文字加上閃亮黃金小星星 ⭐，配合藍色發光外框，視覺極度顯眼
+                if st.button(f"⭐ 納入自選", key=f"ac_btn_{stock['code']}", use_container_width=True):
                     display_name = f"{stock['name']} ({full_code})"
                     st.session_state["watchlist_dict"][display_name] = full_code
                     save_my_watchlist()
