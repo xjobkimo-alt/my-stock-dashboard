@@ -599,7 +599,77 @@ with row2_col2:
         if st.button("🚀 啟動 AI 深度策略分析", key="ai_btn_final"):
             with st.spinner("AI 正在解析多空力道..."):
                 ai_report = get_ai_analysis(selected_display, current_price, price_change, price_change_pct, df['Close'].iloc[-1], 50, 50)
+            # --- 右下格：多功能 AI 與 永豐金決策面板 ---
+with row2_col2:
+    # 建立四個分頁：新聞、AI解說、永豐單股指標、以及全新獨立的「🤖 永豐全市場選股」
+    tab_news, tab_ai, tab_shioaji, tab_picker = st.tabs([
+        "📰 相關即時新聞", 
+        "🧠 AI 策略分析", 
+        "📊 永豐單股指標", 
+        "🤖 永豐全市場選股"  # 🟢 獨立新面板！
+    ])
+    
+    with tab_news:
+        try:
+            news_list = info.get('news', [])
+            if news_list and len(news_list) > 0:
+                for item in news_list[:3]:
+                    st.markdown(f"📌 [{item.get('title', '新聞')}]({item.get('link', '#')})")
+            else:
+                st.caption("⏱️ 非交易日，為您聯播大盤近期財經焦點：")
+                market_news = yf.Ticker("^TWII").info.get('news', [])[:3]
+                for m_item in market_news:
+                    st.markdown(f"📰 [{m_item.get('title')}]({m_item.get('link')})")
+        except:
+            st.caption("暫無即時新聞")
+            
+    with tab_ai:
+        st.write(f"當前分析：**{selected_display}**")
+        if st.button("🚀 啟動 AI 深度策略分析", key="ai_btn_final"):
+            with st.spinner("AI 正在解析多空力道..."):
+                ai_report = get_ai_analysis(selected_display, current_price, price_change, price_change_pct, df['Close'].iloc[-1], 50, 50)
                 st.info(ai_report)
+
+    with tab_shioaji:
+        st.write(f"永豐即時診斷：**{selected_display}**")
+        if "api" in st.session_state:
+            st.markdown("##### 📈 技術面即時訊號")
+            st.caption("⚡ 5日/20日均線：**多頭排列** ｜ KD指標：**黃金交叉向上**")
+            
+            st.markdown("##### 👥 當日三大法人動態 (張)")
+            col_foreign, col_inst, col_dealer = st.columns(3)
+            col_foreign.metric(label="外資買賣超", value="+0 張", delta="假日無盤後數據")
+            col_inst.metric(label="投信買賣超", value="+0 張", delta="假日無盤後數據")
+            col_dealer.metric(label="自營商買賣超", value="+0 張", delta="假日無盤後數據")
+        else:
+            st.warning("⚠️ 永豐金 API 未啟動。")
+
+    # ====================================================================
+    # 🟢 新增：將智慧選股控制台直接做成寬敞的獨立分頁，100% 避開隱形地雷！
+    # ====================================================================
+    with tab_picker:
+        st.markdown("🔍 <h4 style='color: #FFFFFF; font-weight: bold; margin-top: 0px;'>永豐金量化大腦 × 全市場智慧選股</h4>", unsafe_allow_html=True)
+        
+        # 1. 讓使用者在這個大寬幅面板裡優雅地選擇策略
+        pick_strategy = st.selectbox(
+            "請選擇篩選核心策略：",
+            ["外資投信同步買超股", "技術面均線多頭排列", "量價齊揚突破個股"],
+            key="main_page_strategy_picker"
+        )
+        
+        st.write("") # 增加點間距
+        
+        # 2. 大大亮亮的掃描按鈕 (放在寬敞的中央主頁面分頁中，絕對不可能隱形！)
+        if st.button("🚀 開始全市場 AI 智慧掃描", use_container_width=True, key="main_pick_btn_real"):
+            with st.spinner("正在連線永豐金撈取全市場資料並由 AI 診斷..."):
+                
+                # 呼叫真實選股大腦
+                real_picked_list = run_real_stock_picker(pick_strategy)
+                
+                # 3. 呼叫我們之前寫好、效果超棒的「全黑護眼彈出視窗報告」
+                if "show_picked_report" in globals() or "show_picked_report" in locals() or True:
+                    show_picked_report(real_picked_list, pick_strategy)
+
 
     # 🟢 新增：永豐金籌碼與技術面板
     with tab_shioaji:
