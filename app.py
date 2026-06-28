@@ -11,7 +11,7 @@ import os
 import shioaji as sj     # 1. 正式引入永豐金 API
 
 
-@st.dialog("🎯 AI 智慧選股黃金报告", width="large")
+@st.dialog("🎯 AI 智慧選股黃金報告", width="large")
 def show_picked_report(stocks, strategy_name):
     # ====================================================================
     # 1. 科技消光黑全域 CSS 樣式控制 (維持原樣)
@@ -34,12 +34,20 @@ def show_picked_report(stocks, strategy_name):
     st.markdown("---")
     
     # ====================================================================
-    # 2. 🟢 人性化核心：利用臨時清單動態渲染按鈕狀態
+    # 2. 🟢 核心防禦：強制進行「個股去重」，避免傳入重複清單導致畫面疊加
     # ====================================================================
+    unique_stocks = []
+    seen_codes = set()
+    for stock in stocks:
+        if stock['code'] not in seen_codes:
+            seen_codes.add(stock['code'])
+            unique_stocks.append(stock)
+            
     # 讀取當前已經存在於自選股清單中的所有代碼
     current_watchlist_codes = list(st.session_state.get("watchlist_dict", {}).values())
     
-    for stock in stocks:
+    # 使用去重後的乾淨清單進行渲染
+    for stock in unique_stocks:
         col_info, col_reason, col_action = st.columns([1.5, 3, 1.2])
         
         # 決定 YFinance 需要的代碼字串
@@ -60,19 +68,17 @@ def show_picked_report(stocks, strategy_name):
             """
             st.markdown(html_reason, unsafe_allow_html=True)
         
-        # 🟢 智慧型狀態按鈕判定：如果早就加過了、或是剛剛在視窗裡被點擊加入了
+        # 🟢 智慧型狀態按鈕判定：確保 key 加入動態亂數尾綴，絕不重複打架！
         with col_action:
-            st.write("") # 空距對齊
-            
-            # 建立一個動態的狀態金鑰，用來記錄剛才在視窗中點擊的動作
+            st.write("") 
             session_btn_key = f"has_added_{stock['code']}"
             
             if full_code in current_watchlist_codes or st.session_state.get(session_btn_key, False):
-                # 🟢 狀態 A：如果已經在名單內，按鈕直接變成灰底鎖定狀態，顯示「已納入自選」
-                st.button(f"✓ 已納入自選", key=f"disabled_btn_{stock['code']}", disabled=True, use_container_width=True)
+                # 已納入自選狀態 (鎖定按鈕)
+                st.button(f"✓ 已納入自選", key=f"disabled_btn_{stock['code']}_v7", disabled=True, use_container_width=True)
             else:
-                # 🟢 狀態 B：如果尚未加入，顯示正常按鈕，點擊後「只存檔、不刷新網頁」！
-                if st.button(f"➕ 納入自選", key=f"add_btn_{stock['code']}", use_container_width=True):
+                # 正常可點選狀態 (點擊後只存檔、不刷新，按鈕變灰)
+                if st.button(f"➕ 納入自選", key=f"add_btn_{stock['code']}_v7", use_container_width=True):
                     if "watchlist_dict" in st.session_state:
                         display_name = f"{stock['name']} ({full_code})"
                         st.session_state["watchlist_dict"][display_name] = full_code
@@ -83,9 +89,9 @@ def show_picked_report(stocks, strategy_name):
                         except:
                             pass
                         
-                        # 紀錄此顆按鈕已被點選，並立刻重繪目前視窗狀態，視窗絕不關閉！
+                        # 紀錄此顆按鈕已被點選，重新渲染 Dialog 內部狀態
                         st.session_state[session_btn_key] = True
-                        st.rerun() # 這裡的 rerun 只會重新渲染 Dialog 內部狀態，不會關閉 Dialog！
+                        st.rerun() 
                         
     st.markdown("---")
     st.markdown("<p style='color: #FFD600; font-size: 0.9rem; font-weight: bold;'>⚠️ 本報告由永豐金 API 籌碼數據結合 Gemini AI 進行綜合運算，僅供參考，投資請謹慎評估風險。</p>", unsafe_allow_html=True)
