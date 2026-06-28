@@ -11,46 +11,85 @@ import os
 import shioaji as sj     # 1. 正式引入永豐金 API
 
 
-@st.dialog("🎯 AI 智慧選股黃金報告", width="large")
+@st.dialog("🎯 AI 智慧選股黃金报告", width="large")
 def show_picked_report(stocks, strategy_name):
     # ====================================================================
-    # 🟢 終極護眼：利用全域選擇器將 Streamlit 新版 Dialog 強制改造為科技消光黑
+    # 1. 科技消光黑全域 CSS 樣式控制 (維持原樣)
     # ====================================================================
     st.markdown("""
         <style>
-            /* 1. 將彈出視窗的最外層毛玻璃遮罩背景與外框強制漆黑 */
-            div[data-testid="stDialog"] {
-                background-color: rgba(0, 0, 0, 0.7) !important;
-            }
-            
-            /* 2. 將彈出視窗的主白底卡片強制變更為消光黑 (#121212) */
+            div[data-testid="stDialog"] { background-color: rgba(0, 0, 0, 0.7) !important; }
             div[data-testid="stDialog"] div[role="dialog"] {
-                background-color: #121212 !important;
-                color: #FFFFFF !important;
-                border: 1px solid #2D2D2D !important;
-                box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.5) !important;
+                background-color: #121212 !important; color: #FFFFFF !important;
+                border: 1px solid #2D2D2D !important; box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.5) !important;
             }
-            
-            /* 3. 強制將視窗內部所有的垂直區塊底色全部同化為消光黑 */
-            div[data-testid="stDialog"] div[data-testid="stVerticalBlock"] {
-                background-color: #121212 !important;
-            }
-            
-            /* 4. 強制將原本發白看不見的側邊文字與標籤一律增亮為純白 */
-            div[data-testid="stDialog"] p, 
-            div[data-testid="stDialog"] span, 
-            div[data-testid="stDialog"] label {
-                color: #FFFFFF !important;
-            }
-            
-            /* 5. 將右上角的關閉打叉按鈕圖示強制變白 */
-            div[data-testid="stDialog"] button[aria-label="Close"] svg,
-            div[data-testid="stDialog"] button p-content="close" svg {
-                fill: #FFFFFF !important;
-            }
+            div[data-testid="stDialog"] div[data-testid="stVerticalBlock"] { background-color: #121212 !important; }
+            div[data-testid="stDialog"] p, div[data-testid="stDialog"] span, div[data-testid="stDialog"] label { color: #FFFFFF !important; }
+            div[data-testid="stDialog"] button[aria-label="Close"] svg, div[data-testid="stDialog"] button p-content="close" svg { fill: #FFFFFF !important; }
         </style>
     """, unsafe_allow_html=True)
     
+    # 大標題
+    st.markdown(f"<h4 style='color: #FFFFFF; font-weight: bold;'>根據您選擇的策略：【<span style='color: #00E676;'>{strategy_name}</span>】，為您篩選出以下最具潛力的個股：</h4>", unsafe_allow_html=True)
+    st.markdown("---")
+    
+    # ====================================================================
+    # 2. 🟢 人性化核心：利用臨時清單動態渲染按鈕狀態
+    # ====================================================================
+    # 讀取當前已經存在於自選股清單中的所有代碼
+    current_watchlist_codes = list(st.session_state.get("watchlist_dict", {}).values())
+    
+    for stock in stocks:
+        col_info, col_reason, col_action = st.columns([1.5, 3, 1.2])
+        
+        # 決定 YFinance 需要的代碼字串
+        full_code = f"{stock['code']}.TW" if not stock['code'].endswith(".TW") and not stock['code'].endswith(".TWO") else stock['code']
+        
+        # 顯示代號與名稱
+        with col_info:
+            st.markdown(f"<h3 style='color: #00B0FF; margin-bottom: 0px;'>📈 {stock['code']}</h3>", unsafe_allow_html=True)
+            st.markdown(f"<p style='color: #FFFFFF; font-size: 1.2rem; font-weight: bold;'>{stock['name']}</p>", unsafe_allow_html=True)
+        
+        # 顯示 AI 診斷原因
+        with col_reason:
+            html_reason = f"""
+            <div style='background-color: #1C1C1E; padding: 12px; border-radius: 8px; border-left: 5px solid #FF9100;'>
+                <strong style='color: #FF9100;'>💡 篩選原因與 AI 診斷：</strong><br>
+                <span style='color: #E0E0E0; font-size: 0.95rem; line-height: 1.5;'>{stock['reason']}</span>
+            </div>
+            """
+            st.markdown(html_reason, unsafe_allow_html=True)
+        
+        # 🟢 智慧型狀態按鈕判定：如果早就加過了、或是剛剛在視窗裡被點擊加入了
+        with col_action:
+            st.write("") # 空距對齊
+            
+            # 建立一個動態的狀態金鑰，用來記錄剛才在視窗中點擊的動作
+            session_btn_key = f"has_added_{stock['code']}"
+            
+            if full_code in current_watchlist_codes or st.session_state.get(session_btn_key, False):
+                # 🟢 狀態 A：如果已經在名單內，按鈕直接變成灰底鎖定狀態，顯示「已納入自選」
+                st.button(f"✓ 已納入自選", key=f"disabled_btn_{stock['code']}", disabled=True, use_container_width=True)
+            else:
+                # 🟢 狀態 B：如果尚未加入，顯示正常按鈕，點擊後「只存檔、不刷新網頁」！
+                if st.button(f"➕ 納入自選", key=f"add_btn_{stock['code']}", use_container_width=True):
+                    if "watchlist_dict" in st.session_state:
+                        display_name = f"{stock['name']} ({full_code})"
+                        st.session_state["watchlist_dict"][display_name] = full_code
+                        
+                        # 執行實時硬碟存檔
+                        try:
+                            save_my_watchlist()
+                        except:
+                            pass
+                        
+                        # 紀錄此顆按鈕已被點選，並立刻重繪目前視窗狀態，視窗絕不關閉！
+                        st.session_state[session_btn_key] = True
+                        st.rerun() # 這裡的 rerun 只會重新渲染 Dialog 內部狀態，不會關閉 Dialog！
+                        
+    st.markdown("---")
+    st.markdown("<p style='color: #FFD600; font-size: 0.9rem; font-weight: bold;'>⚠️ 本報告由永豐金 API 籌碼數據結合 Gemini AI 進行綜合運算，僅供參考，投資請謹慎評估風險。</p>", unsafe_allow_html=True)
+
     # ====================================================================
     # 下方維持您原本精美的文字與按鈕排版 (不要動它)
     # ====================================================================
