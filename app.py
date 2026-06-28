@@ -27,83 +27,65 @@ if "api" not in st.session_state:
         st.session_state["api_error"] = str(e)
 
 # ====================================================================
-# 2. 網頁全域設定與 CSS 科技黑化排版 (精準優化：側邊欄收納箭頭黃金加亮版)
+# 2. 網頁全域設定與 CSS 科技黑化排版 (精準分頁容器隔離灰框版) 🖥️
 # ====================================================================
-# 抽屜式自動縮進設定，一開網頁預設就是全螢幕
-st.set_page_config(
-    page_title="智慧看盤系統 V8.3 - 箭頭導航版", 
-    layout="wide", 
-    initial_sidebar_state="collapsed"
-)
-
 st.markdown("""
-    <style>
-        /* 網頁與側邊欄全暗黑背景 */
-        .stApp { background-color: #121212 !important; color: #E0E0E0 !important; }
-        [data-testid="stSidebar"], section[data-testid="stSidebarViewPort"] { background-color: #1C1C1E !important; }
-        p, label, th, h1, h2, h3, .stMarkdown { color: #E0E0E0 !important; }
-        hr { border-top: 1px solid #333333 !important; }
-        
-        /* 漲跌幅紅綠色設定 */
-        .stock-up { color: #FF3333 !important; font-weight: bold !important; }
-        .stock-down { color: #00AA00 !important; font-weight: bold !important; }
-        
-        /* 側邊欄折疊元件美化 */
-        .stExpander, [data-testid="stExpander"] { background-color: #222224 !important; border: 1px solid #444444 !important; border-radius: 6px !important; }
-        .stExpander summary, .stExpander button, [data-testid="stExpander"] summary { background-color: #26262B !important; color: #FFFFFF !important; }
-        input[type="text"], .stTextInput>div>div>input { background-color: #121212 !important; color: #FFFFFF !important; border: 1px solid #555555 !important; }
-        input[type="text"]::placeholder, .stTextInput>div>div>input::placeholder { color: #BBBBBB !important; opacity: 1 !important; }
-        [data-testid="stNotification"], div[data-testid="stNotificationV2"] { background-color: #222224 !important; color: #FFFFFF !important; }
-        
-        /* 表格美化 */
-        table { background-color: #121212 !important; color: #E0E0E0 !important; }
-        tr { background-color: #121212 !important; border-bottom: 1px solid #2D2D2D !important; }
-        th { background-color: #1E1E1E !important; color: #FFFFFF !important; }
-        .stButton>button { background-color: #262626 !important; color: #E0E0E0 !important; border: 1px solid #444444 !important; }
-        div[data-testid="stNotification"] *, div[data-testid="stNotificationV2"] *, .stAlert *, div[role="alert"] * { color: #FFFFFF !important; }
-        div[data-testid="stNotification"] li::marker, div[data-testid="stNotificationV2"] li::marker { color: #FFFFFF !important; }
-        
-        /* 四宮格獨立科技黑卡細邊框與陰影 */
-        div[data-testid="stColumn"] {
-            background-color: #1A1A1E !important;
-            border: 1px solid #2D2D32 !important;
-            border-radius: 8px !important;
-            padding: 15px !important;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3) !important;
-        }
-        div[data-testid="stHorizontalBlock"] { gap: 16px !important; }
+<style>
+/* 1. 全域主容器全面抽乾：直接拔除 Streamlit 最外層的預設大留白 */
+.block-container {
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+}
 
-        /* 徹底拔除頂端白色區塊，並將右側選單按鈕全數隱形 */
-        header[data-testid="stHeader"] {
-            background-color: #121212 !important;
-            border-bottom: 1px solid #1C1C1E !important;
-        }
-        div[data-testid="stToolbar"] {
-            visibility: hidden !important;
-            display: none !important;
-        }
+/* 拔除可能包裹在自訂區塊外圍的 Streamlit 預設 Gap */
+div[data-testid="stVerticalBlock"] {
+    gap: 0px !important;
+}
 
-        /* ==================================================================== */
-        /* 🟢 頂級強化：強制將側邊欄隱藏/拉出的 (<<) (>>) 箭頭上色並放大 */
-        /* ==================================================================== */
-        /* 1. 強制將控制箭頭的圖示全部塗成顯眼的亮金黃色，並放大 1.3 倍 */
-        button[data-testid="stSidebarCollapseButton"], 
-        button[data-testid="stSidebarCollapseButton"] svg,
-        section[data-testid="stSidebarViewPort"] button svg {
-            fill: #FFD600 !important;
-            color: #FFD600 !important;
-            transform: scale(1.3) !important;
-            transition: all 0.2s ease-in-out !important;
-        }
-        
-        /* 2. 增加滑鼠滑過去時的亮綠色呼吸燈發光效果，提示感極強 */
-        button[data-testid="stSidebarCollapseButton"]:hover svg {
-            fill: #00E676 !important;
-            color: #00E676 !important;
-            filter: drop-shadow(0px 0px 8px #00E676) !important;
-        }
-    </style>
+/* ================================================================= */
+/* 💡 核心隔離：精準抓取「四個大分頁容器的內容方框」，為它們加上各自獨立的專業灰色外框 */
+/* ================================================================= */
+div[data-testid="stTabContent"] {
+    border: 2px solid #555555 !important;  /* 💡 2像素粗、專業看盤中灰色框線 */
+    border-radius: 4px !important;         /* 微微圓角 */
+    padding: 6px !important;               /* 💡 內容與灰框保持 6px 精緻距離，不壓縮看盤空間 */
+    background-color: #141414 !important;  /* 四個方框內部採用一致的暗黑底色 */
+    margin-top: 4px !important;            /* 讓灰框與上方分頁中文字保持一小點距離 */
+}
+
+/* ================================================================= */
+/* 防禦機制：100% 歸零所有 column 容器的框線，保證內部小按鈕絕不碎裂變動 */
+/* ================================================================= */
+div[data-testid="stColumn"] {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0px !important;
+    margin: 0px !important;
+}
+
+div[data-testid="stHorizontalBlock"] {
+    gap: 12px !important; /* 💡 調整左右兩大主欄之間的黑色走道寬度為 12px */
+}
+
+/* ================================================================= */
+/* 側邊欄與其餘科技黑化通用設定 */
+/* ================================================================= */
+.stApp {
+    background-color: #0A0A0A !important;
+}
+
+/* 側邊欄收納箭頭黃金加亮 */
+button[data-testid="collapsedControl"] {
+    color: #FFD700 !important;
+    background-color: #222222 !important;
+    border-radius: 50% !important;
+}
+</style>
 """, unsafe_allow_html=True)
+
 
 # ====================================================================
 # 3. 密碼防護機制与硬碟檔案持久化處理
