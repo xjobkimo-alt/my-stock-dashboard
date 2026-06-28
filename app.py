@@ -508,11 +508,10 @@ with row1_col1:
         start_idx = st.session_state["current_page"] * ITEMS_PER_PAGE
         end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
         
-        # 開始構建一體化表格，確保標題與每一行的數據共用同一個矩陣網格，絕對不可能位移
-        html_table = """
-        <table style="width:100%; border-collapse:collapse; font-family:'Courier New', monospace; font-size:14px; table-layout:fixed;">
-            <!-- 1. 頂層表頭區塊 -->
-            <tr style="border-bottom:2px solid #0D47A1; height:26px;">
+        # 【先渲染表頭】建立頂層網格，分配精準寬度
+        st.markdown("""
+        <table style="width:100%; border-collapse:collapse; font-family:'Courier New', monospace; font-size:14px; table-layout:fixed; margin-bottom:0px;">
+            <tr style="border-bottom:2px solid #0D47A1; height:26px; vertical-align:middle;">
                 <th style="width:22%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:left; padding-left:5px;">商品</th>
                 <th style="width:13%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">買進</th>
                 <th style="width:13%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">賣出</th>
@@ -521,9 +520,10 @@ with row1_col1:
                 <th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲幅%</th>
                 <th style="width:10%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:center;">移除</th>
             </tr>
-        """
+        </table>
+        """, unsafe_allow_html=True)
         
-        # 循環生成每一檔自選股商品的 HTML 橫列
+        # 循環生成每一檔自選股商品（直接獨立逐行安全渲染，避免字串拼接出錯）
         for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
             global_idx = start_idx + idx_offset
             bg_color = "#131313" if idx_offset % 2 == 0 else "#1A1A1A"
@@ -552,32 +552,28 @@ with row1_col1:
             else:
                 v_color, s_arrow, sign_str = "#FFFFFF", " ", ""
                 
-            short_name = name.split(' ')[0] # 擷取純中文，如「台積電」、「加權指數」
+            short_name = name.split(' ')[0] # 擷取純中文名稱
             
-            # 將商品名稱包裝成無障礙超連結樣式，點擊即可切換單股焦點
-            # 透過原生 HTML 的 <tr> 結構，保證每一列的欄位寬度與表頭百分之百垂直切齊
-            html_table += f"""
-            <tr style="background-color:{bg_color}; border-bottom:1px solid #222222; height:28px; vertical-align:middle;">
-                <td style="text-align:left; padding-left:5px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                    <a href="?select_idx={global_idx}" target="_self" style="color:#FFFFFF; text-decoration:none; display:block; width:100%;" onmouseover="this.style.color='#00B0FF'" onmouseout="this.style.color='#FFFFFF'">🔹{short_name}</a>
-                </td>
-                <td style="text-align:right; font-weight:bold; color:{v_color};">{bid_str}</td>
-                <td style="text-align:right; font-weight:bold; color:{v_color};">{ask_str}</td>
-                <td style="text-align:right; font-weight:bold; color:{v_color};">{price_format}</td>
-                <td style="text-align:right; font-weight:bold; color:{v_color};">{s_arrow}{abs(chg):,.2f}</td>
-                <td style="text-align:right; font-weight:bold; color:{v_color};">{sign_str}{pct:.2f}%</td>
-                <td style="text-align:center;">
-                    <a href="?del_idx={global_idx}" target="_self" style="color:#FF3333; text-decoration:none; font-size:12px; font-weight:bold;">[❌]</a>
-                </td>
-            </tr>
-            """
-            
-        html_table += "</table>"
+            # 【逐行安全輸出】寬度百分比（22, 13, 13, 14, 14, 14, 10）與表頭完全一致，100% 垂直完美對齊
+            st.markdown(f"""
+            <table style="width:100%; border-collapse:collapse; font-family:'Courier New', monospace; font-size:14px; table-layout:fixed; margin-top:0px; margin-bottom:0px;">
+                <tr style="background-color:{bg_color}; border-bottom:1px solid #222222; height:28px; vertical-align:middle;">
+                    <td style="width:22%; text-align:left; padding-left:5px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                        <a href="?select_idx={global_idx}" target="_self" style="color:#FFFFFF; text-decoration:none; display:block; width:100%;" onmouseover="this.style.color='#00B0FF'" onmouseout="this.style.color='#FFFFFF'">🔹{short_name}</a>
+                    </td>
+                    <td style="width:13%; text-align:right; font-weight:bold; color:{v_color};">{bid_str}</td>
+                    <td style="width:13%; text-align:right; font-weight:bold; color:{v_color};">{ask_str}</td>
+                    <td style="width:14%; text-align:right; font-weight:bold; color:{v_color};">{price_format}</td>
+                    <td style="width:14%; text-align:right; font-weight:bold; color:{v_color};">{s_arrow}{abs(chg):,.2f}</td>
+                    <td style="width:14%; text-align:right; font-weight:bold; color:{v_color};">{sign_str}{pct:.2f}%</td>
+                    <td style="width:10%; text-align:center;">
+                        <a href="?del_idx={global_idx}" target="_self" style="color:#FF3333; text-decoration:none; font-size:12px; font-weight:bold;">[❌]</a>
+                    </td>
+                </tr>
+            </table>
+            """, unsafe_allow_html=True)
         
-        # 2. 一體化渲染整張精緻報價表，根絕所有元件換行與位移可能
-        st.markdown(html_table, unsafe_allow_html=True)
-        
-        # 3. 處理網頁原生 HTML 超連結點擊後的狀態反饋
+        # 4. 處理網頁超連結點擊後的狀態反饋
         query_params = st.query_params
         
         # 處理點擊商品名稱切換關注
@@ -586,7 +582,7 @@ with row1_col1:
             if target_sel < len(watchlist_items):
                 st.session_state["current_selected_idx"] = target_sel
                 st.session_state["main_stock_selector"] = watchlist_items[target_sel][0]
-                st.query_params.clear() # 清空參數防止無限循環刷新
+                st.query_params.clear() # 清空參數防止網頁無限循環刷新
                 st.rerun()
                 
         # 處理點擊 [❌] 按鈕進行安全刪除
