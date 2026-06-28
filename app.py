@@ -493,39 +493,59 @@ with row1_col1:
                 st.session_state["current_page"] += 1
                 st.rerun()
 
-    # ----------------------------------------------------------------
-    # 【分頁二】：原側邊欄移過來的自選股管理面板 (完美消滅側邊欄)
+        # ----------------------------------------------------------------
+    # 【分頁二】：原側邊欄移過來的自選股管理面板 (完美消滅側邊欄且具唯一 Key 防禦)
     # ----------------------------------------------------------------
     with tab_manage:
         st.markdown("<p style='color:#BBBBBB; font-size:14px; font-weight:bold; margin-top:5px;'>➕ 新增自選股商品</p>", unsafe_allow_html=True)
         
-        new_code = st.text_input("輸入股票代碼", placeholder="防禦限制：請輸入 4 碼或 5 碼代碼", key="manage_add_input").strip()
-        if st.button("🚀 確認加入自選清單", use_container_width=True, key="manage_add_btn"):
+        # 建立全網頁唯一 Key 的輸入框
+        new_code = st.text_input(
+            "請在此輸入欲新增之股票代碼", 
+            placeholder="例如: 2886 或 2330", 
+            key="manage_add_input_unique"
+        ).strip()
+        
+        if st.button("🚀 確認加入自選清單", use_container_width=True, key="manage_add_btn_unique"):
             if new_code:
+                # 1. 統一將字母轉大寫
                 target_code = new_code.upper()
-                pure_number = target_code.split('.')
+                
+                # 2. 核心修正：安全分離出純數字與代碼，確保變數 100% 為字串(str)型態而非列表(list)
+                if '.' in target_code:
+                    pure_number = target_code.split('.')[0] # 取點前面的純數字字串
+                else:
+                    pure_number = target_code # 本身就是純數字字串
+                
+                # 3. 如果使用者只輸入純數字（例如 2886），自動幫他補上台灣市場後綴 .TW
                 if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
                     target_code = f"{pure_number}.TW"
+                
                 try:
+                    # 連線 Yahoo Finance 驗證代碼有效性
                     test_stock = yf.Ticker(target_code)
                     test_df = test_stock.history(period="1d")
+                    
                     if test_df.empty:
                         st.error(f"❌ 查無此代碼 [{target_code}]")
                     else:
+                        # 優先從內部台股字典找中文名稱，找不到則抓取 Yahoo 的名稱
                         detected_name = TAIWAN_STOCK_DICT.get(pure_number, test_stock.info.get('shortName', pure_number))
                         display_key = f"{detected_name} ({target_code})" if "(" not in detected_name else detected_name
+                        
+                        # 寫入 Session 狀態並同步寫入實體 watchlist.json 檔案
                         st.session_state["watchlist_dict"][display_key] = target_code
                         save_my_watchlist()
                         st.success(f"成功加入: {detected_name}")
                         st.rerun()
-                except:
-                    st.error("❌ 無法連線驗證該商品代碼。")
+                except Exception as e:
+                    st.error(f"❌ 無法連線驗證該商品代碼，錯誤原因: {e}")
                     
         st.markdown("<hr style='margin:15px 0px; border-top:1px solid #444;'>", unsafe_allow_html=True)
         st.markdown("<p style='color:#BBBBBB; font-size:14px; font-weight:bold;'>❌ 移除當前關注商品</p>", unsafe_allow_html=True)
         st.write(f"當前選中商品： **{selected_display}**")
         
-        if st.button("💥 從清單中刪除目前股票", use_container_width=True, key="manage_del_btn"):
+        if st.button("💥 從清單中刪除目前股票", use_container_width=True, key="manage_del_btn_unique"):
             if len(st.session_state["watchlist_dict"]) > 1:
                 del st.session_state["watchlist_dict"][selected_display]
                 save_my_watchlist()
@@ -536,6 +556,7 @@ with row1_col1:
                 st.rerun()
             else:
                 st.error("清單內至少需保留一檔股票！")
+
 
 # --- 右上格：技術分析 (圖例改為右上角橫向橫排，修復字體加粗不支援參數的錯誤) ---
 with row1_col2:
