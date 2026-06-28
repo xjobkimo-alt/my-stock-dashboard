@@ -154,23 +154,31 @@ with st.sidebar.expander("➕ 新增自選股", expanded=True):
     if st.button("確認加入自選"): 
         if new_code: 
             target_code = new_code.upper()
-            pure_number = target_code.split('.')
+            
+            # 🟢 修正 1：精準切出純數字，確保它保持「字串」型態
+            pure_number = target_code.split('.')[0]
+            
+            # 🟢 修正 2：檢查 pure_number 是否為純數字，並自動補上台股後綴 .TW
             if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
                 target_code = f"{pure_number}.TW"
+            
             try:
                 test_stock = yf.Ticker(target_code)
                 test_df = test_stock.history(period="1d")
                 if test_df.empty:
                     st.sidebar.error(f"❌ 查無此代碼 [{target_code}]")
                 else:
+                    # 🟢 修正 3：確保對齊您的台股字典與名稱撈取邏輯
                     detected_name = TAIWAN_STOCK_DICT.get(pure_number, test_stock.info.get('shortName', pure_number))
                     display_key = f"{detected_name} ({target_code})" if "(" not in detected_name else detected_name
+                    
                     st.session_state["watchlist_dict"][display_key] = target_code
                     save_my_watchlist()
                     st.sidebar.success(f"成功加入: {detected_name}")
                     st.rerun()
             except:
                 st.sidebar.error("❌ 無法連線驗證。")
+
 watchlist_keys = list(st.session_state["watchlist_dict"].keys())
 if "current_selected_idx" not in st.session_state or st.session_state["current_selected_idx"] >= len(watchlist_keys):
     st.session_state["current_selected_idx"] = 0
