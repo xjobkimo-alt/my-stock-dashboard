@@ -63,15 +63,28 @@ st.markdown("""
         div[data-testid="stNotification"] *, div[data-testid="stNotificationV2"] *, .stAlert *, div[role="alert"] * { color: #FFFFFF !important; }
         div[data-testid="stNotification"] li::marker, div[data-testid="stNotificationV2"] li::marker { color: #FFFFFF !important; }
         
-        /* 四宮格獨立科技黑卡細邊框與陰影 */
-        div[data-testid="stColumn"] {
+        /* 1. 核心修正：只對最外層的四宮格主容器加上獨立大框線 */
+        div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
             background-color: #1A1A1E !important;
-            border: 1px solid #2D2D32 !important;
+            border: 2px solid #555555 !important;  /* 💡 改為較粗、亮灰色的區塊分隔線，您也可以改成紅色 #FF3333 */
             border-radius: 8px !important;
-            padding: 15px !important;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3) !important;
+            padding: 10px !important;              /* 稍微縮小內襯，讓看盤版面變大 */
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.5) !important;
         }
-        div[data-testid="stHorizontalBlock"] { gap: 16px !important; }
+
+        /* 2. 防禦機制：強制把內部嵌套的小欄位框線跟背景通通拔除，防止碎裂錯位 */
+        div[data-testid="stColumn"] div[data-testid="stColumn"] {
+            border: none !important;
+            background-color: transparent !important;
+            padding: 0px 2px !important;           /* 讓左上角商品表格欄位維持極窄無縫貼齊 */
+            box-shadow: none !important;
+        }
+
+        /* 3. 控制四大宮格彼此之間的上下左右間隔距離 */
+        div[data-testid="stHorizontalBlock"] { 
+            gap: 12px !important; 
+            margin-bottom: 12px !important;
+        }
 
         /* 徹底拔除頂端白色區塊，並將右側選單按鈕全數隱形 */
         header[data-testid="stHeader"] {
