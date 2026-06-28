@@ -5,3 +5,5 @@ plotly
 google-genai
 requests
 shioaji
+feedparser        # 新增：解析新聞 RSS 來源
+beautifulsoup4    # 新增：網頁數據清洗
