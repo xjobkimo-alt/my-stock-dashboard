@@ -476,7 +476,7 @@ with row1_col1:
             /* 2. 橫向區塊零縫隙修正：阻止 flex 撐開間距，並可視需求調整 gap */
             /* ================================================================= */
             div[data-testid="stHorizontalBlock"] {
-                gap: 4px !important;       /* 從 4px 直接壓縮到 0px，欄位間距完全對齊 */
+                gap: 0px !important;       /* 從 4px 直接壓縮到 0px，欄位間距完全對齊 */
                 margin-top: 0px !important;
                 margin-bottom: 0px !important;
                 padding: 0px !important;
@@ -491,9 +491,9 @@ with row1_col1:
             }
 
             div.element-container {
-            margin-bottom: 4px !important; /* 💡 稍微放寬，標題和藍色字才不會被削頭 */
-            margin-top: 4px !important;    
-            padding: 0px !important;
+                margin-bottom: 2px !important; 
+                margin-top: 2px !important;    /* 💡 從 0px 稍微上調至 2px，防止大標題被削頭 */
+                padding: 0px !important;    
             }
 
             /* ================================================================= */
