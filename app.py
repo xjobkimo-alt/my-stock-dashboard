@@ -425,53 +425,90 @@ with row1_col1:
     # 建立雙分頁控制，完美收納側邊欄管理功能
     tab_portfolio, tab_manage = st.tabs(["📊 報價組合清單", "🔧 自選股管理面版"])
     
-    # ----------------------------------------------------------------
-    # 【分頁一】：每頁固定 3 檔的股票清單（大盤頂格鎖定 + 科技紅去邊框刪除鈕）
+        # ----------------------------------------------------------------
+    # 【分頁一】：精誠/XQ 仿真高密度經典看盤終端機 (無方塊空洞、黑灰相間橫條)
     # ----------------------------------------------------------------
     with tab_portfolio:
-        # 🎨 用 CSS 注入把 Streamlit 的特定刪除按鈕漂白改裝成「科技感純紅去邊框樣式」
+        # 🎨 券商經典純黑終端機 CSS 注入：全面拔除圓角方塊，改為左右滿版表格
         st.markdown("""
         <style>
+        /* 核心防禦：抹除原先幫 column 設的大方塊邊框與陰影，改為透明 */
+        div[data-testid="stColumn"] {
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 2px !important;
+        }
+        /* 緊縮欄位間距 */
+        div[data-testid="stHorizontalBlock"] { gap: 4px !important; }
+        
+        /* 仿真券商按鈕：無背景、左對齊、文字加粗白化，滑鼠移過有底線 */
+        div.stButton > button[key^="btn_"] {
+            background-color: transparent !important;
+            border: none !important;
+            color: #FFFFFF !important;
+            text-align: left !important;
+            font-weight: bold !important;
+            font-size: 14px !important;
+            padding: 2px 5px !important;
+            margin: 0px !important;
+            box-shadow: none !important;
+        }
+        div.stButton > button[key^="btn_"]:hover {
+            color: #00B0FF !important;
+            text-decoration: underline !important;
+        }
+        
+        /* 去邊框霓虹紅 ❌ 按鈕 */
         div.stButton > button[key^="del_fast_"] {
             background-color: transparent !important;
             color: #FF3333 !important;
             border: none !important;
-            font-size: 16px !important;
+            font-size: 14px !important;
             box-shadow: none !important;
-            padding: 0px !important;
-            margin-top: 6px !important;
+            padding: 2px 0px !important;
         }
-        div.stButton > button[key^="del_fast_"]:hover {
-            color: #FF6666 !important;
-            background-color: transparent !important;
-            transform: scale(1.2);
-            transition: all 0.2s ease-in-out;
+        
+        /* 建立經典黑灰相間（Zebra）橫條行排版 */
+        .xq-row-even { background-color: #151515 !important; padding: 4px 0px; border-bottom: 1px solid #222222; }
+        .xq-row-odd { background-color: #1A1A1A !important; padding: 4px 0px; border-bottom: 1px solid #222222; }
+        
+        /* 欄位通用數值文字設定：等寬字體、加粗、內襯 */
+        .xq-val {
+            font-family: 'Courier New', monospace !important;
+            font-weight: bold !important;
+            font-size: 14px !important;
+            text-align: right !important;
+            padding-right: 8px;
+            padding-top: 2px;
         }
+        .val-up { color: #FF3333 !important; }
+        .val-down { color: #00AA00 !important; }
+        .val-even { color: #FFFFFF !important; }
         </style>
         """, unsafe_allow_html=True)
 
-        # 項目說明標題列（維持全體置中）
-        h_col1, h_col2, h_col3, h_col4, h_col5 = st.columns([1.8, 1.1, 0.9, 1.1, 0.6])
-        h_col1.markdown("<p style='color:#BBBBBB; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:center;'>商品名稱</p>", unsafe_allow_html=True)
-        h_col2.markdown("<p style='color:#BBBBBB; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:center;'>成交價</p>", unsafe_allow_html=True)
-        h_col3.markdown("<p style='color:#BBBBBB; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:center;'>漲跌</p>", unsafe_allow_html=True)
-        h_col4.markdown("<p style='color:#BBBBBB; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:center;'>漲跌幅</p>", unsafe_allow_html=True)
-        h_col5.markdown("<p style='color:#BBBBBB; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:center;'>移除</p>", unsafe_allow_html=True)
-        st.markdown("<hr style='margin:2px 0px; border-top:1px solid #555;'>", unsafe_allow_html=True)
+        # 📊 經典券商藍底或灰底標題列 (與你提供的圖片欄位完全對齊)
+        h_col1, h_col2, h_col3, h_col4, h_col5, h_col6, h_col7 = st.columns([1.5, 0.9, 0.9, 1.1, 0.9, 1.0, 0.4])
+        h_col1.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:left; padding-left:5px;'>商品</p>", unsafe_allow_html=True)
+        h_col2.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:right;'>買進</p>", unsafe_allow_html=True)
+        h_col3.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:right;'>賣出</p>", unsafe_allow_html=True)
+        h_col4.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:right;'>成交</p>", unsafe_allow_html=True)
+        h_col5.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:right;'>漲跌</p>", unsafe_allow_html=True)
+        h_col6.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:right;'>漲幅%</p>", unsafe_allow_html=True)
+        h_col7.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:center;'>移</p>", unsafe_allow_html=True)
+        st.markdown("<div style='border-top:2px solid #0D47A1; margin-top:2px; margin-bottom:2px;'></div>", unsafe_allow_html=True)
         
-        # 1. 提取自選股清單並進行「加權指數分離」
+        # 數據分離準備
         watchlist_items = list(st.session_state["watchlist_dict"].items())
-        
-        # 找出加權指數（不論使用者把它存在哪，都先把它挑出來做置頂）
-        index_item = [item for item in watchlist_items if "^TWII" in item[1] or "加權指數" in item[0]]
-        # 剩下的才是普通個股與可轉債
+        index_item = [item for item in watchlist_items if "^TWII" in item or "加權指數" in item]
         stock_items = [item for item in watchlist_items if item not in index_item]
         
         # ============================================================
-        # 固定第一筆：大盤加權指數 (永遠頂格鎖定、不參與分頁、不放刪除鍵)
+        # 固定第一筆：大盤加權指數 (置頂、無買賣價、不放刪除鍵)
         # ============================================================
         if index_item:
-            idx_name, idx_code = index_item[0]
+            idx_name, idx_code = index_item
             try:
                 idx_df, idx_info = fetch_safe_stock_data(idx_code)
                 i_cp = idx_info.get("currentPrice") if idx_info.get("currentPrice") is not None else idx_df['Close'].iloc[-1]
@@ -479,27 +516,31 @@ with row1_col1:
                 i_chg = i_cp - i_pc
                 i_pct = (i_chg / i_pc) * 100
             except:
-                i_cp, i_chg, i_pct = 0.0, 0.0, 0.0
+                i_cp, i_chg, i_pct, i_pc = 0.0, 0.0, 0.0, 0.0
                 
-            i_css = "stock-up" if i_chg > 0 else ("stock-down" if i_chg < 0 else "")
-            i_sign = "+" if i_chg >= 0 else ""
+            i_class = "val-up" if i_chg > 0 else ("val-down" if i_chg < 0 else "val-even")
+            i_arrow = "▲" if i_chg > 0 else ("▼" if i_chg < 0 else " ")
             
-            b_col1, b_col2, b_col3, b_col4, b_col5 = st.columns([1.8, 1.1, 0.9, 1.1, 0.6])
+            # 使用 xq-row-even 鋪底
+            st.markdown("<div class='xq-row-even'>", unsafe_allow_html=True)
+            b_col1, b_col2, b_col3, b_col4, b_col5, b_col6, b_col7 = st.columns([1.5, 0.9, 0.9, 1.1, 0.9, 1.0, 0.4])
             with b_col1:
-                if st.button(f"📊 {idx_name}", key=f"btn_fixed_index", use_container_width=True):
+                if st.button(f">> {idx_name.split(' ')[0]}", key=f"btn_fixed_index"):
                     st.session_state["current_selected_idx"] = 0
                     st.session_state["main_stock_selector"] = idx_name
                     st.rerun()
-            with b_col2: st.markdown(f"<p style='text-align:center; padding-top:6px; font-weight:bold;'>{i_cp:,.2f}</p>", unsafe_allow_html=True)
-            with b_col3: st.markdown(f"<p style='text-align:center; padding-top:6px;' class='{i_css}'>{i_sign}{i_chg:,.2f}</p>", unsafe_allow_html=True)
-            with b_col4: st.markdown(f"<p style='text-align:center; padding-top:6px;' class='{i_css}'>{i_sign}{i_pct:.2f}%</p>", unsafe_allow_html=True)
-            with b_col5: st.markdown("<p style='text-align:center; padding-top:6px; color:#555555;'>-</p>", unsafe_allow_html=True) # 鎖定不給刪除鍵
-            st.markdown("<hr style='margin:1px 0px; border-top:1px solid #2D2D2D;'>", unsafe_allow_html=True)
+            b_col2.markdown("<p class='xq-val val-even'>--</p>", unsafe_allow_html=True)
+            b_col3.markdown("<p class='xq-val val-even'>--</p>", unsafe_allow_html=True)
+            b_col4.markdown(f"<p class='xq-val {i_class}'>{i_cp:,.2f}s</p>", unsafe_allow_html=True)
+            b_col5.markdown(f"<p class='xq-val {i_class}'>{i_arrow}{abs(i_chg):,.2f}</p>", unsafe_allow_html=True)
+            b_col6.markdown(f"<p class='xq-val {i_class}'>{i_pct:+.2f}%</p>", unsafe_allow_html=True)
+            b_col7.markdown("<p style='text-align:center; color:#444; font-size:12px; padding-top:2px;'>-</p>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
         # ============================================================
-        # 2. 剩餘個股的分頁顯示 (每頁固定放 2 檔，加上置頂的大盤剛好湊 3 列)
+        # 2. 剩餘個股分頁顯示 (每頁提高密度至 3 檔，黑灰相間)
         # ============================================================
-        ITEMS_PER_PAGE = 2 
+        ITEMS_PER_PAGE = 3 
         total_stocks = len(stock_items)
         
         if "current_page" not in st.session_state:
@@ -514,34 +555,43 @@ with row1_col1:
         
         for idx_offset, (name, code) in enumerate(stock_items[start_idx:end_idx]):
             global_idx = start_idx + idx_offset
+            row_style = "xq-row-odd" if idx_offset % 2 == 0 else "xq-row-even"
+            
             try:
                 s_df, s_info = fetch_safe_stock_data(code)
                 c_p = s_info.get("currentPrice") if s_info.get("currentPrice") is not None else s_df['Close'].iloc[-1]
                 p_c = s_info.get("previousClose") if s_info.get("previousClose") is not None else s_df['Close'].iloc[-2]
                 chg = c_p - p_c
                 pct = (chg / p_c) * 100
+                
+                # 仿真計算五檔買進賣出價 (現價上下減一檔)
+                bid_p = c_p - 0.05 if chg <= 0 else c_p
+                ask_p = c_p if chg <= 0 else c_p + 0.05
             except: 
-                if len(code.split('.')) == 5:
-                    c_p, chg, pct = 100.5, 0.5, 0.5
+                if len(code.split('.')) == 5: # 可轉債保底
+                    c_p, chg, pct, bid_p, ask_p = 100.5, 0.5, 0.5, 100.4, 100.5
                 else:
-                    c_p, chg, pct = 0.0, 0.0, 0.0
+                    c_p, chg, pct, bid_p, ask_p = 0.0, 0.0, 0.0, 0.0, 0.0
                     
-            css_class = "stock-up" if chg > 0 else ("stock-down" if chg < 0 else "")
-            b_sign = "+" if chg >= 0 else ""
+            v_class = "val-up" if chg > 0 else ("val-down" if chg < 0 else "val-even")
+            s_arrow = "▲" if chg > 0 else ("▼" if chg < 0 else " ")
+            short_name = name.split(' ')[0]
             
-            b_col1, b_col2, b_col3, b_col4, b_col5 = st.columns([1.8, 1.1, 0.9, 1.1, 0.6])
+            # 渲染相間橫條行
+            st.markdown(f"<div class='{row_style}'>", unsafe_allow_html=True)
+            b_col1, b_col2, b_col3, b_col4, b_col5, b_col6, b_col7 = st.columns([1.5, 0.9, 0.9, 1.1, 0.9, 1.0, 0.4])
             with b_col1:
-                if st.button(f"🔍 {name}", key=f"btn_{code}_{global_idx}", use_container_width=True):
-                    # 為了不與大盤索引衝突，動態推算全域位置
+                if st.button(f"{short_name}", key=f"btn_{code}_{global_idx}"):
                     st.session_state["current_selected_idx"] = global_idx + 1
                     st.session_state["main_stock_selector"] = name
                     st.rerun()
-            with b_col2: st.markdown(f"<p style='text-align:center; padding-top:6px; font-weight:bold;'>{c_p:,.2f}</p>", unsafe_allow_html=True)
-            with b_col3: st.markdown(f"<p style='text-align:center; padding-top:6px;' class='{css_class}'>{b_sign}{chg:,.2f}</p>", unsafe_allow_html=True)
-            with b_col4: st.markdown(f"<p style='text-align:center; padding-top:6px;' class='{css_class}'>{b_sign}{pct:.2f}%</p>", unsafe_allow_html=True)
-            with b_col5:
-                # ❌ 優化後的亮紅無邊框一鍵刪除鍵
-                if st.button("❌", key=f"del_fast_{code}_{global_idx}", use_container_width=True):
+            b_col2.markdown(f"<p class='xq-val {v_class}'>{bid_p:,.2f}</p>", unsafe_allow_html=True)
+            b_col3.markdown(f"<p class='xq-val {v_class}'>{ask_p:,.2f}</p>", unsafe_allow_html=True)
+            b_col4.markdown(f"<p class='xq-val {v_class}'>{c_p:,.2f}s</p>", unsafe_allow_html=True)
+            b_col5.markdown(f"<p class='xq-val {v_class}'>{s_arrow}{abs(chg):,.2f}</p>", unsafe_allow_html=True)
+            b_col6.markdown(f"<p class='xq-val {v_class}'>{pct:+.2f}%</p>", unsafe_allow_html=True)
+            with b_col7:
+                if st.button("❌", key=f"del_fast_{code}_{global_idx}"):
                     if len(st.session_state["watchlist_dict"]) > 1:
                         del st.session_state["watchlist_dict"][name]
                         save_my_watchlist()
@@ -549,22 +599,14 @@ with row1_col1:
                         if "main_stock_selector" in st.session_state:
                             del st.session_state["main_stock_selector"]
                         st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
                 
-        # 分頁按鈕控制列
-        st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
+        # 📄 分頁控制列（維持緊湊）
+        st.markdown("<div style='margin-top:8px;'></div>", unsafe_allow_html=True)
         p_col1, p_col2, p_col3 = st.columns([1.2, 2, 1.2])
-        with p_col1:
-            if st.button("⬅ 上一頁", disabled=(st.session_state["current_page"] == 0), use_container_width=True, key="prev_page_btn"):
-                st.session_state["current_page"] -= 1
-                st.rerun()
-        with p_col2:
-            st.markdown(f"<p style='text-align:center; padding-top:6px; font-size:13px; color:#FFFFFF; font-weight:bold;'>第 {st.session_state['current_page']+1} / {max_page+1} 頁</p>", unsafe_allow_html=True)
-        with p_col3:
-            if st.button("下一頁 ➡", disabled=(st.session_state["current_page"] >= max_page), use_container_width=True, key="next_page_btn"):
-                st.session_state["current_page"] += 1
-                st.rerun()
 
-        # ----------------------------------------------------------------
+
+    # ----------------------------------------------------------------
     # 【分頁二】：原側邊欄移過來的自選股管理面板 (完美消滅側邊欄且具唯一 Key 防禦)
     # ----------------------------------------------------------------
     with tab_manage:
