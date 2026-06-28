@@ -412,10 +412,10 @@ else:
         st.error(f"數據載入失敗: {e}")
         st.stop()
 # ====================================================================
-# 9. XQ 仿真四宮格主排版控制 (自選股 3 檔分頁、橫向右上圖例、內嵌管理分頁)
+# 9. XQ 仿真四宮格主排版控制 (精準灰線隔離、其他地方絕不變動版) 📐
 # ====================================================================
 
-# 💡 修正 1：利用 div 容器給最頂部大標題 16px 安全防禦空間，防止標題被頂出螢幕削頭
+# 頂部大標題（給予安全防禦空間，防止標題被頂出螢幕削頭）
 st.markdown(f"""
     <div style='margin-top: 16px !important; margin-bottom: 8px !important; display: inline-block !important; width: 100%;'>
         <h3 style='margin: 0px !important; padding: 0px !important; color: #FFFFFF; font-size: 20px; font-weight: bold;'>
@@ -424,17 +424,16 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# 宣告主要四宮格 columns 佈局
+# 宣告第一層橫向兩大格（左上、右上）
 row1_col1, row1_col2 = st.columns(2)
 
 with row1_col1:
     tab_portfolio, tab_manage = st.tabs([" 報價組合清單", " 自選股管理面版"])
     
     with tab_portfolio:
-        # 💡 修正 2：核心終極 CSS 壓縮 (100% 維持您最滿意的極致窄間隔，純用高度解封清除字體切半蓋子)
+        # 核心終極 CSS 壓縮 (100% 維持您最滿意的極致窄間隔)
         st.markdown("""
         <style>
-        /* 抽乾每一行 column 容器的上下內襯與外邊距 */
         div[data-testid="stColumn"] {
             background-color: transparent !important;
             border: none !important;
@@ -445,16 +444,12 @@ with row1_col1:
             padding-right: 2px !important;
             margin: 0px !important;
         }
-        
-        /* 強制將 Streamlit 的橫向區塊外邊距設為 0，阻止外層 flex 撐開間距 */
         div[data-testid="stHorizontalBlock"] {
             gap: 4px !important;
             margin-top: 0px !important;
             margin-bottom: 0px !important;
             padding: 0px !important;
         }
-        
-        /* 💡 修正：解封高度限制！間隔維持 0px 絕對不變大，純粹解除藍色文字說明的裁切限制 */
         div[data-testid="stHorizontalBlock"] p {
             line-height: 1.4 !important;
             height: auto !important;
@@ -465,8 +460,6 @@ with row1_col1:
             padding-bottom: 0px !important;
             display: block !important;
         }
-        
-        /* 消除 Streamlit 自動為每個元件包裹的 block 容器所產生的固定下留白 */
         div[data-testid="stVerticalBlock"] > div {
             margin-bottom: 0px !important;
             padding-bottom: 0px !important;
@@ -476,8 +469,6 @@ with row1_col1:
             margin-top: 0px !important;
             padding: 0px !important;
         }
-        
-        /* 鎖定按鈕本身的極窄高度與行高 */
         div.stButton > button {
             min-height: 24px !important;
             height: 24px !important;
@@ -486,8 +477,6 @@ with row1_col1:
             margin: 0px !important;
             line-height: 24px !important;
         }
-        
-        /* 商品按鈕專用設定 */
         div.stButton > button[key^="btn_"] {
             background-color: transparent !important;
             border: none !important;
@@ -501,8 +490,6 @@ with row1_col1:
             color: #00B0FF !important;
             text-decoration: underline !important;
         }
-        
-        /* ❌ 刪除按鈕專用 */
         div.stButton > button[key^="del_fast_"] {
             background-color: transparent !important;
             color: #FF3333 !important;
@@ -513,8 +500,6 @@ with row1_col1:
             align-items: center !important;
             justify-content: center !important;
         }
-        
-        /* 黑灰相間橫條行：強制無縫銜接 */
         .xq-row-even {
             background-color: #131313 !important;
             margin: 0px !important;
@@ -529,8 +514,6 @@ with row1_col1:
             border-bottom: 1px solid #222222 !important;
             height: 28px !important;
         }
-        
-        /* 數值文字行高壓縮 */
         .xq-val {
             font-family: 'Courier New', monospace !important;
             font-weight: bold !important;
@@ -557,6 +540,8 @@ with row1_col1:
         h_col7.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:center;'>移</p>", unsafe_allow_html=True)
         st.markdown("<div style='border-top:2px solid #0D47A1; margin-top:2px; margin-bottom:2px;'></div>", unsafe_allow_html=True)
         
+        # 自選股清單分類與渲染 (後續接著您原本的大盤固定筆與 stock_items 渲染 FOR 迴圈邏輯)
+
         # 1. 提取自選股清單並進行「加權指數分離」
         watchlist_items = list(st.session_state["watchlist_dict"].items())
         
