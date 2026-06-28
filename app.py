@@ -382,7 +382,8 @@ with row1_col1:
 
     # 分頁按鈕控制
     st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
-    p_col1, p_col2, p_col3 = st.columns()
+    # 🟢 完美修正：在括號內填入 [1.2, 2, 1.2] 代表建立左、中、右三個對齊的按鈕欄位
+    p_col1, p_col2, p_col3 = st.columns([1.2, 2, 1.2])
     with p_col1:
         if st.button("⬅️ 上一頁", disabled=(st.session_state["current_page"] == 0), use_container_width=True, key="prev_page_btn"):
             st.session_state["current_page"] -= 1
