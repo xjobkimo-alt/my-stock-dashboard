@@ -49,6 +49,22 @@ st.markdown("""
         .stButton>button { background-color: #262626 !important; color: #E0E0E0 !important; border: 1px solid #444444 !important; }
         div[data-testid="stNotification"] *, div[data-testid="stNotificationV2"] *, .stAlert *, div[role="alert"] * { color: #FFFFFF !important; }
         div[data-testid="stNotification"] li::marker, div[data-testid="stNotificationV2"] li::marker { color: #FFFFFF !important; }
+                /* ==================================================================== */
+        /* 🟢 V7.8 新增：四宮格科技黑卡細邊框強化（消滅連在一起的視覺感） */
+        /* ==================================================================== */
+        /* 精準抓取 Streamlit 的 Columns 區塊並進行黑卡化裝飾 */
+        div[data-testid="stColumn"] {
+            background-color: #1A1A1E !important;        /* 讓四格的底色比背景再稍微亮一點點，產生多維層次 */
+            border: 1px solid #2D2D32 !important;         /* 加上低調內斂的科技深灰細線邊框 */
+            border-radius: 8px !important;               /* 賦予 8 像素的優雅圓角 */
+            padding: 15px !important;                    /* 讓格子內部的文字與圖表和邊框保持舒適的安全間距 */
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3) !important; /* 加上微幅陰影，讓四格產生立體浮出感 */
+        }
+        
+        /* 修正格子之間的間距拉開，避免黏在一起 */
+        div[data-testid="stHorizontalBlock"] {
+            gap: 16px !important;
+        }
     </style>
 """, unsafe_allow_html=True)
 
