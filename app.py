@@ -401,17 +401,57 @@ if st.sidebar.button("❌ 從清單中刪除目前股票"):
 refresh_rate = st.sidebar.slider("即時報價刷新頻率 (秒)", min_value=5, max_value=60, value=10, step=5) 
 
 # 加載核心數據
-try:
-    df, info = fetch_safe_stock_data(stock_code) 
-    current_price = info.get("currentPrice", df['Close'].iloc[-1]) 
-    prev_close = info.get("previousClose", df['Close'].iloc[-2]) 
-    price_change = current_price - prev_close 
-    price_change_pct = (price_change / prev_close) * 100 
-    color_text = "#FF3333" if price_change >= 0 else "#00AA00"
-    sign = "+" if price_change >= 0 else ""
-except Exception as e:
-    st.error(f"數據載入失敗: {e}")
-    st.stop()
+# ====================================================================
+# 🛠️ 升級 V7.3：核心數據加載大腦 (可轉債 5 碼/普通股 4 碼 智慧分流防禦版)
+# ====================================================================
+# 初始化預設空數據，避免後方繪圖元件報錯
+df = pd.DataFrame()
+info = {}
+is_cb_bond = False  # 標記當前選中的是否為可轉債
+
+# 從當前代碼中切出純數字 (例如 "24542.TW" -> "24542")
+pure_num_check = stock_code.split('.')[0]
+
+# 🟢 關鍵判定：如果代碼數字部分長度為 5 碼，代表它是可轉債 (CB)！
+if len(pure_num_check) == 5:
+    is_cb_bond = True
+    info = {
+        "shortName": f"可轉債 {pure_num_check}",
+        "currentPrice": 100.0,  # 預設面額保底價
+        "previousClose": 100.0,
+        "news": []
+    }
+    # 建立一條假的一天 K 線資料，防止後續的 Plotly 畫圖元件因為拿到空資料而當掉
+    df = pd.DataFrame(
+        {"Open": [100.0], "High": [100.0], "Low": [100.0], "Close": [100.0], "Volume": [0]},
+        index=[pd.Timestamp(datetime.date.today())]
+    )
+    current_price = 100.0
+    price_change = 0.0
+    price_change_pct = 0.0
+    color_text = "#FFFFFF"
+    sign = ""
+else:
+    # 🟢 普通股走原本的 yfinance 真實加載管道
+    try:
+        df, info = fetch_safe_stock_data(stock_code) 
+        current_price = info.get("currentPrice")
+        if current_price is None:
+            current_price = df['Close'].iloc[-1] if not df.empty else 0.0
+            
+        prev_close = info.get("previousClose")
+        if prev_close is None:
+            prev_close = df['Close'].iloc[-2] if len(df) > 1 else current_price
+            
+        price_change = current_price - prev_close 
+        price_change_pct = (price_change / prev_close) * 100 if prev_close != 0 else 0.0
+        color_text = "#FF3333" if price_change >= 0 else "#00AA00"
+        sign = "+" if price_change >= 0 else ""
+    except Exception as e:
+        # 萬一普通股載入失敗，優雅降級不當機
+        st.error(f"普通股數據載入失敗: {e}")
+        st.stop()
+
     
 # --- 左側邊欄設定 ---
 with st.sidebar:
