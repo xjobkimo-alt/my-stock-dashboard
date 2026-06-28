@@ -605,9 +605,15 @@ with row1_col1:
                 st.session_state["current_page"] += 1
                 st.rerun()
 
-            with tab_manage:
-                st.markdown("<p style='color:#BBBBBB; font-size:14px; font-weight:bold; margin-top:5px;'>➕ 新增自選股商品</p>", unsafe_allow_html=True)
-                new_code = st.text_input("請在此輸入欲新增之股票代碼", placeholder="例如: 2330", key="manage_add_input_unique").strip()
+            # ----------------------------------------------------------------
+    # 分頁標籤二：🔧 自選股管理面版 (【鐵腕歸位】輸入框與確認按鈕完全封鎖在內)
+    # ----------------------------------------------------------------
+    with tab_manage:
+        st.markdown("<p style='color:#BBBBBB; font-size:14px; font-weight:bold; margin-top:5px;'>➕ 新增自選股商品</p>", unsafe_allow_html=True)
+        
+        # 1. 輸入框與確認按鈕全部嚴格縮進在 with tab_manage 之內
+        new_code = st.text_input("請在此輸入欲新增之股票代碼", placeholder="例如: 2330", key="manage_add_input_unique").strip()
+        
         if st.button("🚀 確認加入自選清單", use_container_width=True, key="manage_add_btn_unique"):
             if new_code:
                 target_code = new_code.upper()
@@ -621,7 +627,6 @@ with row1_col1:
                 else:
                     try:
                         with st.spinner("正在驗證並解析商品繁體中文名稱..."):
-                            # 繁體中文智慧爬蟲核心
                             detected_name = pure_number
                             if pure_number in TAIWAN_STOCK_DICT:
                                 detected_name = TAIWAN_STOCK_DICT[pure_number]
@@ -635,7 +640,7 @@ with row1_col1:
                                         h1_title = soup.find('h1')
                                         if h1_title:
                                             raw_title = h1_title.text
-                                            detected_name = raw_title.split('(')[0].split(')')[0].strip()
+                                            detected_name = raw_title.split('(').split(')').strip()
                                 except:
                                     pass
                                 if detected_name == pure_number or any(c.isalpha() for c in detected_name):
@@ -652,8 +657,9 @@ with row1_col1:
                     except Exception as e:
                         st.error(f"連線驗證失敗: {e}")
                         
-    st.markdown('</div>', unsafe_allow_html=True) # 閉合獨立卡片外框
-
+    # 2. 這裡才是整個左上格卡片的終點！在此閉合獨立卡片外框
+    st.markdown('</div>', unsafe_allow_html=True) 
+    
 # --- 【右上格】：技術分析 K 線與均線圖 ---
 with row1_col2:
     st.markdown('<div class="xq-grid-card">', unsafe_allow_html=True) # 包裹獨立卡片
