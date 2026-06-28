@@ -29,46 +29,35 @@ if "api" not in st.session_state:
 # ====================================================================
 # 2. 網頁全域設定與 CSS 科技黑化排版
 # ====================================================================
-# 🟢 完美修正：加入 collapsed 參數，一開網頁時左側面板就會自動「完美縮進去」變成您圖一的樣子！
-st.set_page_config(
-    page_title="智慧看盤系統 V8.1 - 完美縮進版", 
-    layout="wide", 
-    initial_sidebar_state="collapsed"  # <-- 就是這行黃金密碼！
-)
+st.set_page_config(page_title="智慧看盤系統 V8.2 - 終極美化版", layout="wide", initial_sidebar_state="collapsed")
 st.markdown("""
     <style>
         .stApp { background-color: #121212 !important; color: #E0E0E0 !important; }
-        [data-testid="stSidebar"], section[data-testid="stSidebarViewPort"] { background-color: #1C1C1E !important; }
-        p, label, th, h1, h2, h3, .stMarkdown { color: #E0E0E0 !important; }
-        hr { border-top: 1px solid #333333 !important; }
-        .stock-up { color: #FF3333 !important; font-weight: bold !important; }
-        .stock-down { color: #00AA00 !important; font-weight: bold !important; }
-        .stExpander, [data-testid="stExpander"] { background-color: #222224 !important; border: 1px solid #444444 !important; border-radius: 6px !important; }
-        .stExpander summary, .stExpander button, [data-testid="stExpander"] summary { background-color: #26262B !important; color: #FFFFFF !important; }
-        input[type="text"], .stTextInput>div>div>input { background-color: #121212 !important; color: #FFFFFF !important; border: 1px solid #555555 !important; }
-        input[type="text"]::placeholder, .stTextInput>div>div>input::placeholder { color: #BBBBBB !important; opacity: 1 !important; }
-        [data-testid="stNotification"], div[data-testid="stNotificationV2"] { background-color: #222224 !important; color: #FFFFFF !important; }
-        table { background-color: #121212 !important; color: #E0E0E0 !important; }
-        tr { background-color: #121212 !important; border-bottom: 1px solid #2D2D2D !important; }
-        th { background-color: #1E1E1E !important; color: #FFFFFF !important; }
-        .stButton>button { background-color: #262626 !important; color: #E0E0E0 !important; border: 1px solid #444444 !important; }
-        div[data-testid="stNotification"] *, div[data-testid="stNotificationV2"] *, .stAlert *, div[role="alert"] * { color: #FFFFFF !important; }
-        div[data-testid="stNotification"] li::marker, div[data-testid="stNotificationV2"] li::marker { color: #FFFFFF !important; }
-                /* ==================================================================== */
-        /* 🟢 V7.8 新增：四宮格科技黑卡細邊框強化（消滅連在一起的視覺感） */
-        /* ==================================================================== */
-        /* 精準抓取 Streamlit 的 Columns 區塊並進行黑卡化裝飾 */
-        div[data-testid="stColumn"] {
-            background-color: #1A1A1E !important;        /* 讓四格的底色比背景再稍微亮一點點，產生多維層次 */
-            border: 1px solid #2D2D32 !important;         /* 加上低調內斂的科技深灰細線邊框 */
-            border-radius: 8px !important;               /* 賦予 8 像素的優雅圓角 */
-            padding: 15px !important;                    /* 讓格子內部的文字與圖表和邊框保持舒適的安全間距 */
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3) !important; /* 加上微幅陰影，讓四格產生立體浮出感 */
-        }
         
-        /* 修正格子之間的間距拉開，避免黏在一起 */
-        div[data-testid="stHorizontalBlock"] {
-            gap: 16px !important;
+        /* ... 中間維持您原有的所有 CSS 控制項目 ... */
+        
+        div[data-testid="stColumn"] {
+            background-color: #1A1A1E !important;
+            border: 1px solid #2D2D32 !important;
+            border-radius: 8px !important;
+            padding: 15px !important;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3) !important;
+        }
+        div[data-testid="stHorizontalBlock"] { gap: 16px !important; }
+
+        /* 🔴 請把這段最新去白條加亮代碼貼在這裡（</style> 的正前方） */
+        header[data-testid="stHeader"] {
+            background-color: #121212 !important;
+            border-bottom: 1px solid #1C1C1E !important;
+        }
+        div[data-testid="stToolbar"] {
+            visibility: hidden !important;
+            display: none !important;
+        }
+        .legendtext {
+            font-size: 13px !important;
+            font-weight: bold !important;
+            fill: #FFFFFF !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -425,13 +414,18 @@ with row1_col2:
     vol_colors = ['#FF3333' if c >= o else '#00AA00' for o, c in zip(plot_df['Open'], plot_df['Close'])]
     fig.add_trace(go.Bar(x=plot_df.index, y=plot_df['Volume'], marker_color=vol_colors, name="成交量", showlegend=False), row=2, col=1)
     
+    # 🟢 修正：加入 font 控制，強制將 5MA、20MA 橫向文字變大、變純白、變粗體！
     fig.update_layout(
         template="plotly_dark", paper_bgcolor="#121212", plot_bgcolor="#121212", 
         xaxis_rangeslider_visible=False, height=240, margin=dict(l=10, r=40, t=5, b=5),
         showlegend=True, 
         legend=dict(
-            orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1.0,
-            bgcolor="rgba(0, 0, 0, 0)", font=dict(size=12, color="#FFFFFF", family="Arial, sans-serif")
+            orientation="h",
+            yanchor="bottom", y=1.02,
+            xanchor="right", x=1.0,
+            bgcolor="rgba(0, 0, 0, 0)", 
+            # 👈 核心加強：字級放大到 13，顏色純白，強制加粗
+            font=dict(size=13, color="#FFFFFF", weight="bold", family="Arial, sans-serif")
         )
     )
     fig.update_yaxes(side="right", gridcolor="#2D2D2D")
@@ -450,12 +444,17 @@ with row2_col1:
         fig_line.add_trace(go.Scatter(x=plot_df.index[-10:], y=plot_df['Close'].tail(10), mode='lines+markers', line=dict(color='#00E676', width=2.5), name="分時價格", showlegend=True), row=1, col=1)
         fig_line.add_trace(go.Bar(x=plot_df.index[-10:], y=plot_df['Volume'].tail(10), marker_color='#00B0FF', name="即時量能", showlegend=True), row=2, col=1)
         
+                # 🟢 修正：同步將分時價格、即時量能的圖例說明文字放大、變純白、加粗！
         fig_line.update_layout(
             template="plotly_dark", paper_bgcolor="#121212", plot_bgcolor="#121212", height=200, margin=dict(l=10, r=40, t=5, b=5),
             showlegend=True, 
             legend=dict(
-                orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1.0, bgcolor="rgba(0, 0, 0, 0)",
-                font=dict(size=12, color="#FFFFFF", family="Arial, sans-serif")
+                orientation="h",
+                yanchor="bottom", y=1.02,
+                xanchor="right", x=1.0,
+                bgcolor="rgba(0, 0, 0, 0)",
+                # 👈 核心加強
+                font=dict(size=13, color="#FFFFFF", weight="bold", family="Arial, sans-serif")
             )
         )
         st.plotly_chart(fig_line, use_container_width=True, config={'displayModeBar': False})
