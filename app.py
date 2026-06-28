@@ -10,6 +10,31 @@ import json
 import os
 import shioaji as sj     # 1. 正式引入永豐金 API
 
+# ====================================================================
+# 永豐金 API 背景自動初始化與登入驗證 (保持於 st.session_state)
+# ====================================================================
+# 檢查 Session 狀態中是否已經有成功登入的 api 物件，避免網頁每次刷新都重複登入
+if "api" not in st.session_state:
+    try:
+        # 1. 建立永豐金 API 實例
+        # simulation=True 代表先用模擬/測試環境（建議開發初期先開著，安全第一）
+        # 如果您要切換到真實環境，請將 simulation 改為 False
+        api = sj.Shioaji(simulation=True)
+        
+        # 2. 讀取 Streamlit Secrets 的金鑰並執行登入
+        api.login(
+            api_key=st.secrets["shioaji"]["api_key"],
+            secret_key=st.secrets["shioaji"]["secret_key"]
+        )
+        
+        # 3. 將登入成功的實例存入系統狀態中
+        st.session_state["api"] = api
+        st.sidebar.success("🟢 永豐金 API 連線成功！")
+        
+    except Exception as e:
+        # 如果金鑰有錯或沒填，會在側邊欄顯示警告，但不會讓整個網頁當掉
+        st.sidebar.error(f"🔴 永豐金 API 登入失敗: {e}")
+
 # ==================================================================== 
 # 1. 網頁全域設定與 CSS 科技黑化排版
 # ==================================================================== 
