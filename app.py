@@ -509,7 +509,6 @@ with row1_col1:
     total_items = len(watchlist_items)
     
     with tab_portfolio:
-        # 分頁邏輯控制 (每頁顯示 6 筆項目)
                 # 分頁邏輯控制 (每頁顯示 6 筆項目)
         ITEMS_PER_PAGE = 6
         if "current_page" not in st.session_state: 
@@ -522,22 +521,10 @@ with row1_col1:
         start_idx = st.session_state["current_page"] * ITEMS_PER_PAGE
         end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
 
-        # 1. 宣告一體化表頭，橫向與縱向黃金配比鎖死 [18%, 14%, 14%, 15%, 14%, 15%, 10%]
-        st.markdown("""
-        <table style="width:100%; border-collapse:collapse; font-family:'Courier New', monospace; font-size:14px; table-layout:fixed; line-height:1.2; margin-bottom:4px;">
-            <tr style="border-bottom:2px solid #0D47A1; height:26px; vertical-align:middle;">
-                <th style="width:18%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:left; padding-left:4px;">商品</th>
-                <th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">買進</th>
-                <th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">賣出</th>
-                <th style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">成交</th>
-                <th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲跌</th>
-                <th style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲幅%</th>
-                <th style="width:10%; color:#64B5F6; font-size:11px; font-weight:bold; text-align:center;">移除</th>
-            </tr>
-        </table>
-        """, unsafe_allow_html=True)
+        # 【核心修正】將表頭與所有商品列，用 += 串接成唯一一條絕對沒有換行符號的單一行 HTML，死鎖行高
+        html_matrix = '<table style="width:100%; border-collapse:collapse; font-family:\'Courier New\', monospace; font-size:14px; table-layout:fixed; line-height:1.2;"><tr style="border-bottom:2px solid #0D47A1; height:26px; vertical-align:middle;"><th style="width:18%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:left; padding-left:4px;">商品</th><th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">買進</th><th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">賣出</th><th style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">成交</th><th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲跌</th><th style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲幅%</th><th style="width:10%; color:#64B5F6; font-size:11px; font-weight:bold; text-align:center; padding-right:4px;">移除</th></tr>'
         
-        # 2. 循環組裝 6 檔商品的 HTML <tr> 資料行
+        # 循環組裝 6 檔商品的 HTML <tr> 資料行
         for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
             global_idx = start_idx + idx_offset
             bg_color = "#131313" if idx_offset % 2 == 0 else "#1A1A1A"
@@ -566,58 +553,30 @@ with row1_col1:
             else:
                 v_color, s_arrow, sign_str = "#FFFFFF", " ", ""
                 
-            # 【完美修復】名稱擷取，徹底洗淨陣列格式錯誤，還原純字串
-            raw_name_string = str(name)
-            pure_name_str = raw_name_string.split(' (')[0].split('(')[0].strip()
+            # 【名稱格式解包修復】確保純文字字串解析，完全消滅括號、引號與逗號
+            pure_name_str = str(name).split(' (')[0].split('(')[0].replace("[", "").replace("]", "").replace("'", "").replace('"', '').strip()
             
-            # 建立單行 HTML 網格，綁定安全的後台訊息遞送機制
-            html_code = f"""
-            <table style="width:100%; border-collapse:collapse; font-family:'Courier New', monospace; font-size:14px; table-layout:fixed; line-height:1.2; margin-top:0px; margin-bottom:0px;">
-                <tr style="background-color:{bg_color}; border-bottom:1px solid #222222; height:28px; vertical-align:middle;">
-                    <td style="width:18%; text-align:left; padding-left:4px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                        <span style="color:#FFFFFF; cursor:pointer; display:block; width:100%;" onmouseover="this.style.color='#00B0FF'" onmouseout="this.style.color='#FFFFFF'" onclick="window.parent.postMessage({{type:'stock_click', val:'{global_idx}'}}, '*')">🔹{pure_name_str}</span>
-                    </td>
-                    <td style="width:14%; text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{bid_str}</td>
-                    <td style="width:14%; text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{ask_str}</td>
-                    <td style="width:15%; text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{price_format}</td>
-                    <td style="width:14%; text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{s_arrow}{abs(chg):,.2f}</td>
-                    <td style="width:15%; text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{sign_str}{pct:.2f}%</td>
-                    <td style="width:10%; text-align:center; padding-right:4px;">
-                        <span style="color:#FF3333; cursor:pointer; font-size:12px; font-weight:bold; white-space:nowrap;" onmouseover="this.style.color='#FF8A80'" onmouseout="this.style.color='#FF3333'" onclick="window.parent.postMessage({{type:'del_click', val:'{global_idx}'}}, '*')">[❌]</span>
-                    </td>
-                </tr>
-            </table>
-            """
-            st.markdown(html_code.replace("\n", "").replace("\r", ""), unsafe_allow_html=True)
+            # 將每一行數據塞入同一個 Table 內
+            html_matrix += f'<tr style="background-color:{bg_color}; border-bottom:1px solid #222222; height:28px; vertical-align:middle;"><td style="text-align:left; padding-left:4px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><span style="color:#FFFFFF; cursor:pointer; display:block; width:100%;" onmouseover="this.style.color=\'#00B0FF\'" onmouseout="this.style.color=\'#FFFFFF\'" onclick="window.parent.postMessage({{type:\'stock_click\', val:\'{global_idx}\'}}, \'*\')">🔹{pure_name_str}</span></td><td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{bid_str}</td><td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{ask_str}</td><td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{price_format}</td><td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{s_arrow}{abs(chg):,.2f}</td><td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{sign_str}{pct:.2f}%</td><td style="text-align:center; padding-right:4px;"><span style="color:#FF3333; cursor:pointer; font-size:12px; font-weight:bold; white-space:nowrap;" onmouseover="this.style.color=\'#FF8A80\'" onmouseout="this.style.color=\'#FF3333\'" onclick="window.parent.postMessage({{type:\'del_click\', val:\'{global_idx}\'}}, \'*\')">[❌]</span></td></tr>'
+            
+        html_matrix += '</table>'
+        
+        # 唯一一次呼叫渲染，保證 100% 網頁化，絕不產生空隙與擠壓
+        st.markdown(html_matrix, unsafe_allow_html=True)
 
-        # 3. 嵌入原生組件監聽器，精確截獲點擊訊號
+        # 3. 隱藏組件監聽前端點擊
         import streamlit.components.v1 as components
-        js_listener = """
-        <script>
-        window.addEventListener('message', function(e) {
-            if(e.data.type === 'stock_click') {
-                const url = new URL(window.parent.location.href);
-                url.searchParams.set('fast_sel', e.data.val);
-                window.parent.location.replace(url.href);
-            }
-            if(e.data.type === 'del_click') {
-                const url = new URL(window.parent.location.href);
-                url.searchParams.set('fast_del', e.data.val);
-                window.parent.location.replace(url.href);
-            }
-        });
-        </script>
-        """
+        js_listener = "<script>window.addEventListener('message', function(e) { if(e.data.type === 'stock_click') { const url = new URL(window.parent.location.href); url.searchParams.set('fast_sel', e.data.val); window.parent.location.replace(url.href); } if(e.data.type === 'del_click') { const url = new URL(window.parent.location.href); url.searchParams.set('fast_del', e.data.val); window.parent.location.replace(url.href); } });</script>"
         components.html(js_listener, height=0, width=0)
         
-                # 4. 接收通道回傳參數並在 Session 中高速響應切換，防禦登出
+        # 4. 接收通道回傳參數並在 Session 中高速響應切換，防禦登出
         curr_params = st.query_params
         
         if "fast_sel" in curr_params:
             sel_idx = int(curr_params["fast_sel"])
             if sel_idx < len(watchlist_items):
                 st.session_state["current_selected_idx"] = sel_idx
-                st.session_state["main_stock_selector"] = watchlist_items[sel_idx][0] # 綁定純中文名稱 Key
+                st.session_state["main_stock_selector"] = watchlist_items[sel_idx][0] # 精確指引回原生的中文對齊 Key
                 st.query_params.clear()
                 st.rerun()
                 
@@ -629,7 +588,7 @@ with row1_col1:
                 save_my_watchlist()
                 remaining_keys = list(st.session_state["watchlist_dict"].keys())
                 st.session_state["current_selected_idx"] = 0
-                st.session_state["main_stock_selector"] = remaining_keys[0] if remaining_keys else ""
+                st.session_state["main_stock_selector"] = remaining_keys if remaining_keys else ""
                 st.query_params.clear()
                 st.rerun()
             
@@ -646,7 +605,7 @@ with row1_col1:
             if st.button("下一頁 ➡", disabled=(st.session_state["current_page"] >= max_page), use_container_width=True, key="next_page_btn"):
                 st.session_state["current_page"] += 1
                 st.rerun()
-                
+
         with tab_manage:
             st.markdown("<p style='color:#BBBBBB; font-size:14px; font-weight:bold; margin-top:5px;'>➕ 新增自選股商品</p>", unsafe_allow_html=True)
         new_code = st.text_input("請在此輸入欲新增之股票代碼", placeholder="例如: 2330", key="manage_add_input_unique").strip()
