@@ -29,9 +29,9 @@ if "api" not in st.session_state:
 # ====================================================================
 # 2. 網頁全域設定與 CSS 科技黑化排版
 # ====================================================================
-# 🟢 修正：移除 collapsed 參數，全權交給我們手寫的按鈕與 Session 記憶體控制
+# 🟢 修正：移除 collapsed 參數，把控制權完全還給 Python 記憶體
 st.set_page_config(
-    page_title="智慧看盤系統 V8.5 - 終極完全體", 
+    page_title="智慧看盤系統 V8.6 - 終極開關版", 
     layout="wide"
 )
 
@@ -286,26 +286,39 @@ def get_ai_analysis(stock_name, price, change, pct, ma5, k_val, d_val):
         return f"AI 暫時繁忙中。錯誤訊息: {e}"
     
 # ====================================================================
-# 7. 🔧 左側邊欄自選股管理面板 (🟢 V8.5 升級：雙向記憶按鈕式完美開關)
+# 7. 🔧 左側邊欄自選股管理面板 (🟢 V8.6 修正：記憶體雙向滑動解鎖)
 # ====================================================================
-# 1. 在系統狀態中建立一個用來記憶側邊欄是要「關閉 0」還是「打開 1」的記憶體
+# 1. 確保開關狀態完美初始化
 if "sidebar_toggle_state" not in st.session_state:
-    st.session_state["sidebar_toggle_state"] = True # 預設一進網頁是展開的，利於手動調校
+    st.session_state["sidebar_toggle_state"] = True
 
 # 2. 讀取自選股基本變數
 watchlist_keys = list(st.session_state["watchlist_dict"].keys())
 if "current_selected_idx" not in st.session_state or st.session_state["current_selected_idx"] >= len(watchlist_keys):
     st.session_state["current_selected_idx"] = 0
 
-# 3. 根據記憶體狀態，動態畫出左側側邊欄的內容
-if st.session_state["sidebar_toggle_state"]:
+# 3. 🟢 核心解鎖：將記憶體狀態實時同步注入到 Streamlit 官方側邊欄的顯示機制中
+if not st.session_state["sidebar_toggle_state"]:
+    # 如果使用者點了關閉，透過 CSS 強制把左邊灰色側邊欄瞬間隱形縮進去，不留任何痕跡！
+    st.markdown("""
+        <style>
+            [data-testid="stSidebar"] { display: none !important; }
+            section[data-testid="stSidebarViewPort"] { display: none !important; }
+            .stApp [data-testid="stHeader"] { left: 0rem !important; }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    selected_display = watchlist_keys[st.session_state["current_selected_idx"]]
+    stock_code = st.session_state["watchlist_dict"][selected_display]
+else:
+    # 如果使用者點了打開，正常渲染所有管理工具
     st.sidebar.header("🔧 我的自選股管理面版")
     with st.sidebar.expander("➕ 新增自選股", expanded=True):
         new_code = st.text_input("輸入股票代碼", placeholder="例如: 2882").strip()
         if st.button("確認加入自選"):
             if new_code:
                 target_code = new_code.upper()
-                pure_number = target_code.split('.')[0]
+                pure_number = target_code.split('.')
                 if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
                     target_code = f"{pure_number}.TW"
                 try:
@@ -336,10 +349,6 @@ if st.session_state["sidebar_toggle_state"]:
             st.sidebar.warning("清單內至少需保留一檔股票！")
 
     refresh_rate = st.sidebar.slider("即時報價刷新頻率 (秒)", min_value=5, max_value=60, value=10, step=5)
-else:
-    # 當側邊欄在記憶體中被關閉時，不畫任何元件，直接保持目前選定股票，釋放所有邊欄空間！
-    selected_display = watchlist_keys[st.session_state["current_selected_idx"]]
-    stock_code = st.session_state["watchlist_dict"][selected_display]
 
 # ====================================================================
 # 8. 智慧分流加載大腦 (可轉債 5 碼/普通股 4 碼 安全不崩潰)
