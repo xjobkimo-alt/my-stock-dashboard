@@ -11,6 +11,45 @@ import os
 import shioaji as sj     # 1. 正式引入永豐金 API
 
 # ====================================================================
+# 🟢 搬移至此：全域智慧選股彈出視窗 (最左邊完全不縮排，靠左對齊)
+# ====================================================================
+@st.dialog("🎯 AI 智慧選股黃金報告", width="large")
+def show_picked_report(stocks, strategy_name):
+    st.markdown(f"<h4 style='color: #FFFFFF; font-weight: bold;'>根據您選擇的策略：【<span style='color: #00E676;'>{strategy_name}</span>】，為您篩選出以下最具潛力的個股：</h4>", unsafe_allow_html=True)
+    st.markdown("---")
+    
+    for stock in stocks:
+        col_info, col_reason, col_action = st.columns([1.5, 3, 1.2])
+        with col_info:
+            st.markdown(f"<h3 style='color: #00B0FF; margin-bottom: 0px;'>📈 {stock['code']}</h3>", unsafe_allow_html=True)
+            st.markdown(f"<p style='color: #FFFFFF; font-size: 1.2rem; font-weight: bold;'>{stock['name']}</p>", unsafe_allow_html=True)
+        
+        with col_reason:
+            html_reason = f"""
+            <div style='background-color: #1C1C1E; padding: 12px; border-radius: 8px; border-left: 5px solid #FF9100;'>
+                <strong style='color: #FF9100;'>💡 篩選原因與 AI 診斷：</strong><br>
+                <span style='color: #E0E0E0; font-size: 0.95rem; line-height: 1.5;'>{stock['reason']}</span>
+            </div>
+            """
+            st.markdown(html_reason, unsafe_allow_html=True)
+        
+        with col_action:
+            st.write("") 
+            full_code = f"{stock['code']}.TW"
+            if st.button(f"➕ 納入自選", key=f"add_btn_{stock['code']}", use_container_width=True):
+                if "watchlist_dict" in st.session_state:
+                    display_name = f"{stock['name']} ({full_code})"
+                    st.session_state["watchlist_dict"][display_name] = full_code
+                    try:
+                        save_my_watchlist()
+                    except:
+                        pass
+                    st.success(f"已加入 {stock['name']}！")
+                    st.rerun()
+    st.markdown("---")
+    st.markdown("<p style='color: #FFD600; font-size: 0.9rem; font-weight: bold;'>⚠️ 本報告由永豐金 API 籌碼數據結合 Gemini AI 進行綜合運算，僅供參考，投資請謹慎評估風險。</p>", unsafe_allow_html=True)
+
+# ====================================================================
 # 永豐金 API 背景自動初始化與登入驗證 (保持於 st.session_state)
 # ====================================================================
 # 檢查 Session 狀態中是否已經有成功登入的 api 物件，避免網頁每次刷新都重複登入
@@ -403,6 +442,27 @@ def run_real_stock_picker(strategy_name):
         picked_results = [{"code": "2330", "name": "台積電", "reason": "全市場掃描暫無完全符合絕對指標之個股，AI 自動推薦權王進行基本面防禦。"}]
         
     return picked_results[:3] # 每次回傳最精華的前 3 檔
+
+    # ====================================================================
+    # 🤖 永豐金 V6.6 智慧選股控制台 (側邊欄最下方，乾淨對齊版)
+    # ====================================================================
+    st.markdown("---")
+    st.subheader("🤖 永豐金智慧選股")
+    
+    # 1. 讓使用者選擇策略
+    pick_strategy = st.selectbox(
+        "請選擇篩選核心策略：",
+        ["外資投信同步買超股", "技術面均線多頭排列", "量價齊揚突破個股"],
+        key="strategy_select_box"
+    )
+    
+    # 2. 核心按鈕 (跟著 selectbox 縮排對齊，不再受 def 函式干擾)
+    if st.button("🚀 開始全市場 AI 掃描", use_container_width=True, key="pick_btn"):
+        with st.spinner("正在連線永豐金撈取全市場資料並由 AI 診斷..."):
+            # 呼叫真實選股大腦
+            real_picked_list = run_real_stock_picker(pick_strategy)
+            # 直接呼叫最上方宣告好的全域彈出視窗
+            show_picked_report(real_picked_list, pick_strategy)
 
 # ==================================================================== 
 # 📊 XQ 仿真四宮格主排版控制
