@@ -338,11 +338,28 @@ with st.sidebar.expander("➕ 新增自選股", expanded=True):
             except:
                 st.sidebar.error("❌ 無法連線驗證。")
 
+# ====================================================================
+# 雙向聯動大腦：優先讀取左上角格子的點擊狀態，若無則依循清單順序
+# ====================================================================
 watchlist_keys = list(st.session_state["watchlist_dict"].keys())
+
+# 防禦：確保索引沒有越界
 if "current_selected_idx" not in st.session_state or st.session_state["current_selected_idx"] >= len(watchlist_keys):
     st.session_state["current_selected_idx"] = 0
 
-selected_display = watchlist_keys[st.session_state["current_selected_idx"]]
+# 自動校正目前關注的商品名稱
+if "main_stock_selector" not in st.session_state:
+    st.session_state["main_stock_selector"] = watchlist_keys[st.session_state["current_selected_idx"]]
+else:
+    # 如果選單名稱在清單中，同步更新索引，避免刪除股票時出錯
+    if st.session_state["main_stock_selector"] in watchlist_keys:
+        st.session_state["current_selected_idx"] = watchlist_keys.index(st.session_state["main_stock_selector"])
+    else:
+        st.session_state["current_selected_idx"] = 0
+        st.session_state["main_stock_selector"] = watchlist_keys[0]
+
+# 最終導出提供給四宮格所有元件使用的變數
+selected_display = st.session_state["main_stock_selector"]
 stock_code = st.session_state["watchlist_dict"][selected_display]
 
 if st.sidebar.button("❌ 從清單中刪除目前股票"):
@@ -437,9 +454,17 @@ with row1_col1:
         b_sign = "+" if chg >= 0 else ""
         b_col1, b_col2, b_col3, b_col4 = st.columns([2, 1.2, 1, 1.2])
         with b_col1:
+            # 當點擊商品名稱按鈕時，直接同步主畫面的關注股票
             if st.button(f"🔍 {name}", key=f"btn_{code}_{global_idx}", use_container_width=True):
+                # 1. 記錄當前選中的全域索引
                 st.session_state["current_selected_idx"] = global_idx
+                
+                # 2. 強制更新主畫面目前關注的代碼與名稱，達成免側邊欄直接切換
+                st.session_state["main_stock_selector"] = name
+                
+                # 3. 觸發頁面刷新
                 st.rerun()
+
         with b_col2: st.markdown(f"<p style='text-align:center; padding-top:6px; font-weight:bold;'>{c_p:,.2f}</p>", unsafe_allow_html=True)
         with b_col3: st.markdown(f"<p style='text-align:center; padding-top:6px;' class='{css_class}'>{b_sign}{chg:,.2f}</p>", unsafe_allow_html=True)
         with b_col4: st.markdown(f"<p style='text-align:center; padding-top:6px;' class='{css_class}'>{b_sign}{pct:.2f}%</p>", unsafe_allow_html=True)
