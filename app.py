@@ -431,105 +431,142 @@ with row1_col1:
     with tab_portfolio:
         # 🎨 核心終極 CSS 壓縮：全面抽乾 Streamlit 外層容器與元件之間的所有隱藏留白
         st.markdown("""
-        <style>
-        /* 1. 抽乾每一行 column 容器的上下內襯與外邊距 */
-        div[data-testid="stColumn"] {
-            background-color: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            padding-top: 0px !important;
-            padding-bottom: 0px !important;
-            padding-left: 2px !important;
-            padding-right: 2px !important;
-            margin: 0px !important;
-        }
-        
-        /* 2. 關鍵修正：強制將 Streamlit 的橫向區塊外邊距設為 0，阻止外層 flex 撐開間距 */
-        div[data-testid="stHorizontalBlock"] { 
-            gap: 4px !important; 
-            margin-top: 0px !important;
-            margin-bottom: 0px !important;
-            padding: 0px !important;
-        }
-        
-        /* 3. 核心隱藏死角：消除 Streamlit 自動為每個元件包裹的 block 容器所產生的固定下留白 */
-        div[data-testid="stVerticalBlock"] > div {
-            margin-bottom: 0px !important;
-            padding-bottom: 0px !important;
-        }
-        div.element-container {
-            margin-bottom: 0px !important; /* 拔除 Streamlit 萬惡的 1rem 預設下留白 */
-            margin-top: 0px !important;
-        }
-        
-        /* 4. 鎖定按鈕本身的極窄高度與行高 */
-        div.stButton > button {
-            min-height: 24px !important;
-            height: 24px !important;
-            padding-top: 0px !important;
-            padding-bottom: 0px !important;
-            margin: 0px !important;
-            line-height: 24px !important;
-        }
-        
-        /* 5. 商品按鈕專用設定 */
-        div.stButton > button[key^="btn_"] {
-            background-color: transparent !important;
-            border: none !important;
-            color: #FFFFFF !important;
-            text-align: left !important;
-            font-weight: bold !important;
-            font-size: 14px !important;
-            box-shadow: none !important;
-        }
-        div.stButton > button[key^="btn_"]:hover {
-            color: #00B0FF !important;
-            text-decoration: underline !important;
-        }
-        
-        /* 6. ❌ 刪除按鈕專用：垂直水平極致置中 */
-        div.stButton > button[key^="del_fast_"] {
-            background-color: transparent !important;
-            color: #FF3333 !important;
-            border: none !important;
-            font-size: 13px !important;
-            box-shadow: none !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-        }
-        
-        /* 7. 黑灰相間橫條行（Zebra Stripes）：強制無縫銜接 */
-        .xq-row-even { 
-            background-color: #131313 !important; 
-            margin: 0px !important;
-            padding: 2px 0px !important;
-            border-bottom: 1px solid #222222 !important;
-            height: 28px !important;
-        }
-        .xq-row-odd { 
-            background-color: #1A1A1A !important; 
-            margin: 0px !important;
-            padding: 2px 0px !important;
-            border-bottom: 1px solid #222222 !important;
-            height: 28px !important;
-        }
-        
-        /* 8. 數值文字行高壓縮 */
-        .xq-val {
-            font-family: 'Courier New', monospace !important;
-            font-weight: bold !important;
-            font-size: 14px !important;
-            text-align: right !important;
-            padding-right: 8px;
-            margin: 0px !important;
-            line-height: 24px !important;
-        }
-        .val-up { color: #FF3333 !important; }
-        .val-down { color: #00AA00 !important; }
-        .val-even { color: #FFFFFF !important; }
-        </style>
-        """, unsafe_allow_html=True)
+            <style>
+            /* ================================================================= */
+            /* 0. 核心主容器全面抽乾：直接拔除 Streamlit 最外層的預設大留白 */
+            /* ================================================================= */
+            .block-container {
+                padding-top: 5px !important;
+                padding-bottom: 5px !important;
+                padding-left: 10px !important;
+                padding-right: 10px !important;
+            }
+
+            /* 拔除可能包裹在自訂區塊外圍的 Streamlit 預設 Gap */
+            div[data-testid="stVerticalBlock"] {
+                gap: 0px !important;
+            }
+
+            /* ================================================================= */
+            /* 1. 抽乾每一行 column 容器的上下內襯與外邊距 */
+            /* ================================================================= */
+            div[data-testid="stColumn"] {
+                background-color: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                padding-top: 0px !important;
+                padding-bottom: 0px !important;
+                padding-left: 2px !important;
+                padding-right: 2px !important;
+                margin: 0px !important;
+            }
+
+            /* ================================================================= */
+            /* 2. 橫向區塊零縫隙修正：阻止 flex 撐開間距，並可視需求調整 gap */
+            /* ================================================================= */
+            div[data-testid="stHorizontalBlock"] {
+                gap: 0px !important;       /* 從 4px 直接壓縮到 0px，欄位間距完全對齊 */
+                margin-top: 0px !important;
+                margin-bottom: 0px !important;
+                padding: 0px !important;
+            }
+
+            /* ================================================================= */
+            /* 3. 核心隱藏死角：消除萬惡的 element-container 1rem 預設下留白 */
+            /* ================================================================= */
+            div[data-testid="stVerticalBlock"] > div {
+                margin-bottom: 0px !important;
+                padding-bottom: 0px !important;
+            }
+
+            div.element-container {
+                margin-bottom: 0px !important; 
+                margin-top: 0px !important;
+                padding: 0px !important;    /* 新增：抽乾元件容器內襯 */
+            }
+
+            /* ================================================================= */
+            /* 4. 鎖定按鈕本身的極窄高度與行高 */
+            /* ================================================================= */
+            div.stButton > button {
+                min-height: 22px !important; /* 從 24px 再壓縮到 22px */
+                height: 22px !important;
+                padding-top: 0px !important;
+                padding-bottom: 0px !important;
+                margin: 0px !important;
+                line-height: 22px !important;
+            }
+
+            /* ================================================================= */
+            /* 5. 商品按鈕專用設定 */
+            /* ================================================================= */
+            div.stButton > button[key^="btn_"] {
+                background-color: transparent !important;
+                border: none !important;
+                color: #FFFFFF !important;
+                text-align: left !important;
+                font-weight: bold !important;
+                font-size: 14px !important;
+                box-shadow: none !important;
+            }
+
+            div.stButton > button[key^="btn_"]:hover {
+                color: #00B0FF !important;
+                text-decoration: underline !important;
+            }
+
+            /* ================================================================= */
+            /* 6. ❌ 刪除按鈕專用 */
+            /* ================================================================= */
+            div.stButton > button[key^="del_fast_"] {
+                background-color: transparent !important;
+                color: #FF3333 !important;
+                border: none !important;
+                font-size: 13px !important;
+                box-shadow: none !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+
+            /* ================================================================= */
+            /* 7. 黑灰相間橫條行（Zebra Stripes）：高度調緊 */
+            /* ================================================================= */
+            .xq-row-even {
+                background-color: #131313 !important;
+                margin: 0px !important;
+                padding: 0px !important;       /* 從 2px 抽乾到 0px，改由行高控制 */
+                border-bottom: 1px solid #222222 !important;
+                height: 24px !important;       /* 自訂橫列高度從 28px 下修至 24px */
+            }
+
+            .xq-row-odd {
+                background-color: #1A1A1A !important;
+                margin: 0px !important;
+                padding: 0px !important;       /* 從 2px 抽乾到 0px */
+                border-bottom: 1px solid #222222 !important;
+                height: 24px !important;       /* 自訂橫列高度從 28px 下修至 24px */
+            }
+
+            /* ================================================================= */
+            /* 8. 數值文字行高壓縮 */
+            /* ================================================================= */
+            .xq-val {
+                font-family: 'Courier New', monospace !important;
+                font-weight: bold !important;
+                font-size: 14px !important;
+                text-align: right !important;
+                padding-right: 8px;
+                margin: 0px !important;
+                line-height: 24px !important;  /* 對齊橫列高度 24px，確保垂直置中 */
+            }
+
+            .val-up { color: #FF3333 !important; }
+            .val-down { color: #00AA00 !important; }
+            .val-even { color: #FFFFFF !important; }
+            </style>
+            """, unsafe_allow_html=True)
+
 
         # 📊 經典券商藍底或灰底標題列 (與你提供的圖片欄位完全對齊)
         h_col1, h_col2, h_col3, h_col4, h_col5, h_col6, h_col7 = st.columns([1.5, 0.9, 0.9, 1.1, 0.9, 1.0, 0.4])
