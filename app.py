@@ -305,20 +305,17 @@ with st.sidebar:
         # 免責聲明
         st.markdown("<p style='color: #FFD600; font-size: 0.9rem; font-weight: bold;'>⚠️ 本報告由永豐金 API 籌碼數據結合 Gemini AI 進行綜合運算，僅供參考，投資請謹慎評估風險。</p>", unsafe_allow_html=True)
 
-    # 3. 觸發選股按鈕
-    if st.button("🚀 開始全市場 AI 掃描", use_container_width=True, key="pick_btn"):
-        with st.spinner("正在連線永豐金撈取全市場資料並由 AI 診斷..."):
-            
-            # 模擬清單
-            mock_picked = [
-                {"code": "2330", "name": "台積電", "reason": "三大法人連續 3 日同步加碼，技術面呈現完美的均線多頭排列。"},
-                {"code": "2317", "name": "鴻海", "reason": "主力籌碼大戶持續吸籌，今日股價爆量長紅，突破長達半年的橫盤整理區間。"},
-                {"code": "2454", "name": "聯發科", "reason": "投信法人積極建倉，日線層級 KD 指標與 MACD 在低檔同時完成黃金交叉向上。"}
-            ]
-            
-            # 直接呼叫彈出視窗並把清單丟進去
-            show_picked_report(mock_picked)
-    # ====================================================================
+            # 3. 觸發選股按鈕 (替換為真實對接版本)
+        if st.button("🚀 開始全市場 AI 掃描", use_container_width=True, key="pick_btn"):
+            with st.spinner("正在連線永豐金撈取全市場資料並由 AI 診斷..."):
+                
+                # 🟢 關鍵改造：直接呼叫真實核心大腦，傳入使用者當下選擇的策略名稱
+                real_picked_list = run_real_stock_picker(pick_strategy)
+                
+                # 將真實篩選出的個股名單丟進彈出視窗中顯示
+                show_picked_report(real_picked_list)
+
+# ====================================================================
 # 🤖 永豐金 V6.5 真實智慧選股核心大腦 (全市場量化篩選函式)
 # ====================================================================
 @st.cache_data(ttl=3600)  # 快取1小時，避免频繁掃描全市場導致永豐金 API 封鎖
