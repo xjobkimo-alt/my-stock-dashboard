@@ -210,7 +210,7 @@ with st.sidebar:
     # (中間可能會有很多行 st.sidebar.xxx 或普通的 st.xxx)
     
     # ====================================================================
-    # 🤖 永豐金 V6.1 智慧選股控制台 (升級版：支援彈出視窗與一鍵加入自選)
+    # 🤖 永豐金 V6.2 智慧選股控制台 (文字強化美化版)
     # ====================================================================
     st.markdown("---")
     st.subheader("🤖 永豐金智慧選股")
@@ -224,6 +224,15 @@ with st.sidebar:
     # 2. 宣告一個彈出式視窗函式 (在點擊按鈕時觸發)
     @st.dialog("🎯 AI 智慧選股黃金報告", width="large")
     def show_picked_report(stocks):
+        # 🟢 修正：利用 CSS 強制將對白框內的文字對比度拉高，變更為明亮的白色與灰色
+        st.markdown("""
+            <style>
+                div[data-testid="stDialog"] p { color: #FFFFFF !important; }
+                div[data-testid="stDialog"] span { color: #E0E0E0 !important; }
+                div[data-testid="stDialog"] h3 { color: #FFFFFF !important; }
+            </style>
+        """, unsafe_allow_html=True)
+        
         st.write(f"根據您選擇的策略：**【{pick_strategy}】**，為您篩選出以下最具潛力的個股：")
         st.markdown("---")
         
@@ -242,22 +251,22 @@ with st.sidebar:
             # 顯示一鍵加入自選股按鈕
             with col_action:
                 st.write("") # 空出一點上方間距對齊
-                # 判斷是否已經在自選股清單中
                 full_code = f"{stock['code']}.TW"
                 
                 # 建立按鈕
                 if st.button(f"➕ 納入自選", key=f"add_btn_{stock['code']}", use_container_width=True):
-                    # ⚠️ 請對齊您原本加入自選股的 session_state 名稱，這裡預設為常見的 watchlist_dict
+                    # ⚠️ 請確認您原本加入自選股的 session_state 名稱，這裡預設為常見的 watchlist_dict
                     if "watchlist_dict" in st.session_state:
                         display_name = f"{stock['name']} ({full_code})"
                         st.session_state["watchlist_dict"][display_name] = full_code
                         st.success(f"已加入 {stock['name']}！")
                         st.rerun()
                     else:
-                        st.error("找不到自選股清單變數")
+                        st.error("找不到自選股清單變選")
         
         st.markdown("---")
-        st.caption("⚠️ 本報告由永豐金 API 籌碼數據結合 Gemini AI 進行綜合運算，僅供參考，投資請謹慎評估風險。")
+        # 🟢 修正：下方免責聲明同樣做文字加亮處理
+        st.markdown("<p style='color: #FFB300; font-size: 0.85rem;'>⚠️ 本報告由永豐金 API 籌碼數據結合 Gemini AI 進行綜合運算，僅供參考，投資請謹慎評估風險。</p>", unsafe_allow_html=True)
 
     # 3. 觸發選股按鈕
     if st.button("🚀 開始全市場 AI 掃描", use_container_width=True, key="pick_btn"):
