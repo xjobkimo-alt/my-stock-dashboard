@@ -27,11 +27,11 @@ if "api" not in st.session_state:
         st.session_state["api_error"] = str(e)
 
 # ====================================================================
-# 2. 網頁全域設定與 CSS 科技黑化排版 (精準修正：徹底蒸發頂端白條版)
+# 2. 網頁全域設定與 CSS 科技黑化排版 (精準優化：側邊欄收納箭頭黃金加亮版)
 # ====================================================================
-# 🟢 抽屜式自動縮進設定，一開網頁預設就是全螢幕
+# 抽屜式自動縮進設定，一開網頁預設就是全螢幕
 st.set_page_config(
-    page_title="智慧看盤系統 V8.2 - 終極美化版", 
+    page_title="智慧看盤系統 V8.3 - 箭頭導航版", 
     layout="wide", 
     initial_sidebar_state="collapsed"
 )
@@ -73,7 +73,7 @@ st.markdown("""
         }
         div[data-testid="stHorizontalBlock"] { gap: 16px !important; }
 
-        /* 🟢 徹底拔除頂端白色區塊，並將右側選單按鈕全數隱形 */
+        /* 徹底拔除頂端白色區塊，並將右側選單按鈕全數隱形 */
         header[data-testid="stHeader"] {
             background-color: #121212 !important;
             border-bottom: 1px solid #1C1C1E !important;
@@ -81,6 +81,26 @@ st.markdown("""
         div[data-testid="stToolbar"] {
             visibility: hidden !important;
             display: none !important;
+        }
+
+        /* ==================================================================== */
+        /* 🟢 頂級強化：強制將側邊欄隱藏/拉出的 (<<) (>>) 箭頭上色並放大 */
+        /* ==================================================================== */
+        /* 1. 強制將控制箭頭的圖示全部塗成顯眼的亮金黃色，並放大 1.3 倍 */
+        button[data-testid="stSidebarCollapseButton"], 
+        button[data-testid="stSidebarCollapseButton"] svg,
+        section[data-testid="stSidebarViewPort"] button svg {
+            fill: #FFD600 !important;
+            color: #FFD600 !important;
+            transform: scale(1.3) !important;
+            transition: all 0.2s ease-in-out !important;
+        }
+        
+        /* 2. 增加滑鼠滑過去時的亮綠色呼吸燈發光效果，提示感極強 */
+        button[data-testid="stSidebarCollapseButton"]:hover svg {
+            fill: #00E676 !important;
+            color: #00E676 !important;
+            filter: drop-shadow(0px 0px 8px #00E676) !important;
         }
     </style>
 """, unsafe_allow_html=True)
