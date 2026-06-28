@@ -58,7 +58,7 @@ st.markdown("""
     header[data-testid="stHeader"] { background-color: #121212 !important; border-bottom: 1px solid #1C1C1E !important; }
     div[data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
 
-    /* 【關鍵修正】仿 XQ 專業四宮格獨立科技黑卡邊框 */
+    /* 仿 XQ 專業四宮格獨立科技黑卡邊框 */
     div.xq-grid-card {
         background-color: #1A1A1E !important;
         border: 1px solid #2D2D32 !important;
@@ -83,18 +83,72 @@ st.markdown("""
     div[data-testid="stVerticalBlock"] > div { margin-bottom: 0px !important; padding-bottom: 0px !important; }
     div.element-container { margin-bottom: 0px !important; margin-top: 0px !important; padding: 0px !important; }
     div[data-testid="stHorizontalBlock"] { gap: 8px !important; margin: 0px !important; padding: 0px !important; }
-    
-    /* 商品按鈕專用與極窄高度設定 */
+
+    /* ==================================================================== */
+    /* 【關鍵修正】強制破除原生按鈕的白色發光背景與邊框，完美融於暗黑背景 */
+    /* ==================================================================== */
     div.stButton > button {
-        min-height: 22px !important; height: 22px !important; padding: 0px 4px !important; margin: 0px !important; line-height: 22px !important;
+        background-color: #1A1A1E !important; 
+        color: #E0E0E0 !important; 
+        border: 1px solid #444446 !important; 
+        border-radius: 4px !important;
+        box-shadow: none !important;
+        transition: all 0.15s ease-in-out !important;
     }
+    
+    /* 當鼠標移到普通按鈕時的冷冽科技藍發光效果 */
+    div.stButton > button:hover {
+        background-color: #2C2C2E !important;
+        border-color: #00B0FF !important;
+        color: #00B0FF !important;
+    }
+
+    /* 針對左上角「商品名稱連擊按鈕」的專屬極簡透明化樣式 */
     div.stButton > button[key^="btn_"] {
-        background-color: transparent !important; border: none !important; color: #FFFFFF !important; text-align: left !important; font-weight: bold !important; font-size: 14px !important; box-shadow: none !important;
+        background-color: transparent !important; 
+        border: none !important; 
+        color: #FFFFFF !important; 
+        text-align: left !important; 
+        font-weight: bold !important; 
+        font-size: 14px !important; 
+        box-shadow: none !important;
+        min-height: 22px !important; 
+        height: 22px !important; 
+        padding: 0px 4px !important; 
+        margin: 0px !important; 
+        line-height: 22px !important;
     }
-    div.stButton > button[key^="btn_"]:hover { color: #00B0FF !important; text-decoration: underline !important; }
+    div.stButton > button[key^="btn_"]:hover { 
+        color: #00B0FF !important; 
+        text-decoration: underline !important; 
+    }
+
+    /* 快速刪除按鈕 (❌) 的透明紅色外觀 */
     div.stButton > button[key^="del_fast_"] {
-        background-color: transparent !important; color: #FF3333 !important; border: none !important; font-size: 13px !important; box-shadow: none !important; display: flex !important; align-items: center !important; justify-content: center !important;
+        background-color: transparent !important; 
+        color: #FF3333 !important; 
+        border: none !important; 
+        font-size: 13px !important; 
+        box-shadow: none !important; 
+        display: flex !important; 
+        align-items: center !important; 
+        justify-content: center !important;
     }
+
+    /* 右下角「全市場 AI 智慧掃描」大火箭按鈕的耀眼橘金 XQ 主力色強化樣式 */
+    div.stButton > button[key="main_pick_btn_real"] {
+        background-color: #E65100 !important; 
+        color: #FFFFFF !important; 
+        border: 1px solid #FF6D00 !important;
+        font-weight: bold !important;
+        font-size: 14px !important;
+        height: 36px !important; /* 讓大火箭按鈕高度更明顯 */
+    }
+    div.stButton > button[key="main_pick_btn_real"]:hover {
+        background-color: #FF6D00 !important;
+        box-shadow: 0px 0px 10px #FF6D00 !important;
+    }
+    /* ==================================================================== */
 
     /* 黑灰相間看盤橫條列 */
     .xq-row-even { background-color: #131313 !important; margin: 0px !important; padding: 0px !important; border-bottom: 1px solid #222222 !important; height: 26px !important; display: flex; align-items: center; }
