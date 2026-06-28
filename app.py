@@ -789,12 +789,12 @@ with row2_col2:
  
         st.write("") # 增加安全間距 
  
-        # 2. 大按鈕觸發 (維持原樣)
+                # 2. 🚀 大按鈕觸發 (精準單次呼叫去重版)
         if st.button("🚀 開始全市場 AI 智慧掃描", use_container_width=True, key="main_pick_btn_real"): 
             with st.spinner("正在連線鉅亨網與櫃買中心數據庫，並由 Gemini AI 進行多空診斷..."): 
                 
-                # 判斷如果是可轉債
-                if "可轉債" in pick_strategy:  # 🟢 修正：拿掉括號，只要有「可轉債」三個字就100%過關
+                # A. 判斷如果是可轉債
+                if "可轉債" in pick_strategy:
                     cb_list = fetch_real_cb_data()
                     formatted_picked = []
                     for cb in cb_list:
@@ -803,7 +803,10 @@ with row2_col2:
                             "name": f"{cb['cb_name']} (標的:{cb['underlying']})",
                             "reason": f"【現價:{cb['price']}元 | 溢價率:{cb['premium']}】\n{cb['reason']}"
                         })
+                    # 🟢 只有這裡呼叫一次可轉債視窗，後面絕不重複！
                     show_picked_report(formatted_picked, pick_strategy)
+                    
+                # B. 判斷如果是普通股
                 else:
                     real_picked_list = run_real_stock_picker(pick_strategy)
                     for stock in real_picked_list:
@@ -811,4 +814,8 @@ with row2_col2:
                         if latest_news:
                             news_bulletins = "\n".join([f"• [{n['source']}] {n['title']}" for n in latest_news[:2]])
                             stock["reason"] += f"\n\n📰 **最新市場輿情聯播：**\n{news_bulletins}"
+                    # 🟢 只有這裡呼叫一次普通股視窗，後面絕不重複！
                     show_picked_report(real_picked_list, pick_strategy)
+                    
+# ⚠️ 請確保以上就是您整個 app.py 檔案的「最後一行」了！
+# ⚠️ 如果這段後面還有任何寫在最左邊或縮進的 show_picked_report(...)，請通通無情地刪除它！
