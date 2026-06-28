@@ -29,7 +29,12 @@ if "api" not in st.session_state:
 # ====================================================================
 # 2. 網頁全域設定與 CSS 科技黑化排版
 # ====================================================================
-st.set_page_config(page_title="智慧看盤系統 V7.7 - 終極收官版", layout="wide")
+# 🟢 完美修正：加入 collapsed 參數，一開網頁時左側面板就會自動「完美縮進去」變成您圖一的樣子！
+st.set_page_config(
+    page_title="智慧看盤系統 V8.1 - 完美縮進版", 
+    layout="wide", 
+    initial_sidebar_state="collapsed"  # <-- 就是這行黃金密碼！
+)
 st.markdown("""
     <style>
         .stApp { background-color: #121212 !important; color: #E0E0E0 !important; }
@@ -248,61 +253,52 @@ def get_ai_analysis(stock_name, price, change, pct, ma5, k_val, d_val):
         if "429" in str(e) or "quota" in str(e).lower():
             return "【系統提示】目前您的 Gemini 帳戶今日免費流量已達上限。請更換 API 金鑰或靜候跨日解鎖。"
         return f"AI 暫時繁忙中。錯誤訊息: {e}"
+    
 # ====================================================================
-# 7. 🔧 左側邊欄自選股管理面板 (支援一鍵完全顯示與隱藏)
+# 7. 🔧 左側邊欄自選股管理面板 (完全交給官方箭頭控制縮進)
 # ====================================================================
-# 在側邊欄最頂端放一個控制開關
-show_sidebar_panel = st.sidebar.checkbox("👁️ 顯示自選股管理工具", value=True)
+# 🟢 修正：移除 Checkbox，讓所有元件直接全域發動，交由官方自帶的箭頭控制展開與縮進
+st.sidebar.header("🔧 我的自選股管理面版")
+with st.sidebar.expander("➕ 新增自選股", expanded=True):
+    new_code = st.text_input("輸入股票代碼", placeholder="例如: 2882").strip()
+    if st.button("確認加入自選"):
+        if new_code:
+            target_code = new_code.upper()
+            pure_number = target_code.split('.')[0]
+            if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
+                target_code = f"{pure_number}.TW"
+            try:
+                test_stock = yf.Ticker(target_code)
+                test_df = test_stock.history(period="1d")
+                if test_df.empty:
+                    st.sidebar.error(f"❌ 查無此代碼 [{target_code}]")
+                else:
+                    detected_name = TAIWAN_STOCK_DICT.get(pure_number, test_stock.info.get('shortName', pure_number))
+                    display_key = f"{detected_name} ({target_code})" if "(" not in detected_name else detected_name
+                    st.session_state["watchlist_dict"][display_key] = target_code
+                    save_my_watchlist()
+                    st.sidebar.success(f"成功加入: {detected_name}")
+                    st.rerun()
+            except:
+                st.sidebar.error("❌ 無法連線驗證。")
 
-# 初始化自選股選擇索引狀態
 watchlist_keys = list(st.session_state["watchlist_dict"].keys())
 if "current_selected_idx" not in st.session_state or st.session_state["current_selected_idx"] >= len(watchlist_keys):
     st.session_state["current_selected_idx"] = 0
 
-# 如果勾選「顯示」，才把管理工具渲染出來；取消勾選則自動隱藏
-if show_sidebar_panel:
-    st.sidebar.markdown("---")
-    st.sidebar.header("🔧 我的自選股管理面版")
-    with st.sidebar.expander("➕ 新增自選股", expanded=True):
-        new_code = st.text_input("輸入股票代碼", placeholder="例如: 2882").strip()
-        if st.button("確認加入自選"):
-            if new_code:
-                target_code = new_code.upper()
-                pure_number = target_code.split('.')[0]
-                if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
-                    target_code = f"{pure_number}.TW"
-                try:
-                    test_stock = yf.Ticker(target_code)
-                    test_df = test_stock.history(period="1d")
-                    if test_df.empty:
-                        st.sidebar.error(f"❌ 查無此代碼 [{target_code}]")
-                    else:
-                        detected_name = TAIWAN_STOCK_DICT.get(pure_number, test_stock.info.get('shortName', pure_number))
-                        display_key = f"{detected_name} ({target_code})" if "(" not in detected_name else detected_name
-                        st.session_state["watchlist_dict"][display_key] = target_code
-                        save_my_watchlist()
-                        st.sidebar.success(f"成功加入: {detected_name}")
-                        st.rerun()
-                except:
-                    st.sidebar.error("❌ 無法連線驗證。")
+selected_display = watchlist_keys[st.session_state["current_selected_idx"]]
+stock_code = st.session_state["watchlist_dict"][selected_display]
 
-    selected_display = watchlist_keys[st.session_state["current_selected_idx"]]
-    stock_code = st.session_state["watchlist_dict"][selected_display]
+if st.sidebar.button("❌ 從清單中刪除目前股票"):
+    if len(st.session_state["watchlist_dict"]) > 1:
+        del st.session_state["watchlist_dict"][selected_display]
+        save_my_watchlist()
+        st.session_state["current_selected_idx"] = 0
+        st.rerun()
+    else:
+        st.sidebar.warning("清單內至少需保留一檔股票！")
 
-    if st.sidebar.button("❌ 從清單中刪除目前股票"):
-        if len(st.session_state["watchlist_dict"]) > 1:
-            del st.session_state["watchlist_dict"][selected_display]
-            save_my_watchlist()
-            st.session_state["current_selected_idx"] = 0
-            st.rerun()
-        else:
-            st.sidebar.warning("清單內至少需保留一檔股票！")
-
-    refresh_rate = st.sidebar.slider("即時報價刷新頻率 (秒)", min_value=5, max_value=60, value=10, step=5)
-else:
-    # 隱藏時，預設保持當前選擇的股票，讓主畫面不會出錯
-    selected_display = watchlist_keys[st.session_state["current_selected_idx"]]
-    stock_code = st.session_state["watchlist_dict"][selected_display]
+refresh_rate = st.sidebar.slider("即時報價刷新頻率 (秒)", min_value=5, max_value=60, value=10, step=5)
 
 # ====================================================================
 # 8. 智慧分流加載大腦 (可轉債 5 碼/普通股 4 碼 安全不崩潰)
