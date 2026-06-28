@@ -27,78 +27,83 @@ if "api" not in st.session_state:
         st.session_state["api_error"] = str(e)
 
 # ====================================================================
-# 2. 網頁全域設定與 CSS 科技黑化排版 (四宮格獨立窗格背板大突破版) 🖥️
+# 2. 網頁全域設定與 CSS 科技黑化排版 (精準優化：側邊欄收納箭頭黃金加亮版)
 # ====================================================================
+# 抽屜式自動縮進設定，一開網頁預設就是全螢幕
+st.set_page_config(
+    page_title="智慧看盤系統 V8.3 - 箭頭導航版", 
+    layout="wide", 
+    initial_sidebar_state="collapsed"
+)
+
 st.markdown("""
-<style>
-/* ================================================================= */
-/* 1. 舞台底色與最外圍設定 */
-/* ================================================================= */
-.stApp {
-    background-color: #0A0A0A !important; /* 整個大網頁最底層用「純黑」，當作格子間的走道 */
-}
+    <style>
+        /* 網頁與側邊欄全暗黑背景 */
+        .stApp { background-color: #121212 !important; color: #E0E0E0 !important; }
+        [data-testid="stSidebar"], section[data-testid="stSidebarViewPort"] { background-color: #1C1C1E !important; }
+        p, label, th, h1, h2, h3, .stMarkdown { color: #E0E0E0 !important; }
+        hr { border-top: 1px solid #333333 !important; }
+        
+        /* 漲跌幅紅綠色設定 */
+        .stock-up { color: #FF3333 !important; font-weight: bold !important; }
+        .stock-down { color: #00AA00 !important; font-weight: bold !important; }
+        
+        /* 側邊欄折疊元件美化 */
+        .stExpander, [data-testid="stExpander"] { background-color: #222224 !important; border: 1px solid #444444 !important; border-radius: 6px !important; }
+        .stExpander summary, .stExpander button, [data-testid="stExpander"] summary { background-color: #26262B !important; color: #FFFFFF !important; }
+        input[type="text"], .stTextInput>div>div>input { background-color: #121212 !important; color: #FFFFFF !important; border: 1px solid #555555 !important; }
+        input[type="text"]::placeholder, .stTextInput>div>div>input::placeholder { color: #BBBBBB !important; opacity: 1 !important; }
+        [data-testid="stNotification"], div[data-testid="stNotificationV2"] { background-color: #222224 !important; color: #FFFFFF !important; }
+        
+        /* 表格美化 */
+        table { background-color: #121212 !important; color: #E0E0E0 !important; }
+        tr { background-color: #121212 !important; border-bottom: 1px solid #2D2D2D !important; }
+        th { background-color: #1E1E1E !important; color: #FFFFFF !important; }
+        .stButton>button { background-color: #262626 !important; color: #E0E0E0 !important; border: 1px solid #444444 !important; }
+        div[data-testid="stNotification"] *, div[data-testid="stNotificationV2"] *, .stAlert *, div[role="alert"] * { color: #FFFFFF !important; }
+        div[data-testid="stNotification"] li::marker, div[data-testid="stNotificationV2"] li::marker { color: #FFFFFF !important; }
+        
+        /* 四宮格獨立科技黑卡細邊框與陰影 */
+        div[data-testid="stColumn"] {
+            background-color: #1A1A1E !important;
+            border: 1px solid #2D2D32 !important;
+            border-radius: 8px !important;
+            padding: 15px !important;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3) !important;
+        }
+        div[data-testid="stHorizontalBlock"] { gap: 16px !important; }
 
-.block-container {
-    padding-top: 10px !important;
-    padding-bottom: 10px !important;
-    padding-left: 12px !important;
-    padding-right: 12px !important;
-    background-color: #0A0A0A !important;
-}
+        /* 徹底拔除頂端白色區塊，並將右側選單按鈕全數隱形 */
+        header[data-testid="stHeader"] {
+            background-color: #121212 !important;
+            border-bottom: 1px solid #1C1C1E !important;
+        }
+        div[data-testid="stToolbar"] {
+            visibility: hidden !important;
+            display: none !important;
+        }
 
-div[data-testid="stVerticalBlock"] {
-    gap: 0px !important;
-}
-
-/* ================================================================= */
-/* 💡 核心優化：把四個大分頁內容方框，直接變成五宮格那種獨立的「科技黑卡背板」 */
-/* ================================================================= */
-div[data-testid="stTabContent"] {
-    /* 變更底色：改為明顯的券商專業「鐵灰色/碳黑色」背板，與背景純黑拉開色差 */
-    background-color: #1A1A1E !important; 
-    
-    /* 四周加上細緻的微亮灰色邊框 */
-    border: 1px solid #333333 !important; 
-    border-radius: 6px !important;         /* 視窗圓角 */
-    
-    /* 核心推開：給方框底部加上 16px 的黑色推開距離，強制左右與下方產生清晰的黑色走道區隔 */
-    margin-top: 4px !important;
-    margin-bottom: 16px !important;        
-    
-    /* 舒適留白：讓內部的圖表與表格文字，離自己的鐵灰背板邊緣有 10px 距離 */
-    padding: 10px !important;               
-    
-    /* 讓區塊微微浮起來的深色立體陰影 */
-    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5) !important;
-}
-
-/* ================================================================= */
-/* 防禦機制：100% 歸零所有隱藏欄位框線，保證內部小按鈕完全維持原樣不位移 */
-/* ================================================================= */
-div[data-testid="stColumn"] {
-    background-color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0px !important;
-    margin: 0px !important;
-}
-
-div[data-testid="stHorizontalBlock"] {
-    /* 💡 強制讓左邊兩個大區塊與右邊兩個大區塊之間，保持 16px 寬的純黑垂直大走道 */
-    gap: 16px !important; 
-}
-
-/* ================================================================= */
-/* 側邊欄與其餘通用設定 */
-/* ================================================================= */
-button[data-testid="collapsedControl"] {
-    color: #FFD700 !important;
-    background-color: #222222 !important;
-    border-radius: 50% !important;
-}
-</style>
+        /* ==================================================================== */
+        /* 🟢 頂級強化：強制將側邊欄隱藏/拉出的 (<<) (>>) 箭頭上色並放大 */
+        /* ==================================================================== */
+        /* 1. 強制將控制箭頭的圖示全部塗成顯眼的亮金黃色，並放大 1.3 倍 */
+        button[data-testid="stSidebarCollapseButton"], 
+        button[data-testid="stSidebarCollapseButton"] svg,
+        section[data-testid="stSidebarViewPort"] button svg {
+            fill: #FFD600 !important;
+            color: #FFD600 !important;
+            transform: scale(1.3) !important;
+            transition: all 0.2s ease-in-out !important;
+        }
+        
+        /* 2. 增加滑鼠滑過去時的亮綠色呼吸燈發光效果，提示感極強 */
+        button[data-testid="stSidebarCollapseButton"]:hover svg {
+            fill: #00E676 !important;
+            color: #00E676 !important;
+            filter: drop-shadow(0px 0px 8px #00E676) !important;
+        }
+    </style>
 """, unsafe_allow_html=True)
-
 
 # ====================================================================
 # 3. 密碼防護機制与硬碟檔案持久化處理
