@@ -587,100 +587,109 @@ with row2_col2:
         "🤖 永豐全市場選股" 
     ]) 
  
-    # --- 分頁 1：即時新聞 ---
-    with tab_news: 
-        try: 
-            news_list = info.get('news', []) 
-            if news_list and len(news_list) > 0: 
-                for item in news_list[:3]: 
-                    st.markdown(f"📌 [{item.get('title', '新聞')}]({item.get('link', '#')})") 
-            else: 
-                st.caption("⏱️ 非交易日，為您聯播大盤近期財經焦點：") 
-                market_news = yf.Ticker("^TWII").info.get('news', [])[:3] 
-                for m_item in market_news: 
-                    st.markdown(f"📰 [{m_item.get('title')}]({m_item.get('link')})") 
-        except: 
-            st.caption("暫無即時新聞") 
+        # ==================================================================== 
+    # 🛠️ 右下格：多功能 AI 與 永豐金決策面板 (縮排完美對齊解鎖版)
+    # ==================================================================== 
+    # 這行與與主程式 columns 對齊（4個半形空格）
+    with row2_col2: 
+        # 一口氣建立四個乾淨獨立的分頁
+        tab_news, tab_ai, tab_shioaji, tab_picker = st.tabs([ 
+            "📰 相關即時新聞", 
+            "🧠 AI 策略分析", 
+            "📊 永豐單股指標", 
+            "🤖 永豐全市場選股" 
+        ]) 
  
-    # --- 分頁 2：AI 策略分析 ---
-    with tab_ai: 
-        st.write(f"當前分析：**{selected_display}**") 
-        if st.button("🚀 啟動 AI 深度策略分析", key="ai_btn_final"): 
-            with st.spinner("AI 正在解析多空力道..."): 
-                ai_report = get_ai_analysis(selected_display, current_price, price_change, price_change_pct, df['Close'].iloc[-1], 50, 50) 
-                st.info(ai_report) 
-
-    # --- 分頁 3：永豐單股指標 (串接真實三大法人數據) ---
-    with tab_shioaji: 
-        st.write(f"永豐即時診斷：**{selected_display}**") 
-        
-        if "api" in st.session_state: 
-            api = st.session_state["api"] 
-            
-            # 從選擇的名稱（如：台積電 (2330.TW)）切出純數字 "2330"
+        # --- 分頁 1：即時新聞 (注意：內部固定縮排 8 個空格) ---
+        with tab_news: 
             try: 
-                pure_code = selected_display.split('.')[-2].split('(')[-1].strip() 
+                news_list = info.get('news', []) 
+                if news_list and len(news_list) > 0: 
+                    for item in news_list[:3]: 
+                        st.markdown(f"📌 [{item.get('title', '新聞')}]({item.get('link', '#')})") 
+                else: 
+                    st.caption("⏱️ 非交易日，為您聯播大盤近期財經焦點：") 
+                    market_news = yf.Ticker("^TWII").info.get('news', [])[:3] 
+                    for m_item in market_news: 
+                        st.markdown(f"📰 [{m_item.get('title')}]({m_item.get('link')})") 
             except: 
-                pure_code = "2330" 
+                st.caption("暫無即時新聞") 
  
-            st.markdown("##### 📈 技術面即時訊號") 
-            st.caption("⚡ 5 日/20 日均線：**多頭排列** ｜ KD 指標：**黃金交叉向上**") 
- 
-            st.markdown("##### 👥 當日三大法人動態 (張)") 
+        # --- 分頁 2：AI 策略分析 (精準閉合！內部所有程式都縮排 8 個空格) ---
+        with tab_ai: 
+            st.write(f"當前分析：**{selected_display}**") 
+            if st.button("🚀 啟動 AI 深度策略分析", key="ai_btn_final"): 
+                with st.spinner("AI 正在解析多空力道..."): 
+                    ai_report = get_ai_analysis(selected_display, current_price, price_change, price_change_pct, df['Close'].iloc[-1], 50, 50) 
+                    st.info(ai_report) 
+
+        # --- 分頁 3：永豐單股指標 (與 with tab_ai 對齊，不再縮進別人肚子裡) ---
+        with tab_shioaji: 
+            st.write(f"永豐即時診斷：**{selected_display}**") 
             
-            # 初始化數據
-            foreign_net = 0 
-            inst_net = 0 
-            dealer_net = 0 
- 
-            try: 
-                contract = api.Contracts.Stocks[pure_code] 
-                today_str = datetime.date.today().strftime("%Y-%m-%d") 
-                inst_data = api.credit_enquiry(contract, date=today_str) 
- 
-                foreign_net = int(getattr(inst_data, 'foreign_net_buy', 0)) 
-                inst_net = int(getattr(inst_data, 'itrust_net_buy', 0)) 
-                dealer_net = int(getattr(inst_data, 'dealer_net_buy', 0)) 
-                error_msg = None 
-            except Exception as e: 
-                error_msg = "暫無當日即時數據 (非交易日或資料更新中)" 
- 
-            col_foreign, col_inst, col_dealer = st.columns(3) 
-            
-            if error_msg: 
-                st.caption(f"⏱️ {error_msg}") 
- 
-            f_arrow = "買超" if foreign_net >= 0 else "賣超" 
-            col_foreign.metric(label="外資買賣超", value=f"{foreign_net:+,} 張", delta=f"今日{f_arrow}") 
- 
-            i_arrow = "買超" if inst_net >= 0 else "賣超" 
-            col_inst.metric(label="投信買賣超", value=f"{inst_net:+,} 張", delta=f"今日{i_arrow}") 
- 
-            d_arrow = "買超" if dealer_net >= 0 else "賣超" 
-            col_dealer.metric(label="自營商買賣超", value=f"{dealer_net:+,} 張", delta=f"今日{d_arrow}") 
-        else: 
-            st.warning("⚠️ 永豐金 API 未啟動。請確保您的帳密與憑證已正確設定於祕密欄位中。") 
+            if "api" in st.session_state: 
+                api = st.session_state["api"] 
+                
+                try: 
+                    pure_code = selected_display.split('.')[-2].split('(')[-1].strip() 
+                except: 
+                    pure_code = "2330" 
+     
+                st.markdown("##### 📈 技術面即時訊號") 
+                st.caption("⚡ 5 日/20 日均線：**多頭排列** ｜ KD 指標：**黃金交叉向上**") 
+     
+                st.markdown("##### 👥 當日三大法人動態 (張)") 
+                
+                # 初始化數據
+                foreign_net = 0 
+                inst_net = 0 
+                dealer_net = 0 
+     
+                try: 
+                    contract = api.Contracts.Stocks[pure_code] 
+                    today_str = datetime.date.today().strftime("%Y-%m-%d") 
+                    inst_data = api.credit_enquiry(contract, date=today_str) 
+     
+                    foreign_net = int(getattr(inst_data, 'foreign_net_buy', 0)) 
+                    inst_net = int(getattr(inst_data, 'itrust_net_buy', 0)) 
+                    dealer_net = int(getattr(inst_data, 'dealer_net_buy', 0)) 
+                    error_msg = None 
+                except Exception as e: 
+                    error_msg = "暫無當日即時數據 (非交易日或資料更新中)" 
+     
+                col_foreign, col_inst, col_dealer = st.columns(3) 
+                
+                if error_msg: 
+                    st.caption(f"⏱️ {error_msg}") 
+     
+                f_arrow = "買超" if foreign_net >= 0 else "賣超" 
+                col_foreign.metric(label="外資買賣超", value=f"{foreign_net:+,} 張", delta=f"今日{f_arrow}") 
+     
+                i_arrow = "買超" if inst_net >= 0 else "賣超" 
+                col_inst.metric(label="投信買賣超", value=f"{inst_net:+,} 張", delta=f"今日{i_arrow}") 
+     
+                d_arrow = "買超" if dealer_net >= 0 else "賣超" 
+                col_dealer.metric(label="自營商買賣超", value=f"{dealer_net:+,} 張", delta=f"今日{d_arrow}") 
+            else: 
+                st.warning("⚠️ 永豐金 API 未啟動。請確保您的帳密與憑證已正確設定於祕密欄位中。") 
 
-    # --- 分頁 4：🤖 永豐全市場智慧選股 (100% 避開地雷乾淨版) ---
-    with tab_picker: 
-        st.markdown("🔍 <h4 style='color: #FFFFFF; font-weight: bold; margin-top: 0px;'>永豐金量化大腦 × 全市場智慧選股</h4>", unsafe_allow_html=True) 
- 
-        # 1. 策略下拉選單
-        pick_strategy = st.selectbox( 
-            "請選擇篩選核心策略：", 
-            ["外資投信同步買超股", "技術面均線多頭排列", "量價齊揚突破個股"], 
-            key="main_page_strategy_picker" 
-        ) 
- 
-        st.write("") # 增加安全間距 
- 
-        # 2. 🟢 核心按鈕現身！(在乾淨的單一 with 結構下，保證 100% 正常長出來)
-        if st.button("🚀 開始全市場 AI 智慧掃描", use_container_width=True, key="main_pick_btn_real"): 
-            with st.spinner("正在連線永豐金撈取全市場資料並由 AI 診斷..."): 
-                # 呼叫真實選股大腦
-                real_picked_list = run_real_stock_picker(pick_strategy) 
-                # 呼叫最上方的全域彈出視窗
-                show_picked_report(real_picked_list, pick_strategy)
-
-
-    
+        # --- 分頁 4：🤖 永豐全市場智慧選股 (與其他 with 平起平坐) ---
+        with tab_picker: 
+            st.markdown("🔍 <h4 style='color: #FFFFFF; font-weight: bold; margin-top: 0px;'>永豐金量化大腦 × 全市場智慧選股</h4>", unsafe_allow_html=True) 
+     
+            # 1. 策略下拉選單
+            pick_strategy = st.selectbox( 
+                "請選擇篩選核心策略：", 
+                ["外資投信同步買超股", "技術面均線多頭排列", "量價齊揚突破個股"], 
+                key="main_page_strategy_picker" 
+            ) 
+     
+            st.write("") # 增加安全間距 
+     
+            # 2. 🟢 終極解鎖：大按鈕現身！ (最左邊固定縮排 8 個空格)
+            if st.button("🚀 開始全市場 AI 智慧掃描", use_container_width=True, key="main_pick_btn_real"): 
+                with st.spinner("正在連線永豐金撈取全市場資料並由 AI 診斷..."): 
+                    # 呼叫真實選股大腦
+                    real_picked_list = run_real_stock_picker(pick_strategy) 
+                    # 呼叫最上方的全域彈出視窗
+                    show_picked_report(real_picked_list, pick_strategy)
