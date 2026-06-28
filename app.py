@@ -604,7 +604,21 @@ with row1_col1:
         # 📄 分頁控制列（維持緊湊）
         st.markdown("<div style='margin-top:8px;'></div>", unsafe_allow_html=True)
         p_col1, p_col2, p_col3 = st.columns([1.2, 2, 1.2])
-
+        st.markdown("</div>", unsafe_allow_html=True) # 這是你原本的第 602 行
+                
+        # 📄 分頁控制列（注意：這三行必須跟上方的 for 迴圈維持「同一層縮排」！）
+        st.markdown("<div style='margin-top:8px;'></div>", unsafe_allow_html=True)
+        p_col1, p_col2, p_col3 = st.columns([1.2, 2, 1.2])
+        with p_col1:
+            if st.button("⬅ 上一頁", disabled=(st.session_state["current_page"] == 0), use_container_width=True, key="prev_page_btn"):
+                st.session_state["current_page"] -= 1
+                st.rerun()
+        with p_col2:
+            st.markdown(f"<p style='text-align:center; padding-top:4px; font-size:12px; color:#888888; font-weight:bold;'>[ 頁次: {st.session_state['current_page']+1} / {max_page+1} ]</p>", unsafe_allow_html=True)
+        with p_col3:
+            if st.button("下一頁 ➡", disabled=(st.session_state["current_page"] >= max_page), use_container_width=True, key="next_page_btn"):
+                st.session_state["current_page"] += 1
+                st.rerun()
 
     # ----------------------------------------------------------------
     # 【分頁二】：原側邊欄移過來的自選股管理面板 (完美消滅側邊欄且具唯一 Key 防禦)
