@@ -68,6 +68,23 @@ st.markdown("""
         margin-bottom: 12px !important;
     }
 
+    /* ==================================================================== */
+    /* 【關鍵修正】強制拉開四宮格左右的縱向間距，並在中央降下直立科技灰分割線 */
+    /* ==================================================================== */
+    /* 讓兩大直欄的水平排列空出 24 像素的舒適寬度 */
+    div[data-testid="stHorizontalBlock"] { 
+        gap: 24px !important; 
+        margin: 0px !important; 
+        padding: 0px !important; 
+    }
+    
+    /* 精準鎖定左半邊的直欄容器 (Column 1)，在其右側刻出仿 XQ 的深灰直立中軸線 */
+    div[data-testid="stHorizontalBlock"] > div:nth-child(1) {
+        border-right: 1px solid #2D2D32 !important;
+        padding-right: 12px !important;
+    }
+    /* ==================================================================== */
+
     /* 側邊欄拉出 (<<) (>>) 亮金加亮版 */
     button[data-testid="stSidebarCollapseButton"], 
     button[data-testid="stSidebarCollapseButton"] svg,
@@ -78,15 +95,12 @@ st.markdown("""
         fill: #00E676 !important; color: #00E676 !important; filter: drop-shadow(0px 0px 8px #00E676) !important;
     }
 
-    /* 密實壓縮：全面抽乾 Streamlit 容器預設留白 */
+    /* 密實壓縮：全面抽乾單一卡片內部的垂直留白，維持緊湊操盤感 */
     div[data-testid="stVerticalBlock"] { gap: 0px !important; }
     div[data-testid="stVerticalBlock"] > div { margin-bottom: 0px !important; padding-bottom: 0px !important; }
     div.element-container { margin-bottom: 0px !important; margin-top: 0px !important; padding: 0px !important; }
-    div[data-testid="stHorizontalBlock"] { gap: 8px !important; margin: 0px !important; padding: 0px !important; }
 
-    /* ==================================================================== */
-    /* 【關鍵修正】強制破除原生按鈕的白色發光背景與邊框，完美融於暗黑背景 */
-    /* ==================================================================== */
+    /* 強制破除原生按鈕的白色發光背景與邊框，完美融於暗黑背景 */
     div.stButton > button {
         background-color: #1A1A1E !important; 
         color: #E0E0E0 !important; 
@@ -142,13 +156,12 @@ st.markdown("""
         border: 1px solid #FF6D00 !important;
         font-weight: bold !important;
         font-size: 14px !important;
-        height: 36px !important; /* 讓大火箭按鈕高度更明顯 */
+        height: 36px !important; 
     }
     div.stButton > button[key="main_pick_btn_real"]:hover {
         background-color: #FF6D00 !important;
         box-shadow: 0px 0px 10px #FF6D00 !important;
     }
-    /* ==================================================================== */
 
     /* 黑灰相間看盤橫條列 */
     .xq-row-even { background-color: #131313 !important; margin: 0px !important; padding: 0px !important; border-bottom: 1px solid #222222 !important; height: 26px !important; display: flex; align-items: center; }
