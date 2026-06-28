@@ -499,16 +499,21 @@ with row1_col1:
         h_col7.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:center;'>移</p>", unsafe_allow_html=True)
         st.markdown("<div style='border-top:2px solid #0D47A1; margin-top:2px; margin-bottom:2px;'></div>", unsafe_allow_html=True)
         
-        # 數據分離準備
+                # 1. 提取自選股清單並進行「加權指數分離」
         watchlist_items = list(st.session_state["watchlist_dict"].items())
-        index_item = [item for item in watchlist_items if "^TWII" in item or "加權指數" in item]
+        
+        # 找出加權指數
+        index_item = [item for item in watchlist_items if "^TWII" in item[1] or "加權指數" in item[0]]
+        # 剩下的才是普通個股與可轉債
         stock_items = [item for item in watchlist_items if item not in index_item]
         
         # ============================================================
-        # 固定第一筆：大盤加權指數 (置頂、無買賣價、不放刪除鍵)
+        # 固定第一筆：大盤加權指數 (永遠頂格鎖定、安全解包修正版)
         # ============================================================
         if index_item:
-            idx_name, idx_code = index_item
+            # 💡 關鍵修正：指定拿取 index_item[0] 進行解包，徹底消滅 ValueError 崩潰！
+            idx_name, idx_code = index_item[0]
+            
             try:
                 idx_df, idx_info = fetch_safe_stock_data(idx_code)
                 i_cp = idx_info.get("currentPrice") if idx_info.get("currentPrice") is not None else idx_df['Close'].iloc[-1]
@@ -521,11 +526,12 @@ with row1_col1:
             i_class = "val-up" if i_chg > 0 else ("val-down" if i_chg < 0 else "val-even")
             i_arrow = "▲" if i_chg > 0 else ("▼" if i_chg < 0 else " ")
             
-            # 使用 xq-row-even 鋪底
             st.markdown("<div class='xq-row-even'>", unsafe_allow_html=True)
             b_col1, b_col2, b_col3, b_col4, b_col5, b_col6, b_col7 = st.columns([1.5, 0.9, 0.9, 1.1, 0.9, 1.0, 0.4])
             with b_col1:
-                if st.button(f">> {idx_name.split(' ')[0]}", key=f"btn_fixed_index"):
+                # 簡化名稱顯示
+                short_idx_name = idx_name.split(' (')[0] if ' (' in idx_name else idx_name
+                if st.button(f">> {short_idx_name}", key=f"btn_fixed_index"):
                     st.session_state["current_selected_idx"] = 0
                     st.session_state["main_stock_selector"] = idx_name
                     st.rerun()
