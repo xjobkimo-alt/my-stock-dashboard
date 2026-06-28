@@ -14,7 +14,22 @@ import shioaji as sj     # 1. 正式引入永豐金 API
 @st.dialog("🎯 AI 智慧選股黃金報告", width="large")
 def show_picked_report(stocks, strategy_name):
     # ====================================================================
-    # 1. 科技消光黑全域 CSS 樣式控制
+    # 🟢 終極絕育防線：利用計數器鎖定，全系統一秒內絕對只能執行「唯一一次」！
+    # ====================================================================
+    if "dialog_run_count" not in st.session_state:
+        st.session_state["dialog_run_count"] = 0
+        
+    # 如果進入這個函式時，發現計數器已經大於 0，代表有舊的幽靈代碼在重複呼叫它
+    if st.session_state["dialog_run_count"] > 0:
+        # 重設狀態以利下次點擊，並直接強行中斷退出，絕對不讓它畫出第二層！
+        st.session_state["dialog_run_count"] = 0
+        return
+        
+    # 通過檢查，將計數器加 1，鎖定視窗
+    st.session_state["dialog_run_count"] += 1
+
+    # ====================================================================
+    # 1. 科技消光黑全域 CSS 樣式控制 (維持原樣)
     # ====================================================================
     st.markdown("""
         <style>
@@ -46,11 +61,9 @@ def show_picked_report(stocks, strategy_name):
     # 讀取當前已經存在於自選股清單中的所有代碼
     current_watchlist_codes = list(st.session_state.get("watchlist_dict", {}).values())
     
-    # 使用去重後的乾淨清單進行「唯一一次」渲染
+    # 使用去重後的乾淨清單進行渲染
     for stock in unique_stocks:
         col_info, col_reason, col_action = st.columns([1.5, 3, 1.2])
-        
-        # 決定 YFinance 需要的代碼字串
         full_code = f"{stock['code']}.TW" if not stock['code'].endswith(".TW") and not stock['code'].endswith(".TWO") else stock['code']
         
         # 顯示代號與名稱
@@ -74,28 +87,27 @@ def show_picked_report(stocks, strategy_name):
             session_btn_key = f"has_added_{stock['code']}"
             
             if full_code in current_watchlist_codes or st.session_state.get(session_btn_key, False):
-                # 已納入自選狀態 (鎖定按鈕)
                 st.button(f"✓ 已納入自選", key=f"disabled_btn_{stock['code']}_v7", disabled=True, use_container_width=True)
             else:
-                # 正常可點選狀態 (點擊後只存檔、不刷新，按鈕變灰)
                 if st.button(f"➕ 納入自選", key=f"add_btn_{stock['code']}_v7", use_container_width=True):
                     if "watchlist_dict" in st.session_state:
                         display_name = f"{stock['name']} ({full_code})"
                         st.session_state["watchlist_dict"][display_name] = full_code
-                        
-                        # 執行實時硬碟存檔
                         try:
                             save_my_watchlist()
                         except:
                             pass
                         
-                        # 紀錄此顆按鈕已被點選，重新渲染 Dialog 內部狀態
+                        # 點擊加入時，重設視窗開關狀態，確保重新渲染內部時能順利通過防線
+                        st.session_state["dialog_run_count"] = 0
                         st.session_state[session_btn_key] = True
                         st.rerun() 
                         
     st.markdown("---")
-    # 免責聲明
     st.markdown("<p style='color: #FFD600; font-size: 0.9rem; font-weight: bold;'>⚠️ 本報告由永豐金 API 籌碼數據結合 Gemini AI 進行綜合運算，僅供參考，投資請謹慎評估風險。</p>", unsafe_allow_html=True)
+    
+    # 視窗正常畫完關閉前，重設計數器，方便下一次點擊大按鈕時能重新觸發
+    st.session_state["dialog_run_count"] = 0
 
     # ====================================================================
     # 下方維持您原本精美的文字與按鈕排版 (不要動它)
