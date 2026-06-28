@@ -278,20 +278,28 @@ with st.sidebar:
                 """
                 st.markdown(html_reason, unsafe_allow_html=True)
             
-            # 顯示一鍵加入自選股按鈕
-            with col_action:
-                st.write("") # 空出一點上方間距對齊
-                full_code = f"{stock['code']}.TW"
-                
-                # 建立按鈕
-                if st.button(f"➕ 納入自選", key=f"add_btn_{stock['code']}", use_container_width=True):
-                    if "watchlist_dict" in st.session_state:
-                        display_name = f"{stock['name']} ({full_code})"
-                        st.session_state["watchlist_dict"][display_name] = full_code
-                        st.success(f"已加入 {stock['name']}！")
-                        st.rerun()
-                    else:
-                        st.error("找不到自選股清單變數")
+                            # 顯示一鍵加入自選股按鈕
+                with col_action:
+                    st.write("") # 空出一點上方間距對齊
+                    full_code = f"{stock['code']}.TW"
+                    
+                    # 建立按鈕
+                    if st.button(f"➕ 納入自選", key=f"add_btn_{stock['code']}", use_container_width=True):
+                        if "watchlist_dict" in st.session_state:
+                            display_name = f"{stock['name']} ({full_code})"
+                            st.session_state["watchlist_dict"][display_name] = full_code
+                            
+                            # 🟢 關鍵修正：當點擊彈出視窗的納入自選時，立刻呼叫您系統原有的「存檔函式」
+                            try:
+                                save_my_watchlist() 
+                            except Exception as e:
+                                # 預防萬一，若存檔失敗會在後台提示，但不卡死網頁
+                                print(f"智慧選股存檔失敗: {e}")
+                            
+                            st.success(f"已加入 {stock['name']} 並且永久存檔！")
+                            st.rerun()
+                        else:
+                            st.error("找不到自選股清單變數")
         
         st.markdown("---")
         # 免責聲明
