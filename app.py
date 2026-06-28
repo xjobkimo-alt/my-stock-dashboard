@@ -11,26 +11,12 @@ import os
 import shioaji as sj     # 1. 正式引入永豐金 API
 
 
+# ==================================================================== 
+# 🤖 永豐金 V7.6 智慧選股全新命名視窗 (徹底根除重疊幽靈版)
+# ==================================================================== 
 @st.dialog("🎯 AI 智慧選股黃金報告", width="large")
-def show_picked_report(stocks, strategy_name):
-    # ====================================================================
-    # 🟢 終極絕育防線：利用計數器鎖定，全系統一秒內絕對只能執行「唯一一次」！
-    # ====================================================================
-    if "dialog_run_count" not in st.session_state:
-        st.session_state["dialog_run_count"] = 0
-        
-    # 如果進入這個函式時，發現計數器已經大於 0，代表有舊的幽靈代碼在重複呼叫它
-    if st.session_state["dialog_run_count"] > 0:
-        # 重設狀態以利下次點擊，並直接強行中斷退出，絕對不讓它畫出第二層！
-        st.session_state["dialog_run_count"] = 0
-        return
-        
-    # 通過檢查，將計數器加 1，鎖定視窗
-    st.session_state["dialog_run_count"] += 1
-
-    # ====================================================================
-    # 1. 科技消光黑全域 CSS 樣式控制 (維持原樣)
-    # ====================================================================
+def show_my_cb_report(stocks, strategy_name): # 🟢 徹底改名！
+    # 科技消光黑 CSS 樣式控制
     st.markdown("""
         <style>
             div[data-testid="stDialog"] { background-color: rgba(0, 0, 0, 0.7) !important; }
@@ -44,34 +30,21 @@ def show_picked_report(stocks, strategy_name):
         </style>
     """, unsafe_allow_html=True)
     
-    # 大標題
     st.markdown(f"<h4 style='color: #FFFFFF; font-weight: bold;'>根據您選擇的策略：【<span style='color: #00E676;'>{strategy_name}</span>】，為您篩選出以下最具潛力的個股：</h4>", unsafe_allow_html=True)
     st.markdown("---")
     
-    # ====================================================================
-    # 2. 核心防禦：強制進行「個股去重」
-    # ====================================================================
-    unique_stocks = []
-    seen_codes = set()
-    for stock in stocks:
-        if stock['code'] not in seen_codes:
-            seen_codes.add(stock['code'])
-            unique_stocks.append(stock)
-            
     # 讀取當前已經存在於自選股清單中的所有代碼
     current_watchlist_codes = list(st.session_state.get("watchlist_dict", {}).values())
     
-    # 使用去重後的乾淨清單進行渲染
-    for stock in unique_stocks:
+    # 單層唯一循環渲染
+    for stock in stocks:
         col_info, col_reason, col_action = st.columns([1.5, 3, 1.2])
         full_code = f"{stock['code']}.TW" if not stock['code'].endswith(".TW") and not stock['code'].endswith(".TWO") else stock['code']
         
-        # 顯示代號與名稱
         with col_info:
             st.markdown(f"<h3 style='color: #00B0FF; margin-bottom: 0px;'>📈 {stock['code']}</h3>", unsafe_allow_html=True)
             st.markdown(f"<p style='color: #FFFFFF; font-size: 1.2rem; font-weight: bold;'>{stock['name']}</p>", unsafe_allow_html=True)
         
-        # 顯示 AI 診斷原因
         with col_reason:
             html_reason = f"""
             <div style='background-color: #1C1C1E; padding: 12px; border-radius: 8px; border-left: 5px solid #FF9100;'>
@@ -81,15 +54,14 @@ def show_picked_report(stocks, strategy_name):
             """
             st.markdown(html_reason, unsafe_allow_html=True)
         
-        # 智慧型狀態按鈕判定：鎖定按鈕連擊不關閉
         with col_action:
             st.write("") 
             session_btn_key = f"has_added_{stock['code']}"
             
             if full_code in current_watchlist_codes or st.session_state.get(session_btn_key, False):
-                st.button(f"✓ 已納入自選", key=f"disabled_btn_{stock['code']}_v7", disabled=True, use_container_width=True)
+                st.button(f"✓ 已納入自選", key=f"disabled_btn_{stock['code']}_v76", disabled=True, use_container_width=True)
             else:
-                if st.button(f"➕ 納入自選", key=f"add_btn_{stock['code']}_v7", use_container_width=True):
+                if st.button(f"➕ 納入自選", key=f"add_btn_{stock['code']}_v76", use_container_width=True):
                     if "watchlist_dict" in st.session_state:
                         display_name = f"{stock['name']} ({full_code})"
                         st.session_state["watchlist_dict"][display_name] = full_code
@@ -97,17 +69,11 @@ def show_picked_report(stocks, strategy_name):
                             save_my_watchlist()
                         except:
                             pass
-                        
-                        # 點擊加入時，重設視窗開關狀態，確保重新渲染內部時能順利通過防線
-                        st.session_state["dialog_run_count"] = 0
                         st.session_state[session_btn_key] = True
                         st.rerun() 
                         
     st.markdown("---")
     st.markdown("<p style='color: #FFD600; font-size: 0.9rem; font-weight: bold;'>⚠️ 本報告由永豐金 API 籌碼數據結合 Gemini AI 進行綜合運算，僅供參考，投資請謹慎評估風險。</p>", unsafe_allow_html=True)
-    
-    # 視窗正常畫完關閉前，重設計數器，方便下一次點擊大按鈕時能重新觸發
-    st.session_state["dialog_run_count"] = 0
 
     # ====================================================================
     # 下方維持您原本精美的文字與按鈕排版 (不要動它)
@@ -781,11 +747,11 @@ with row2_col2:
  
         st.write("") # 增加安全間距 
  
-        # 2. 🚀 大按鈕觸發 (精準單次呼叫去重版)
+                # === 這裡在您檔案的最底部 ===
+        # 2. 大按鈕觸發
         if st.button("🚀 開始全市場 AI 智慧掃描", use_container_width=True, key="main_pick_btn_real"): 
             with st.spinner("正在連線鉅亨網與櫃買中心數據庫，並由 Gemini AI 進行多空診斷..."): 
                 
-                # A. 判斷如果是可轉債
                 if "可轉債" in pick_strategy:
                     cb_list = fetch_real_cb_data()
                     formatted_picked = []
@@ -795,10 +761,9 @@ with row2_col2:
                             "name": f"{cb['cb_name']} (標的:{cb['underlying']})",
                             "reason": f"【現價:{cb['price']}元 | 溢價率:{cb['premium']}】\n{cb['reason']}"
                         })
-                    # 🟢 只有這裡呼叫一次可轉債視窗，後面絕不重複！
-                    show_picked_report(formatted_picked, pick_strategy)
+                    # 🟢 修正：更改調用名稱，精準發動新大腦
+                    show_my_cb_report(formatted_picked, pick_strategy)
                     
-                # B. 判斷如果是普通股
                 else:
                     real_picked_list = run_real_stock_picker(pick_strategy)
                     for stock in real_picked_list:
@@ -806,5 +771,5 @@ with row2_col2:
                         if latest_news:
                             news_bulletins = "\n".join([f"• [{n['source']}] {n['title']}" for n in latest_news[:2]])
                             stock["reason"] += f"\n\n📰 **最新市場輿情聯播：**\n{news_bulletins}"
-                    # 🟢 只有這裡呼叫一次普通股視窗，後面絕不重複！
-                    show_picked_report(real_picked_list, pick_strategy)
+                    # 🟢 修正：更改調用名稱，精準發動新大腦
+                    show_my_cb_report(real_picked_list, pick_strategy)
