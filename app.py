@@ -305,14 +305,18 @@ with st.sidebar:
         # 免責聲明
         st.markdown("<p style='color: #FFD600; font-size: 0.9rem; font-weight: bold;'>⚠️ 本報告由永豐金 API 籌碼數據結合 Gemini AI 進行綜合運算，僅供參考，投資請謹慎評估風險。</p>", unsafe_allow_html=True)
 
-            # 3. 觸發選股按鈕 (替換為真實對接版本)
+        # ====================================================================
+        # 🟢 修正：就是這裡！請確保以下這幾行程式碼的前方縮排，
+        # 🟢 完全跟上方的 「@st.dialog」與「def show_picked_report」對齊！（往左退 4 空格）
+        # ====================================================================
+        # 3. 觸發選股按鈕 (注意：不可縮進 def 內部)
         if st.button("🚀 開始全市場 AI 掃描", use_container_width=True, key="pick_btn"):
             with st.spinner("正在連線永豐金撈取全市場資料並由 AI 診斷..."):
                 
-                # 🟢 關鍵改造：直接呼叫真實核心大腦，傳入使用者當下選擇的策略名稱
+                # 呼叫真實選股大腦
                 real_picked_list = run_real_stock_picker(pick_strategy)
                 
-                # 將真實篩選出的個股名單丟進彈出視窗中顯示
+                # 直接呼叫彈出視窗並把清單丟進去
                 show_picked_report(real_picked_list)
 
 # ====================================================================
