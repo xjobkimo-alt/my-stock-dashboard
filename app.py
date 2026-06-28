@@ -520,28 +520,16 @@ with row1_col1:
             
         start_idx = st.session_state["current_page"] * ITEMS_PER_PAGE
         end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
+
+        # 1. 宣告一體化表頭，橫向與縱向黃金配比鎖死 [18%, 14%, 14%, 15%, 14%, 15%, 10%]
+        html_code = """<table style="width:100%; border-collapse:collapse; font-family:'Courier New', monospace; font-size:14px; table-layout:fixed; line-height:1.2;"><tr style="border-bottom:2px solid #0D47A1; height:26px; vertical-align:middle;"><th style="width:18%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:left; padding-left:4px;">商品</th><th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">買進</th><th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">賣出</th><th style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">成交</th><th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲跌</th><th style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲幅%</th><th style="width:10%; color:#64B5F6; font-size:11px; font-weight:bold; text-align:center; padding-right:4px;">移除</th></tr>"""
         
-        # 1. 宣告一體化表頭，這次移除了行內數據，行內數據將改用安全的 Streamlit 按鈕網格
-        st.markdown("""
-        <table style="width:100%; border-collapse:collapse; font-family:'Courier New', monospace; font-size:14px; table-layout:fixed; line-height:1.2; margin-bottom:4px;">
-            <tr style="border-bottom:2px solid #0D47A1; height:26px; vertical-align:middle;">
-                <th style="width:18%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:left; padding-left:4px;">商品</th>
-                <th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">買進</th>
-                <th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">賣出</th>
-                <th style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">成交</th>
-                <th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲跌</th>
-                <th style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲幅%</th>
-                <th style="width:10%; color:#64B5F6; font-size:11px; font-weight:bold; text-align:center;">移除</th>
-            </tr>
-        </table>
-        """, unsafe_allow_html=True)
-        
-        # 2. 使用 Streamlit 原生高效按鈕網格來渲染數據列，杜絕跳網頁網址造成的登出
+        # 2. 循環組裝 6 檔商品的 HTML <tr> 資料行
         for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
             global_idx = start_idx + idx_offset
-            bg_style = "xq-row-even" if idx_offset % 2 == 0 else "xq-row-odd"
+            bg_color = "#131313" if idx_offset % 2 == 0 else "#1A1A1A"
             
-            # 即時數據獲取
+            # 即時數據抓取
             try:
                 s_df, s_info = fetch_safe_stock_data(code)
                 c_p = s_info.get("currentPrice") if s_info.get("currentPrice") is not None else s_df['Close'].iloc[-1]
@@ -557,44 +545,84 @@ with row1_col1:
                 c_p, chg, pct, bid_str, ask_str = 248.5, -9.0, -3.5, "248.00", "248.50"
                 price_format = f"{c_p:,.2f}"
             
-            # 判斷多空紅綠
-            v_class = "val-up" if chg > 0 else ("val-down" if chg < 0 else "val-even")
-            s_arrow = "▲" if chg > 0 else ("▼" if chg < 0 else " ")
-            sign_str = "+" if chg > 0 else ""
+            # 多空紅綠配色與符號判定
+            if chg > 0:
+                v_color, s_arrow, sign_str = "#FF3333", "▲", "+"
+            elif chg < 0:
+                v_color, s_arrow, sign_str = "#00AA00", "▼", ""
+            else:
+                v_color, s_arrow, sign_str = "#FFFFFF", " ", ""
                 
-            pure_name_str = str(name).split(' (')[0].split('(')[0]
+            # 清洗並純化商品名稱（只拿第一段字串，消滅 tuple 與陣列符號）
+            pure_name_str = str(name).split(' (')[0].split('(')[0].replace("[", "").replace("]", "").replace("'", "").replace('"', '')
             
-            # 建立橫向數據列容器，利用 Streamlit 的 columns 的完美比例鎖死對齊
-            st.markdown(f"<div class='{bg_style}'>", unsafe_allow_html=True)
-            c1, c2, c3, c4, c5, c6, c7 = st.columns([1.8, 1.4, 1.4, 1.5, 1.4, 1.5, 1.0])
+            # 【關鍵優化】點擊事件改用純前端 postMessage 通道發送，拋棄外部庫，改用網頁視窗原生機制
+            html_code += f"""
+            <tr style="background-color:{bg_color}; border-bottom:1px solid #222222; height:28px; vertical-align:middle;">
+                <td style="text-align:left; padding-left:4px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    <span style="color:#FFFFFF; cursor:pointer; display:block; width:100%;" onmouseover="this.style.color='#00B0FF'" onmouseout="this.style.color='#FFFFFF'" onclick="window.parent.postMessage({{type:'stock_click', val:{global_idx}}}, '*')">🔹{pure_name_str}</span>
+                </td>
+                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{bid_str}</td>
+                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{ask_str}</td>
+                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{price_format}</td>
+                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{s_arrow}{abs(chg):,.2f}</td>
+                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{sign_str}{pct:.2f}%</td>
+                <td style="text-align:center; padding-right:4px;">
+                    <span style="color:#FF3333; cursor:pointer; font-size:12px; font-weight:bold; white-space:nowrap;" onmouseover="this.style.color='#FF8A80'" onmouseout="this.style.color='#FF3333'" onclick="window.parent.postMessage({{type:'del_click', val:{global_idx}}}, '*')">[❌]</span>
+                </td>
+            </tr>
+            """
             
-            with c1:
-                # 高質感透明連擊按鈕：點擊瞬間只刷新右側圖表，絕不登出
-                if st.button(f"🔹{pure_name_str}", key=f"stock_link_{code}_{global_idx}"):
-                    st.session_state["current_selected_idx"] = global_idx
-                    st.session_state["main_stock_selector"] = name
-                    st.rerun()
-            c2.markdown(f"<p class='xq-val {v_class}'>{bid_str}</p>", unsafe_allow_html=True)
-            c3.markdown(f"<p class='xq-val {v_class}'>{ask_str}</p>", unsafe_allow_html=True)
-            c4.markdown(f"<p class='xq-val {v_class}'>{price_format}</p>", unsafe_allow_html=True)
-            c5.markdown(f"<p class='xq-val {v_class}'>{s_arrow}{abs(chg):,.2f}</p>", unsafe_allow_html=True)
-            c6.markdown(f"<p class='xq-val {v_class}'>{sign_str}{pct:.2f}%</p>", unsafe_allow_html=True)
+        html_code += "</table>"
+        
+        # 壓縮 HTML 字串防 Markdown 誤判原始碼
+        clean_html_code = html_code.replace("\n", "").replace("\r", "")
+        st.markdown(clean_html_code, unsafe_allow_html=True)
+
+        # 3. 用 Streamlit 內建的原生 components 元件監聽前端點擊，不需要匯入 elements 套件
+        import streamlit.components.v1 as components
+        js_listener = """
+        <script>
+        window.addEventListener('message', function(e) {
+            if(e.data.type === 'stock_click') {
+                const url = new URL(window.parent.location.href);
+                url.searchParams.set('fast_sel', e.data.val);
+                window.parent.location.replace(url.href);
+            }
+            if(e.data.type === 'del_click') {
+                const url = new URL(window.parent.location.href);
+                url.searchParams.set('fast_del', e.data.val);
+                window.parent.location.replace(url.href);
+            }
+        });
+        </script>
+        """
+        components.html(js_listener, height=0, width=0) # 高度設為 0，在頁面上完全不著痕跡
+        
+        # 4. 接收通道回傳參數並在 Session 中高速響應切換，防禦登出
+        curr_params = st.query_params
+        
+        if "fast_sel" in curr_params:
+            sel_idx = int(curr_params["fast_sel"])
+            if sel_idx < len(watchlist_items):
+                st.session_state["current_selected_idx"] = sel_idx
+                st.session_state["main_stock_selector"] = watchlist_items[sel_idx][0] # 綁定正確的字串 key
+                st.query_params.clear()
+                st.rerun()
+                
+        if "fast_del" in curr_params:
+            del_idx = int(curr_params["fast_del"])
+            if total_items > 1 and del_idx < len(watchlist_items):
+                target_del_name = watchlist_items[del_idx][0] # 綁定正確的字串 key
+                del st.session_state["watchlist_dict"][target_del_name]
+                save_my_watchlist()
+                remaining_keys = list(st.session_state["watchlist_dict"].keys())
+                st.session_state["current_selected_idx"] = 0
+                st.session_state["main_stock_selector"] = remaining_keys[0] if remaining_keys else ""
+                st.query_params.clear()
+                st.rerun()
             
-            with c7:
-                if total_items > 1:
-                    # 安全刪除按鈕
-                    if st.button("❌", key=f"del_btn_safe_{code}_{global_idx}"):
-                        del st.session_state["watchlist_dict"][name]
-                        save_my_watchlist()
-                        remaining_keys = list(st.session_state["watchlist_dict"].keys())
-                        st.session_state["current_selected_idx"] = 0
-                        st.session_state["main_stock_selector"] = remaining_keys[0] if remaining_keys else ""
-                        st.rerun()
-                else:
-                    st.markdown("<p style='text-align:center; color:#444446; margin:0;'>🔒</p>", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
-            
-        # 分頁導航底欄
+        # 分頁導航底欄 (緊湊對齊不跑位)
         st.markdown("<div style='margin-top:8px;'></div>", unsafe_allow_html=True)
         p_col1, p_col2, p_col3 = st.columns([1.2, 2, 1.2])
         with p_col1:
