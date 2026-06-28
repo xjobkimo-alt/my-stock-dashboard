@@ -210,7 +210,7 @@ with st.sidebar:
     # (中間可能會有很多行 st.sidebar.xxx 或普通的 st.xxx)
     
     # ====================================================================
-    # 🤖 永豐金 V6.2 智慧選股控制台 (文字強化美化版)
+    # 🤖 永豐金 V6.3 智慧選股控制台 (完全不失誤：元件級文字加亮版)
     # ====================================================================
     st.markdown("---")
     st.subheader("🤖 永豐金智慧選股")
@@ -224,16 +224,8 @@ with st.sidebar:
     # 2. 宣告一個彈出式視窗函式 (在點擊按鈕時觸發)
     @st.dialog("🎯 AI 智慧選股黃金報告", width="large")
     def show_picked_report(stocks):
-        # 🟢 修正：利用 CSS 強制將對白框內的文字對比度拉高，變更為明亮的白色與灰色
-        st.markdown("""
-            <style>
-                div[data-testid="stDialog"] p { color: #FFFFFF !important; }
-                div[data-testid="stDialog"] span { color: #E0E0E0 !important; }
-                div[data-testid="stDialog"] h3 { color: #FFFFFF !important; }
-            </style>
-        """, unsafe_allow_html=True)
-        
-        st.write(f"根據您選擇的策略：**【{pick_strategy}】**，為您篩選出以下最具潛力的個股：")
+        # 🟢 修正 1：最上方大標題文字加白加粗
+        st.markdown(f"<h4 style='color: #FFFFFF; font-weight: bold;'>根據您選擇的策略：【<span style='color: #00E676;'>{pick_strategy}</span>】，為您篩選出以下最具潛力的個股：</h4>", unsafe_allow_html=True)
         st.markdown("---")
         
         # 用表格與按鈕的組合呈現
@@ -242,18 +234,27 @@ with st.sidebar:
             
             # 顯示代號與名稱
             with col_info:
-                st.markdown(f"### 📈 {stock['code']}\n**{stock['name']}**")
+                # 🟢 修正 2：股票代號與名稱強制變純白與明亮淺藍
+                st.markdown(f"<h3 style='color: #00B0FF; margin-bottom: 0px;'>📈 {stock['code']}</h3>", unsafe_allow_html=True)
+                st.markdown(f"<p style='color: #FFFFFF; font-size: 1.2rem; font-weight: bold;'>{stock['name']}</p>", unsafe_allow_html=True)
             
             # 顯示 AI 診斷原因
             with col_reason:
-                st.info(f"💡 **篩選原因與 AI 診斷：**\n{stock['reason']}")
+                # 🟢 修正 3：利用自訂的 div 來包裝診斷原因，底色維持半透明深色，文字強制變純白
+                html_reason = f"""
+                <div style='background-color: #1E1E1E; padding: 12px; border-radius: 8px; border-left: 5px solid #FF9100;'>
+                    <strong style='color: #FF9100;'>💡 篩選原因與 AI 診斷：</strong><br>
+                    <span style='color: #FFFFFF; font-size: 0.95rem; line-height: 1.5;'>{stock['reason']}</span>
+                </div>
+                """
+                st.markdown(html_reason, unsafe_allow_html=True)
             
             # 顯示一鍵加入自選股按鈕
             with col_action:
                 st.write("") # 空出一點上方間距對齊
                 full_code = f"{stock['code']}.TW"
                 
-                # 建立按鈕
+                # 建立按鈕 (按鈕外觀維持 Streamlit 樣式)
                 if st.button(f"➕ 納入自選", key=f"add_btn_{stock['code']}", use_container_width=True):
                     # ⚠️ 請確認您原本加入自選股的 session_state 名稱，這裡預設為常見的 watchlist_dict
                     if "watchlist_dict" in st.session_state:
@@ -262,17 +263,17 @@ with st.sidebar:
                         st.success(f"已加入 {stock['name']}！")
                         st.rerun()
                     else:
-                        st.error("找不到自選股清單變選")
+                        st.error("找不到自選股清單變數")
         
         st.markdown("---")
-        # 🟢 修正：下方免責聲明同樣做文字加亮處理
-        st.markdown("<p style='color: #FFB300; font-size: 0.85rem;'>⚠️ 本報告由永豐金 API 籌碼數據結合 Gemini AI 進行綜合運算，僅供參考，投資請謹慎評估風險。</p>", unsafe_allow_html=True)
+        # 🟢 修正 4：下方免責聲明同樣做顯眼的黃色處理
+        st.markdown("<p style='color: #FFD600; font-size: 0.9rem; font-weight: bold;'>⚠️ 本報告由永豐金 API 籌碼數據結合 Gemini AI 進行綜合運算，僅供參考，投資請謹慎評估風險。</p>", unsafe_allow_html=True)
 
     # 3. 觸發選股按鈕
     if st.button("🚀 開始全市場 AI 掃描", use_container_width=True, key="pick_btn"):
         with st.spinner("正在連線永豐金撈取全市場資料並由 AI 診斷..."):
             
-            # 這裡為模擬篩選出來的黃金清單 (週一開盤後我們會將真實掃描函式對接到這)
+            # 模擬清單
             mock_picked = [
                 {"code": "2330", "name": "台積電", "reason": "三大法人連續 3 日同步加碼，技術面呈現完美的均線多頭排列。"},
                 {"code": "2317", "name": "鴻海", "reason": "主力籌碼大戶持續吸籌，今日股價爆量長紅，突破長達半年的橫盤整理區間。"},
