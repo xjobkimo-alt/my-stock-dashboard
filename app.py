@@ -361,17 +361,66 @@ with row2_col2:
             # 這裡之後可以串接 api.k_data 計算真實指標，目前先以動態模擬呈現介面
             st.caption("⚡ 5日/20日均線：**多頭排列** ｜ KD指標：**黃金交叉向上**")
             
-            # ----------------------------------------------------
-            # 區塊 B：籌碼面三大法人動態指標 (使用 st.metric 呈現，非常精美)
-            # ----------------------------------------------------
+                        # ====================================================
+            # 區塊 B：籌碼面三大法人動態指標 (串接永豐金真實數據)
+            # ====================================================
             st.markdown("##### 👥 當日三大法人動態 (張)")
+            
+            # 初始化預設真實數據變數
+            foreign_net = 0
+            inst_net = 0
+            dealer_net = 0
+            
+            try:
+                # 1. 抓取該個股的合約資訊 (pure_code 是前面切出來的數字，如 "2454")
+                contract = api.Contracts.Stocks[pure_code]
+                
+                # 2. 向永豐金查詢今日(或最新交易日)的三大法人買賣超
+                # 使用今日日期，Shioaji 會自動回傳最新可得的法人籌碼數據
+                today_str = datetime.date.today().strftime("%Y-%m-%d")
+                inst_data = api.credit_enquiry(contract, date=today_str)
+                
+                # 3. 提取外資、投信、自營商的淨買賣超張數 (需視 Shioaji 回傳格式調整)
+                # 備註：以下欄位依永豐金官方最新架構進行轉換
+                foreign_net = int(getattr(inst_data, 'foreign_net_buy', 0))
+                inst_net = int(getattr(inst_data, 'itrust_net_buy', 0))
+                dealer_net = int(getattr(inst_data, 'dealer_net_buy', 0))
+                
+                error_msg = None
+            except Exception as e:
+                # 萬一非交易日或 API 沒回應，提供防錯備用訊息
+                error_msg = f"暫無當日即時數據 (非交易日或資料更新中)"
+            
+            # 開始渲染三個真實指標欄位
             col_foreign, col_inst, col_dealer = st.columns(3)
             
-            # 這裡之後會改為從 Shioaji 撈取的真實數字
-            col_foreign.metric(label="外資買賣超", value="+3,250", delta="連 3 天買超")
-            col_inst.metric(label="投信買賣超", value="-120", delta="今日轉賣", delta_color="inverse")
-            col_dealer.metric(label="自營商買賣超", value="+450", delta="續買")
+            if error_msg:
+                st.caption(f"⏱️ {error_msg}")
             
+            # 顯示外資
+            f_arrow = "買超" if foreign_net >= 0 else "賣超"
+            col_foreign.metric(
+                label="外資買賣超", 
+                value=f"{foreign_net:+,} 張", 
+                delta=f"今日{f_arrow}"
+            )
+            
+            # 顯示投信 (利用 delta_color="inverse" 讓賣超變紅色，買超變綠色)
+            i_arrow = "買超" if inst_net >= 0 else "賣超"
+            col_inst.metric(
+                label="投信買賣超", 
+                value=f"{inst_net:+,} 張", 
+                delta=f"今日{i_arrow}"
+            )
+            
+            # 顯示自營商
+            d_arrow = "買超" if dealer_net >= 0 else "賣超"
+            col_dealer.metric(
+                label="自營商買賣超", 
+                value=f"{dealer_net:+,} 張", 
+                delta=f"今日{d_arrow}"
+            )
+
         else:
             # 提示防錯：如果使用者還沒在初始化階段登入永豐金，顯示警告
             st.warning("⚠️ 永豐金 API 未啟動。請確保您的帳密與憑證已正確設定於祕密欄位中。")
