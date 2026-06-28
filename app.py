@@ -496,21 +496,6 @@ with row1_col1:
     total_items = len(watchlist_items)
     
     with tab_portfolio:
-        # 【關鍵修正】調整表頭百分比：縮小商品寬度，欄位整體集體左移，並將右側「移」欄位擴大至 10%
-        st.markdown("""
-        <table style="width:100%; border-collapse:collapse; margin-bottom:4px;">
-            <tr style="border-bottom:2px solid #0D47A1; height:24px;">
-                <td style="width:20%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:left; padding-left:5px;">商品</td>
-                <td style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">買進</td>
-                <td style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">賣出</td>
-                <td style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">成交</td>
-                <td style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲跌</td>
-                <td style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲幅%</td>
-                <td style="width:10%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:center;">移除</td>
-            </tr>
-        </table>
-        """, unsafe_allow_html=True)
-        
         # 分頁邏輯控制 (每頁顯示 4 筆項目)
         ITEMS_PER_PAGE = 4
         if "current_page" not in st.session_state: 
@@ -523,12 +508,27 @@ with row1_col1:
         start_idx = st.session_state["current_page"] * ITEMS_PER_PAGE
         end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
         
-        # 循環渲染當前分頁的自選股商品
+        # 開始構建一體化表格，確保標題與每一行的數據共用同一個矩陣網格，絕對不可能位移
+        html_table = """
+        <table style="width:100%; border-collapse:collapse; font-family:'Courier New', monospace; font-size:14px; table-layout:fixed;">
+            <!-- 1. 頂層表頭區塊 -->
+            <tr style="border-bottom:2px solid #0D47A1; height:26px;">
+                <th style="width:22%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:left; padding-left:5px;">商品</th>
+                <th style="width:13%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">買進</th>
+                <th style="width:13%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">賣出</th>
+                <th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">成交</th>
+                <th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲跌</th>
+                <th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲幅%</th>
+                <th style="width:10%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:center;">移除</th>
+            </tr>
+        """
+        
+        # 循環生成每一檔自選股商品的 HTML 橫列
         for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
             global_idx = start_idx + idx_offset
-            row_style = "xq-row-odd" if idx_offset % 2 == 0 else "xq-row-even"
+            bg_color = "#131313" if idx_offset % 2 == 0 else "#1A1A1A"
             
-            # 即時抓取每檔商品的即時報價數據
+            # 即時抓取數據
             try:
                 s_df, s_info = fetch_safe_stock_data(code)
                 c_p = s_info.get("currentPrice") if s_info.get("currentPrice") is not None else s_df['Close'].iloc[-1]
@@ -537,50 +537,72 @@ with row1_col1:
                 pct = (chg / p_c) * 100
                 
                 if "^TWII" in code:
-                    bid_str, ask_str, price_format = "--", "--", f"{c_p:,.2f}s"
+                    bid_str, ask_str, price_format = "--", "--", f"{c_p:,.2f}"
                 else:
-                    bid_str, ask_str, price_format = f"{c_p-0.05:,.2f}", f"{c_p+0.05:,.2f}", f"{c_p:,.2f}s"
+                    bid_str, ask_str, price_format = f"{c_p-0.05:,.2f}", f"{c_p+0.05:,.2f}", f"{c_p:,.2f}"
             except:
                 c_p, chg, pct, bid_str, ask_str = 248.5, -9.0, -3.5, "248.00", "248.50"
-                price_format = f"{c_p:,.2f}s"
+                price_format = f"{c_p:,.2f}"
             
-            v_class = "val-up" if chg > 0 else ("val-down" if chg < 0 else "val-even")
-            s_arrow = "▲" if chg > 0 else ("▼" if chg < 0 else " ")
-            short_name = name.split(' ')[0] # 僅抓取前段中文名稱，防止代碼冗長擠壓排版
+            # 漲跌變色與符號判定
+            if chg > 0:
+                v_color, s_arrow, sign_str = "#FF3333", "▲", "+"
+            elif chg < 0:
+                v_color, s_arrow, sign_str = "#00AA00", "▼", ""
+            else:
+                v_color, s_arrow, sign_str = "#FFFFFF", " ", ""
+                
+            short_name = name.split(' ')[0] # 擷取純中文，如「台積電」、「加權指數」
             
-            # 使用獨立 row 容器包裹
-            st.markdown(f"<div class='{row_style}'>", unsafe_allow_html=True)
+            # 將商品名稱包裝成無障礙超連結樣式，點擊即可切換單股焦點
+            # 透過原生 HTML 的 <tr> 結構，保證每一列的欄位寬度與表頭百分之百垂直切齊
+            html_table += f"""
+            <tr style="background-color:{bg_color}; border-bottom:1px solid #222222; height:28px; vertical-align:middle;">
+                <td style="text-align:left; padding-left:5px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    <a href="?select_idx={global_idx}" target="_self" style="color:#FFFFFF; text-decoration:none; display:block; width:100%;" onmouseover="this.style.color='#00B0FF'" onmouseout="this.style.color='#FFFFFF'">🔹{short_name}</a>
+                </td>
+                <td style="text-align:right; font-weight:bold; color:{v_color};">{bid_str}</td>
+                <td style="text-align:right; font-weight:bold; color:{v_color};">{ask_str}</td>
+                <td style="text-align:right; font-weight:bold; color:{v_color};">{price_format}</td>
+                <td style="text-align:right; font-weight:bold; color:{v_color};">{s_arrow}{abs(chg):,.2f}</td>
+                <td style="text-align:right; font-weight:bold; color:{v_color};">{sign_str}{pct:.2f}%</td>
+                <td style="text-align:center;">
+                    <a href="?del_idx={global_idx}" target="_self" style="color:#FF3333; text-decoration:none; font-size:12px; font-weight:bold;">[❌]</a>
+                </td>
+            </tr>
+            """
             
-            # 【關鍵修正】這裡的數字代表欄位寬度比例，完全契合上方表頭的 [20%, 14%, 14%, 14%, 14%, 14%, 10%] 權重分配
-            r_col1, r_col2, r_col3, r_col4, r_col5, r_col6, r_col7 = st.columns([2.0, 1.4, 1.4, 1.4, 1.4, 1.4, 1.0])
-            
-            with r_col1:
-                if st.button(f" {short_name}", key=f"btn_{code}_{global_idx}"):
-                    st.session_state["current_selected_idx"] = global_idx
-                    st.session_state["main_stock_selector"] = name
-                    st.rerun()
-            r_col2.markdown(f"<p class='xq-val {v_class}'>{bid_str}</p>", unsafe_allow_html=True)
-            r_col3.markdown(f"<p class='xq-val {v_class}'>{ask_str}</p>", unsafe_allow_html=True)
-            r_col4.markdown(f"<p class='xq-val {v_class}'>{price_format}</p>", unsafe_allow_html=True)
-            r_col5.markdown(f"<p class='xq-val {v_class}'>{s_arrow}{abs(chg):,.2f}</p>", unsafe_allow_html=True)
-            r_col6.markdown(f"<p class='xq-val {v_class}'>{pct:+.2f}%</p>", unsafe_allow_html=True)
-            
-            with r_col7:
-                # 保底安全機制：清單大於1筆才允許點擊刪除
-                if total_items > 1:
-                    if st.button("❌", key=f"del_fast_{code}_{global_idx}"):
-                        del st.session_state["watchlist_dict"][name]
-                        save_my_watchlist()
-                        remaining_keys = list(st.session_state["watchlist_dict"].keys())
-                        st.session_state["current_selected_idx"] = 0
-                        st.session_state["main_stock_selector"] = remaining_keys[0]
-                        st.rerun()
-                else:
-                    st.markdown("<p style='text-align:center; color:#444446; margin:0;'>🔒</p>", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
+        html_table += "</table>"
+        
+        # 2. 一體化渲染整張精緻報價表，根絕所有元件換行與位移可能
+        st.markdown(html_table, unsafe_allow_html=True)
+        
+        # 3. 處理網頁原生 HTML 超連結點擊後的狀態反饋
+        query_params = st.query_params
+        
+        # 處理點擊商品名稱切換關注
+        if "select_idx" in query_params:
+            target_sel = int(query_params["select_idx"])
+            if target_sel < len(watchlist_items):
+                st.session_state["current_selected_idx"] = target_sel
+                st.session_state["main_stock_selector"] = watchlist_items[target_sel][0]
+                st.query_params.clear() # 清空參數防止無限循環刷新
+                st.rerun()
+                
+        # 處理點擊 [❌] 按鈕進行安全刪除
+        if "del_idx" in query_params:
+            target_del = int(query_params["del_idx"])
+            if total_items > 1 and target_del < len(watchlist_items):
+                del_name = watchlist_items[target_del][0]
+                del st.session_state["watchlist_dict"][del_name]
+                save_my_watchlist()
+                st.session_state["current_selected_idx"] = 0
+                st.session_state["main_stock_selector"] = list(st.session_state["watchlist_dict"].keys())[0]
+                st.query_params.clear()
+                st.rerun()
             
         # 分頁導航底欄
-        st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top:8px;'></div>", unsafe_allow_html=True)
         p_col1, p_col2, p_col3 = st.columns([1.2, 2, 1.2])
         with p_col1:
             if st.button("⬅ 上一頁", disabled=(st.session_state["current_page"] == 0), use_container_width=True, key="prev_page_btn"):
