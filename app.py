@@ -508,27 +508,15 @@ with row1_col1:
         start_idx = st.session_state["current_page"] * ITEMS_PER_PAGE
         end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
         
-        # 【精準配比修正】微調各欄位權重：商品(24%)、成交(15%)、移除(9%)，並鎖死單行與不換行樣式
-        # 這裡宣告一體化字串頭部
-        html_code = """
-        <table style="width:100%; border-collapse:collapse; font-family:'Courier New', monospace; font-size:14px; table-layout:fixed; word-break:break-all; line-height:1.2;">
-            <tr style="border-bottom:2px solid #0D47A1; height:26px; vertical-align:middle;">
-                <th style="width:24%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:left; padding-left:4px;">商品</th>
-                <th style="width:12%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">買進</th>
-                <th style="width:12%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">賣出</th>
-                <th style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">成交</th>
-                <th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲跌</th>
-                <th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲幅%</th>
-                <th style="width:9%;  color:#64B5F6; font-size:13px; font-weight:bold; text-align:center; padding-right:4px;">移除</th>
-            </tr>
-        """
+        # 1. 宣告一體化字串頭部（配置 XQ 專屬對齊比例）
+        html_code = """<table style="width:100%; border-collapse:collapse; font-family:'Courier New', monospace; font-size:14px; table-layout:fixed; line-height:1.2;"><tr style="border-bottom:2px solid #0D47A1; height:26px; vertical-align:middle;"><th style="width:24%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:left; padding-left:4px;">商品</th><th style="width:12%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">買進</th><th style="width:12%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">賣出</th><th style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">成交</th><th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲跌</th><th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲幅%</th><th style="width:9%;  color:#64B5F6; font-size:13px; font-weight:bold; text-align:center; padding-right:4px;">移除</th></tr>"""
         
-        # 循環將每一行商品的 <tr> 原始碼拼裝進 html_code 字串變數中
+        # 2. 循環拼裝每一檔商品的 <tr> 行列
         for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
             global_idx = start_idx + idx_offset
             bg_color = "#131313" if idx_offset % 2 == 0 else "#1A1A1A"
             
-            # 即時抓取數據
+            # 即時數據獲取
             try:
                 s_df, s_info = fetch_safe_stock_data(code)
                 c_p = s_info.get("currentPrice") if s_info.get("currentPrice") is not None else s_df['Close'].iloc[-1]
@@ -544,7 +532,7 @@ with row1_col1:
                 c_p, chg, pct, bid_str, ask_str = 248.5, -9.0, -3.5, "248.00", "248.50"
                 price_format = f"{c_p:,.2f}"
             
-            # 漲跌變色與符號判定
+            # 判斷多空紅綠配色與箭頭
             if chg > 0:
                 v_color, s_arrow, sign_str = "#FF3333", "▲", "+"
             elif chg < 0:
@@ -552,30 +540,18 @@ with row1_col1:
             else:
                 v_color, s_arrow, sign_str = "#FFFFFF", " ", ""
                 
-            short_name = name.split(' ')[0] # 擷取純中文名稱，如「台積電」、「加權指數」
+            short_name = name.split(' ')[0] # 擷取純中文名稱，防止括號代碼擠壓
             
-            # 使用標準 HTML 確保文字絕對維持在同一行 (white-space:nowrap; overflow:hidden;)
-            html_code += f"""
-            <tr style="background-color:{bg_color}; border-bottom:1px solid #222222; height:28px; vertical-align:middle;">
-                <td style="text-align:left; padding-left:4px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                    <a href="?select_idx={global_idx}" target="_self" style="color:#FFFFFF; text-decoration:none; display:block; width:100%;" onmouseover="this.style.color='#00B0FF'" onmouseout="this.style.color='#FFFFFF'">🔹{short_name}</a>
-                </td>
-                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{bid_str}</td>
-                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{ask_str}</td>
-                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{price_format}</td>
-                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{s_arrow}{abs(chg):,.2f}</td>
-                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{sign_str}{pct:.2f}%</td>
-                <td style="text-align:center; padding-right:4px;">
-                    <a href="?del_idx={global_idx}" target="_self" style="color:#FF3333; text-decoration:none; font-size:12px; font-weight:bold; white-space:nowrap;">[❌]</a>
-                </td>
-            </tr>
-            """
+            # 拼入商品橫列原始碼（死鎖單行 white-space:nowrap;）
+            html_code += f"""<tr style="background-color:{bg_color}; border-bottom:1px solid #222222; height:28px; vertical-align:middle;"><td style="text-align:left; padding-left:4px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><a href="?select_idx={global_idx}" target="_self" style="color:#FFFFFF; text-decoration:none; display:block; width:100%;" onmouseover="this.style.color='#00B0FF'" onmouseout="this.style.color='#FFFFFF'">🔹{short_name}</a></td><td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{bid_str}</td><td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{ask_str}</td><td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{price_format}</td><td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{s_arrow}{abs(chg):,.2f}</td><td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{sign_str}{pct:.2f}%</td><td style="text-align:center; padding-right:4px;"><a href="?del_idx={global_idx}" target="_self" style="color:#FF3333; text-decoration:none; font-size:12px; font-weight:bold; white-space:nowrap;">[❌]</a></td></tr>"""
             
-        # 封閉 HTML 表格標籤
         html_code += "</table>"
         
-        # 【大功告成：唯一一次呼叫渲染】徹底杜絕 Streamlit 的內建行距干擾
-        st.markdown(html_code, unsafe_allow_html=True)
+        # 【鐵腕核心修正】強制將字串中所有的換行符號抹除，壓縮成絕對的單一行 HTML 網頁代碼，徹底防禦 Markdown 誤判！
+        clean_html_code = html_code.replace("\n", "").replace("\r", "")
+        
+        # 單一元件點火渲染
+        st.markdown(clean_html_code, unsafe_allow_html=True)
         
         # 4. 處理網頁超連結點擊後的狀態反饋
         query_params = st.query_params
@@ -585,18 +561,17 @@ with row1_col1:
             target_sel = int(query_params["select_idx"])
             if target_sel < len(watchlist_items):
                 st.session_state["current_selected_idx"] = target_sel
-                st.session_state["main_stock_selector"] = watchlist_items[target_sel][0] # 綁定正確的 dict key
-                st.query_params.clear() # 清空參數防止網頁無限循環刷新
+                st.session_state["main_stock_selector"] = watchlist_items[target_sel][0]
+                st.query_params.clear() 
                 st.rerun()
                 
         # 處理點擊 [❌] 按鈕進行安全刪除
         if "del_idx" in query_params:
             target_del = int(query_params["del_idx"])
             if total_items > 1 and target_del < len(watchlist_items):
-                del_name = watchlist_items[target_del][0] # 取得正確的商品中文名稱 key
+                del_name = watchlist_items[target_del][0]
                 del st.session_state["watchlist_dict"][del_name]
                 save_my_watchlist()
-                # 刪除後重設指針
                 remaining_keys = list(st.session_state["watchlist_dict"].keys())
                 st.session_state["current_selected_idx"] = 0
                 st.session_state["main_stock_selector"] = remaining_keys[0]
