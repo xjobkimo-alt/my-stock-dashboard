@@ -496,8 +496,8 @@ with row1_col1:
     total_items = len(watchlist_items)
     
     with tab_portfolio:
-        # 分頁邏輯控制 (每頁顯示 4 筆項目)
-        ITEMS_PER_PAGE = 4
+        # 【微調控制】將每頁顯示檔數從 4 強勢提升至 5 檔，讓視覺畫面更飽滿
+        ITEMS_PER_PAGE = 5
         if "current_page" not in st.session_state: 
             st.session_state["current_page"] = 0
             
@@ -508,10 +508,10 @@ with row1_col1:
         start_idx = st.session_state["current_page"] * ITEMS_PER_PAGE
         end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
         
-        # 1. 宣告一體化字串頭部（配置 XQ 專屬對齊比例）
-        html_code = """<table style="width:100%; border-collapse:collapse; font-family:'Courier New', monospace; font-size:14px; table-layout:fixed; line-height:1.2;"><tr style="border-bottom:2px solid #0D47A1; height:26px; vertical-align:middle;"><th style="width:24%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:left; padding-left:4px;">商品</th><th style="width:12%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">買進</th><th style="width:12%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">賣出</th><th style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">成交</th><th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲跌</th><th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲幅%</th><th style="width:9%;  color:#64B5F6; font-size:13px; font-weight:bold; text-align:center; padding-right:4px;">移除</th></tr>"""
+        # 1. 宣告一體化字串頭部（調整移除欄位字體大小，完美對齊）
+        html_code = """<table style="width:100%; border-collapse:collapse; font-family:'Courier New', monospace; font-size:14px; table-layout:fixed; line-height:1.2;"><tr style="border-bottom:2px solid #0D47A1; height:26px; vertical-align:middle;"><th style="width:24%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:left; padding-left:4px;">商品</th><th style="width:12%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">買進</th><th style="width:12%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">賣出</th><th style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">成交</th><th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲跌</th><th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲幅%</th><th style="width:9%;  color:#64B5F6; font-size:11px; font-weight:bold; text-align:center; padding-right:4px;">移除</th></tr>"""
         
-        # 2. 循環拼裝每一檔商品的 <tr> 行列
+        # 2. 循環拼裝 5 檔商品的 <tr> 行列
         for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
             global_idx = start_idx + idx_offset
             bg_color = "#131313" if idx_offset % 2 == 0 else "#1A1A1A"
@@ -540,17 +540,15 @@ with row1_col1:
             else:
                 v_color, s_arrow, sign_str = "#FFFFFF", " ", ""
                 
-            short_name = name.split(' ')[0] # 擷取純中文名稱，防止括號代碼擠壓
+            short_name = name.split(' ')[0] # 僅擷取純中文名稱名稱
             
-            # 拼入商品橫列原始碼（死鎖單行 white-space:nowrap;）
+            # 拼入商品橫列原始碼
             html_code += f"""<tr style="background-color:{bg_color}; border-bottom:1px solid #222222; height:28px; vertical-align:middle;"><td style="text-align:left; padding-left:4px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><a href="?select_idx={global_idx}" target="_self" style="color:#FFFFFF; text-decoration:none; display:block; width:100%;" onmouseover="this.style.color='#00B0FF'" onmouseout="this.style.color='#FFFFFF'">🔹{short_name}</a></td><td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{bid_str}</td><td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{ask_str}</td><td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{price_format}</td><td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{s_arrow}{abs(chg):,.2f}</td><td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{sign_str}{pct:.2f}%</td><td style="text-align:center; padding-right:4px;"><a href="?del_idx={global_idx}" target="_self" style="color:#FF3333; text-decoration:none; font-size:12px; font-weight:bold; white-space:nowrap;">[❌]</a></td></tr>"""
             
         html_code += "</table>"
         
-        # 【鐵腕核心修正】強制將字串中所有的換行符號抹除，壓縮成絕對的單一行 HTML 網頁代碼，徹底防禦 Markdown 誤判！
+        # 強制單行網頁碼壓縮，防止 Markdown 誤判原始碼
         clean_html_code = html_code.replace("\n", "").replace("\r", "")
-        
-        # 單一元件點火渲染
         st.markdown(clean_html_code, unsafe_allow_html=True)
         
         # 4. 處理網頁超連結點擊後的狀態反饋
@@ -561,7 +559,7 @@ with row1_col1:
             target_sel = int(query_params["select_idx"])
             if target_sel < len(watchlist_items):
                 st.session_state["current_selected_idx"] = target_sel
-                st.session_state["main_stock_selector"] = watchlist_items[target_sel][0]
+                st.session_state["main_stock_selector"] = watchlist_items[target_sel][0] # 修改點：精確綁定元組的中文 key 名稱
                 st.query_params.clear() 
                 st.rerun()
                 
@@ -569,7 +567,7 @@ with row1_col1:
         if "del_idx" in query_params:
             target_del = int(query_params["del_idx"])
             if total_items > 1 and target_del < len(watchlist_items):
-                del_name = watchlist_items[target_del][0]
+                del_name = watchlist_items[target_del][0] # 修改點：精確取得正確的商品 key 名稱
                 del st.session_state["watchlist_dict"][del_name]
                 save_my_watchlist()
                 remaining_keys = list(st.session_state["watchlist_dict"].keys())
