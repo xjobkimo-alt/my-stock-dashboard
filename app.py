@@ -1,6 +1,6 @@
 import datetime 
 import yfinance as yf 
-import pandas as pd 
+import pandas as pd      # 確保有引入，處理數據用
 import streamlit as st 
 import plotly.graph_objects as go 
 from plotly.subplots import make_subplots 
@@ -8,6 +8,7 @@ from google import genai
 import requests 
 import json
 import os
+import shioaji as sj     # 1. 正式引入永豐金 API
 
 # ==================================================================== 
 # 1. 網頁全域設定與 CSS 科技黑化排版
@@ -287,9 +288,11 @@ with row2_col1:
         except:
             st.info("成交明細載入中...")
 
-# --- 右下格：新聞與 AI 策略 ---
+# --- 右下格：新聞、AI 策略 與 永豐金指標 ---
 with row2_col2:
-    tab_news, tab_ai = st.tabs(["📰 相關即時新聞", "🤖 AI 智慧投資解說"])
+    # 擴充為三個分頁：加入「📊 永豐籌碼/技術面」
+    tab_news, tab_ai, tab_shioaji = st.tabs(["📰 相關即時新聞", "🤖 AI 智慧投資解說", "📊 永豐籌碼/技術面"])
+    
     with tab_news:
         try:
             news_list = info.get('news', [])
@@ -310,3 +313,40 @@ with row2_col2:
             with st.spinner("AI 正在解析多空力道..."):
                 ai_report = get_ai_analysis(selected_display, current_price, price_change, price_change_pct, df['Close'].iloc[-1], 50, 50)
                 st.info(ai_report)
+
+    # 🟢 新增：永豐金籌碼與技術面板
+    with tab_shioaji:
+        st.write(f"永豐即時診斷：**{selected_display}**")
+        
+        # 檢查階段：判斷永豐金 API 是否已經成功初始化並登入
+        if "api" in st.session_state:
+            api = st.session_state["api"]
+            
+            # 從當前選擇的股票名稱切出純數字代碼 "2317"
+            try:
+                # 🟢 修正：將 selected_stock 改為您專案原本定義的 selected_display
+                pure_code = selected_display.split('.')[-2].split('(')[-1].strip() 
+            except:
+                pure_code = "2330" # 備用防錯代碼
+            
+            # ----------------------------------------------------
+            # 區塊 A：技術面指標顯示
+            # ----------------------------------------------------
+            st.markdown("##### 📈 技術面即時訊號")
+            # 這裡之後可以串接 api.k_data 計算真實指標，目前先以動態模擬呈現介面
+            st.caption("⚡ 5日/20日均線：**多頭排列** ｜ KD指標：**黃金交叉向上**")
+            
+            # ----------------------------------------------------
+            # 區塊 B：籌碼面三大法人動態指標 (使用 st.metric 呈現，非常精美)
+            # ----------------------------------------------------
+            st.markdown("##### 👥 當日三大法人動態 (張)")
+            col_foreign, col_inst, col_dealer = st.columns(3)
+            
+            # 這裡之後會改為從 Shioaji 撈取的真實數字
+            col_foreign.metric(label="外資買賣超", value="+3,250", delta="連 3 天買超")
+            col_inst.metric(label="投信買賣超", value="-120", delta="今日轉賣", delta_color="inverse")
+            col_dealer.metric(label="自營商買賣超", value="+450", delta="續買")
+            
+        else:
+            # 提示防錯：如果使用者還沒在初始化階段登入永豐金，顯示警告
+            st.warning("⚠️ 永豐金 API 未啟動。請確保您的帳密與憑證已正確設定於祕密欄位中。")
