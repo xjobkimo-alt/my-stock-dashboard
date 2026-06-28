@@ -481,16 +481,6 @@ with row1_col1:
                 margin-bottom: 0px !important;
                 padding: 0px !important;
             }
-            
-            /* 💡 新增這段：強制解除藍色欄位說明字體被切一半的死角 */
-            div[data-testid="stHorizontalBlock"] p {
-            line-height: 1.5 !important;
-            height: auto !important;
-            margin: 0px !important;
-            padding-top: 3px !important;
-            padding-bottom: 3px !important;
-            display: inline-block !important;
-            }
 
             /* ================================================================= */
             /* 3. 核心隱藏死角：消除萬惡的 element-container 1rem 預設下留白 */
@@ -501,8 +491,8 @@ with row1_col1:
             }
 
             div.element-container {
-            margin-bottom: 0px !important; /* 💡 稍微放寬，標題和藍色字才不會被削頭 */
-            margin-top: 0px !important;    
+            margin-bottom: 4px !important; /* 💡 稍微放寬，標題和藍色字才不會被削頭 */
+            margin-top: 4px !important;    
             padding: 0px !important;
             }
 
