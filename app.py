@@ -284,30 +284,72 @@ def get_ai_analysis(stock_name, price, change, pct, ma5, k_val, d_val):
         if "429" in str(e) or "quota" in str(e).lower():
             return "【系統提示】目前您的 Gemini 帳戶今日免費流量已達上限。請更換 API 金鑰或靜候跨日解鎖。"
         return f"AI 暫時繁忙中。錯誤訊息: {e}"
-
+    
 # ====================================================================
-# 7. 🔧 核心自選股變數初始化 (🟢 終極修復：補齊未定義變數大腦)
+# 7. 🔧 左側邊欄自選股管理面板 (🟢 V8.6 修正：記憶體雙向滑動解鎖)
 # ====================================================================
-# 強制切除官方側邊欄外殼，確保主畫面 100% 滿版大氣
-st.markdown("""
-    <style>
-        [data-testid="stSidebar"] { display: none !important; }
-        section[data-testid="stSidebarViewPort"] { display: none !important; }
-        .stApp [data-testid="stHeader"] { left: 0rem !important; }
-    </style>
-""", unsafe_allow_html=True)
+# 1. 確保開關狀態完美初始化
+if "sidebar_toggle_state" not in st.session_state:
+    st.session_state["sidebar_toggle_state"] = True
 
-# 🟢 修正重點：精準補回後方所有看盤圖表元件賴以生存的 4 個核心變數！
+# 2. 讀取自選股基本變數
 watchlist_keys = list(st.session_state["watchlist_dict"].keys())
-
 if "current_selected_idx" not in st.session_state or st.session_state["current_selected_idx"] >= len(watchlist_keys):
     st.session_state["current_selected_idx"] = 0
 
-# 讓後面的第 295 行與技術分析圖表能精準讀取當前關注股票名稱與代碼
-selected_display = watchlist_keys[st.session_state["current_selected_idx"]]
-stock_code = st.session_state["watchlist_dict"][selected_display]
-refresh_rate = 10  # 預設即時報價刷新頻率固定為 10 秒
+# 3. 🟢 核心解鎖：將記憶體狀態實時同步注入到 Streamlit 官方側邊欄的顯示機制中
+if not st.session_state["sidebar_toggle_state"]:
+    # 如果使用者點了關閉，透過 CSS 強制把左邊灰色側邊欄瞬間隱形縮進去，不留任何痕跡！
+    st.markdown("""
+        <style>
+            [data-testid="stSidebar"] { display: none !important; }
+            section[data-testid="stSidebarViewPort"] { display: none !important; }
+            .stApp [data-testid="stHeader"] { left: 0rem !important; }
+        </style>
+    """, unsafe_allow_html=True)
     
+    selected_display = watchlist_keys[st.session_state["current_selected_idx"]]
+    stock_code = st.session_state["watchlist_dict"][selected_display]
+else:
+    # 如果使用者點了打開，正常渲染所有管理工具
+    st.sidebar.header("🔧 我的自選股管理面版")
+    with st.sidebar.expander("➕ 新增自選股", expanded=True):
+        new_code = st.text_input("輸入股票代碼", placeholder="例如: 2882").strip()
+        if st.button("確認加入自選"):
+            if new_code:
+                target_code = new_code.upper()
+                pure_number = target_code.split('.')
+                if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
+                    target_code = f"{pure_number}.TW"
+                try:
+                    test_stock = yf.Ticker(target_code)
+                    test_df = test_stock.history(period="1d")
+                    if test_df.empty:
+                        st.sidebar.error(f"❌ 查無此代碼 [{target_code}]")
+                    else:
+                        detected_name = TAIWAN_STOCK_DICT.get(pure_number, test_stock.info.get('shortName', pure_number))
+                        display_key = f"{detected_name} ({target_code})" if "(" not in detected_name else detected_name
+                        st.session_state["watchlist_dict"][display_key] = target_code
+                        save_my_watchlist()
+                        st.sidebar.success(f"成功加入: {detected_name}")
+                        st.rerun()
+                except:
+                    st.sidebar.error("❌ 無法連線驗證。")
+
+    selected_display = watchlist_keys[st.session_state["current_selected_idx"]]
+    stock_code = st.session_state["watchlist_dict"][selected_display]
+
+    if st.sidebar.button("❌ 從清單中刪除目前股票"):
+        if len(st.session_state["watchlist_dict"]) > 1:
+            del st.session_state["watchlist_dict"][selected_display]
+            save_my_watchlist()
+            st.session_state["current_selected_idx"] = 0
+            st.rerun()
+        else:
+            st.sidebar.warning("清單內至少需保留一檔股票！")
+
+    refresh_rate = st.sidebar.slider("即時報價刷新頻率 (秒)", min_value=5, max_value=60, value=10, step=5)
+
 # ====================================================================
 # 8. 智慧分流加載大腦 (可轉債 5 碼/普通股 4 碼 安全不崩潰)
 # ====================================================================
@@ -490,19 +532,11 @@ with row2_col1:
         st.dataframe(ticks_df, use_container_width=True, hide_index=True)
 
 # ====================================================================
-# 10. 右下格：多功能 AI 與自選股決策面板 (🟢 V8.8 升級：五分頁終極完全體)
+# 10. 右下格：唯一的融合去重四分頁控制台 (大火箭按鈕王者重裝回歸)
 # ====================================================================
 with row2_col2:
-    # 升級：一口氣建立五個乾淨獨立的功能分頁
-    tab_news, tab_ai, tab_shioaji, tab_picker, tab_manage = st.tabs([
-        "📰 即時新聞", 
-        "🧠 AI 策略", 
-        "📊 永豐單股", 
-        "🤖 全市場選股",
-        "🔧 自選股管理"  # 🟢 震撼登場的第五分頁！
-    ])
+    tab_news, tab_ai, tab_shioaji, tab_picker = st.tabs(["📰 相關即時新聞", "🧠 AI 策略分析", "📊 永豐單股指標", "🤖 永豐全市場選股"])
     
-    # --- 分頁 1：即時新聞 ---
     with tab_news:
         try:
             news_list = info.get('news', [])
@@ -512,14 +546,12 @@ with row2_col2:
                 for m_item in yf.Ticker("^TWII").info.get('news', [])[:3]: st.markdown(f"📰 [{m_item.get('title')}]({m_item.get('link')})")
         except: st.caption("暫無即時新聞")
         
-    # --- 分頁 2：AI 策略分析 ---
     with tab_ai:
         st.write(f"當前分析：**{selected_display}**")
         if st.button("🚀 啟動 AI 深度策略分析", key="ai_btn_final"):
             with st.spinner("AI 正在解析多空力道..."):
                 st.info(get_ai_analysis(selected_display, current_price, price_change, price_change_pct, df['Close'].iloc[-1], 50, 50))
 
-    # --- 分頁 3：永豐單股指標 ---
     with tab_shioaji:
         st.write(f"永豐即時診斷：**{selected_display}**")
         if "api" in st.session_state:
@@ -532,9 +564,10 @@ with row2_col2:
             col_d.metric(label="自營商買賣超", value="+0 張", delta="假日無數據")
         else: st.warning("⚠️ 永豐金 API 未啟動。")
 
-    # --- 分頁 4：🤖 永豐全市場智慧選股 ---
     with tab_picker:
         st.markdown("🔍 <h4 style='color: #FFFFFF; font-weight: bold; margin-top: 0px;'>永豐金量化大腦 × 新聞輿情與可轉債 (CB)</h4>", unsafe_allow_html=True)
+        
+        # 🟢 修正：完美閉合右括號，100% 消除語法解析錯誤！
         pick_strategy = st.selectbox(
             "請選擇篩選核心策略：",
             ["外資投信同步買超股 (普通股)", "技術面均線多頭排列 (普通股)", "新聞輿情爆量突破股 (普通股)", "主力低溢價可轉債 (CB 黃金池)"],
@@ -542,6 +575,7 @@ with row2_col2:
         )
         st.write("")
         
+        # 大火箭按鈕強制現身！
         if st.button("🚀 開始全市場 AI 智慧掃描", use_container_width=True, key="main_pick_btn_real"):
             with st.spinner("正在連線數據庫..."):
                 if "可轉債" in pick_strategy:
@@ -557,46 +591,3 @@ with row2_col2:
                         if latest_news:
                             stock["reason"] += f"\n\n📰 **最新市場輿情聯播：**\n" + "\n".join([f"• [{n['source']}] {n['title']}" for n in latest_news[:2]])
                     show_my_cb_report(real_picked_list, pick_strategy)
-
-    # --- 分頁 5：🔧 自選股管理面板 (串聯原有核心硬碟檔案儲存機制) ---
-    with tab_manage:
-        st.markdown("🔧 <h4 style='color: #FFFFFF; font-weight: bold; margin-top: 0px;'>自選股名單維護工具</h4>", unsafe_allow_html=True)
-        
-        # 1. 新增股票區塊
-        st.markdown("##### ➕ 新增標的")
-        m_new_code = st.text_input("輸入股票或CB代碼 (如: 2317 或 23171)", key="manage_page_input_box").strip()
-        if st.button("確認加入自選清單", use_container_width=True, key="manage_page_add_btn"):
-            if m_new_code:
-                target_code = m_new_code.upper()
-                pure_number = target_code.split('.')[0]
-                if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
-                    target_code = f"{pure_number}.TW"
-                try:
-                    test_stock = yf.Ticker(target_code)
-                    test_df = test_stock.history(period="1d")
-                    if test_df.empty and len(pure_number) != 5: # 5碼可轉債跳過 YF 驗證
-                        st.error(f"❌ 查無此代碼 [{target_code}]")
-                    else:
-                        detected_name = TAIWAN_STOCK_DICT.get(pure_number, test_stock.info.get('shortName', f"個股_{pure_number}"))
-                        display_key = f"{detected_name} ({target_code})" if "(" not in detected_name else detected_name
-                        st.session_state["watchlist_dict"][display_key] = target_code
-                        save_my_watchlist()
-                        st.success(f"成功加入: {detected_name}")
-                        st.rerun()
-                except:
-                    st.error("❌ 無法連線驗證。")
-                    
-        st.markdown("---")
-        
-        # 2. 刪除股票區塊
-        st.markdown("##### ❌ 刪除標的")
-        st.write(f"當前關注股票：**{selected_display}**")
-        if st.button("從我的自選清單中刪除此股票", use_container_width=True, key="manage_page_del_btn"):
-            if len(st.session_state["watchlist_dict"]) > 1:
-                del st.session_state["watchlist_dict"][selected_display]
-                save_my_watchlist()
-                st.session_state["current_selected_idx"] = 0
-                st.success(f"已成功移除該標的！")
-                st.rerun()
-            else:
-                st.warning("清單內至少需保留一檔股票！")
