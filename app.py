@@ -425,14 +425,14 @@ with row1_col1:
     # 建立雙分頁控制，完美收納側邊欄管理功能
     tab_portfolio, tab_manage = st.tabs(["📊 報價組合清單", "🔧 自選股管理面版"])
     
-        # ----------------------------------------------------------------
-    # 【分頁一】：精誠/XQ 仿真高密度經典看盤終端機 (極限緊湊無空洞版)
+    # ----------------------------------------------------------------
+    # 【分頁一】：精誠/XQ 仿真高密度經典看盤終端機 (無縫緊貼終極版)
     # ----------------------------------------------------------------
     with tab_portfolio:
-        # 🎨 核心進階 CSS 壓縮：強制拔除 Streamlit 按鈕、文字的所有多餘上下留白與行高
+        # 🎨 核心終極 CSS 壓縮：全面抽乾 Streamlit 外層容器與元件之間的所有隱藏留白
         st.markdown("""
         <style>
-        /* 1. 徹底拔除網格欄位（Column）與容器自帶的上下 Padding 與間距 */
+        /* 1. 抽乾每一行 column 容器的上下內襯與外邊距 */
         div[data-testid="stColumn"] {
             background-color: transparent !important;
             border: none !important;
@@ -443,22 +443,36 @@ with row1_col1:
             padding-right: 2px !important;
             margin: 0px !important;
         }
+        
+        /* 2. 關鍵修正：強制將 Streamlit 的橫向區塊外邊距設為 0，阻止外層 flex 撐開間距 */
         div[data-testid="stHorizontalBlock"] { 
             gap: 4px !important; 
+            margin-top: 0px !important;
             margin-bottom: 0px !important;
+            padding: 0px !important;
         }
         
-        /* 2. 關鍵致命傷優化：強制縮減按鈕本身的高度與行高，拔除原廠外框襯墊 */
+        /* 3. 核心隱藏死角：消除 Streamlit 自動為每個元件包裹的 block 容器所產生的固定下留白 */
+        div[data-testid="stVerticalBlock"] > div {
+            margin-bottom: 0px !important;
+            padding-bottom: 0px !important;
+        }
+        div.element-container {
+            margin-bottom: 0px !important; /* 拔除 Streamlit 萬惡的 1rem 預設下留白 */
+            margin-top: 0px !important;
+        }
+        
+        /* 4. 鎖定按鈕本身的極窄高度與行高 */
         div.stButton > button {
-            min-height: 24px !important; /* 強制縮減按鈕最小高度 */
-            height: 24px !important;     /* 鎖定超窄高度 */
-            padding-top: 0px !important;  /* 拔除上方肉墊 */
-            padding-bottom: 0px !important;/* 拔除下方肉墊 */
+            min-height: 24px !important;
+            height: 24px !important;
+            padding-top: 0px !important;
+            padding-bottom: 0px !important;
             margin: 0px !important;
-            line-height: 24px !important; /* 讓文字在 24px 高度裡精準置中 */
+            line-height: 24px !important;
         }
         
-        /* 3. 商品按鈕專用：無背景、左對齊、寬度 100% 貼緊 */
+        /* 5. 商品按鈕專用設定 */
         div.stButton > button[key^="btn_"] {
             background-color: transparent !important;
             border: none !important;
@@ -473,7 +487,7 @@ with row1_col1:
             text-decoration: underline !important;
         }
         
-        /* 4. ❌ 刪除按鈕專用：拔除寬度限制、垂直水平極致置中 */
+        /* 6. ❌ 刪除按鈕專用：垂直水平極致置中 */
         div.stButton > button[key^="del_fast_"] {
             background-color: transparent !important;
             color: #FF3333 !important;
@@ -485,23 +499,23 @@ with row1_col1:
             justify-content: center !important;
         }
         
-        /* 5. 黑灰相間橫條行（Zebra Stripes）：高度極限緊縮 */
+        /* 7. 黑灰相間橫條行（Zebra Stripes）：強制無縫銜接 */
         .xq-row-even { 
             background-color: #131313 !important; 
             margin: 0px !important;
-            padding: 2px 0px !important; /* 縮小上下襯墊到極致的 2px */
-            border-bottom: 1px solid #1F1F1F;
-            height: 28px !important; /* 鎖定整行橫條高度 */
+            padding: 2px 0px !important;
+            border-bottom: 1px solid #222222 !important;
+            height: 28px !important;
         }
         .xq-row-odd { 
             background-color: #1A1A1A !important; 
             margin: 0px !important;
-            padding: 2px 0px !important; /* 縮小上下襯墊到極致的 2px */
-            border-bottom: 1px solid #1F1F1F;
-            height: 28px !important; /* 鎖定整行橫條高度 */
+            padding: 2px 0px !important;
+            border-bottom: 1px solid #222222 !important;
+            height: 28px !important;
         }
         
-        /* 6. 數值文字行高壓縮：確保數值在窄行內不會被截斷 */
+        /* 8. 數值文字行高壓縮 */
         .xq-val {
             font-family: 'Courier New', monospace !important;
             font-weight: bold !important;
@@ -509,7 +523,7 @@ with row1_col1:
             text-align: right !important;
             padding-right: 8px;
             margin: 0px !important;
-            line-height: 24px !important; /* 與按鈕行高完美齊平 */
+            line-height: 24px !important;
         }
         .val-up { color: #FF3333 !important; }
         .val-down { color: #00AA00 !important; }
