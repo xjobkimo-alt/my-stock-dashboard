@@ -697,7 +697,7 @@ with row2_col2:
             with st.spinner("正在連線鉅亨網與櫃買中心數據庫，並由 Gemini AI 進行多空診斷..."): 
                 
                 # 判斷如果是可轉債
-                if "可轉債 (CB)" in pick_strategy:
+                if "可轉債" in pick_strategy:  # 🟢 修正：拿掉括號，只要有「可轉債」三個字就100%過關
                     cb_list = fetch_real_cb_data()
                     formatted_picked = []
                     for cb in cb_list:
