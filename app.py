@@ -209,10 +209,9 @@ with st.sidebar:
     # 您原本放自選股、重新整理頻率滑桿等元件的地方...
     # (中間可能會有很多行 st.sidebar.xxx 或普通的 st.xxx)
     
-    # --------------------------------------------------------------------
-    # 🔴 就是這裡！請一路拉到 with st.sidebar: 這個區塊的「最後一行」
-    # ⚠️ 請特別注意：前方必須保持與其他元件相同的「縮排（4個空格）」！
-    # --------------------------------------------------------------------
+    # ====================================================================
+    # 🤖 永豐金 V6.1 智慧選股控制台 (升級版：支援彈出視窗與一鍵加入自選)
+    # ====================================================================
     st.markdown("---")
     st.subheader("🤖 永豐金智慧選股")
     
@@ -222,22 +221,57 @@ with st.sidebar:
         ["外資投信同步買超股", "技術面均線多頭排列", "量價齊揚突破個股"]
     )
     
-    # 2. 觸發選股按鈕
+    # 2. 宣告一個彈出式視窗函式 (在點擊按鈕時觸發)
+    @st.dialog("🎯 AI 智慧選股黃金報告", width="large")
+    def show_picked_report(stocks):
+        st.write(f"根據您選擇的策略：**【{pick_strategy}】**，為您篩選出以下最具潛力的個股：")
+        st.markdown("---")
+        
+        # 用表格與按鈕的組合呈現
+        for stock in stocks:
+            col_info, col_reason, col_action = st.columns([1.5, 3, 1.2])
+            
+            # 顯示代號與名稱
+            with col_info:
+                st.markdown(f"### 📈 {stock['code']}\n**{stock['name']}**")
+            
+            # 顯示 AI 診斷原因
+            with col_reason:
+                st.info(f"💡 **篩選原因與 AI 診斷：**\n{stock['reason']}")
+            
+            # 顯示一鍵加入自選股按鈕
+            with col_action:
+                st.write("") # 空出一點上方間距對齊
+                # 判斷是否已經在自選股清單中
+                full_code = f"{stock['code']}.TW"
+                
+                # 建立按鈕
+                if st.button(f"➕ 納入自選", key=f"add_btn_{stock['code']}", use_container_width=True):
+                    # ⚠️ 請對齊您原本加入自選股的 session_state 名稱，這裡預設為常見的 watchlist_dict
+                    if "watchlist_dict" in st.session_state:
+                        display_name = f"{stock['name']} ({full_code})"
+                        st.session_state["watchlist_dict"][display_name] = full_code
+                        st.success(f"已加入 {stock['name']}！")
+                        st.rerun()
+                    else:
+                        st.error("找不到自選股清單變數")
+        
+        st.markdown("---")
+        st.caption("⚠️ 本報告由永豐金 API 籌碼數據結合 Gemini AI 進行綜合運算，僅供參考，投資請謹慎評估風險。")
+
+    # 3. 觸發選股按鈕
     if st.button("🚀 開始全市場 AI 掃描", use_container_width=True, key="pick_btn"):
-        st.info("正在連線永豐金撈取全市場資料並由 AI 診斷...")
-        
-        # 這裡先建立模擬篩選出來的黃金清單
-        mock_picked = [
-            {"code": "2330", "name": "台積電", "reason": "三大法人連續3日同步加碼，多頭排列"},
-            {"code": "2317", "name": "鴻海", "reason": "爆量長紅突破橫盤整理區間"},
-            {"code": "2454", "name": "聯發科", "reason": "外資轉買，KD指標黃金交叉"}
-        ]
-        
-        # 將篩選結果暫存到系統狀態
-        st.session_state["picked_stocks"] = mock_picked
-        st.success("🤖 掃描完畢！已將潛力股列出。")
-# --------------------------------------------------------------------
-# ⚠️ 縮排結束，這裡下方通常會接主要畫面的三大區塊（如 row1_col1 = st.columns...）
+        with st.spinner("正在連線永豐金撈取全市場資料並由 AI 診斷..."):
+            
+            # 這裡為模擬篩選出來的黃金清單 (週一開盤後我們會將真實掃描函式對接到這)
+            mock_picked = [
+                {"code": "2330", "name": "台積電", "reason": "三大法人連續 3 日同步加碼，技術面呈現完美的均線多頭排列。"},
+                {"code": "2317", "name": "鴻海", "reason": "主力籌碼大戶持續吸籌，今日股價爆量長紅，突破長達半年的橫盤整理區間。"},
+                {"code": "2454", "name": "聯發科", "reason": "投信法人積極建倉，日線層級 KD 指標與 MACD 在低檔同時完成黃金交叉向上。"}
+            ]
+            
+            # 直接呼叫彈出視窗並把清單丟進去
+            show_picked_report(mock_picked)
 
 
 # ==================================================================== 
