@@ -414,170 +414,150 @@ else:
 # ====================================================================
 # 9. XQ 仿真四宮格主排版控制 (自選股 3 檔分頁、橫向右上圖例、內嵌管理分頁)
 # ====================================================================
-st.markdown(f"### 📊 XQ 操盤模擬器 | 當前關注：<span style='color:{color_text};'>{selected_display}</span>", unsafe_allow_html=True)
 
+# 💡 修正 1：利用 div 容器給最頂部大標題 16px 安全防禦空間，防止標題被頂出螢幕削頭
+st.markdown(f"""
+    <div style='margin-top: 16px !important; margin-bottom: 8px !important; display: inline-block !important; width: 100%;'>
+        <h3 style='margin: 0px !important; padding: 0px !important; color: #FFFFFF; font-size: 20px; font-weight: bold;'>
+            📊 XQ 操盤模擬器 | 當前關注：<span style='color:{color_text};'>{selected_display}</span>
+        </h3>
+    </div>
+""", unsafe_allow_html=True)
+
+# 宣告主要四宮格 columns 佈局
 row1_col1, row1_col2 = st.columns(2)
 
-# --- 左上格：商品報價組合 (整合自選股管理分頁版) ---
 with row1_col1:
-    # 建立雙分頁控制，完美收納側邊欄管理功能
-    tab_portfolio, tab_manage = st.tabs(["📊 報價組合清單", "🔧 自選股管理面版"])
+    tab_portfolio, tab_manage = st.tabs([" 報價組合清單", " 自選股管理面版"])
     
-    # ----------------------------------------------------------------
-    # 【分頁一】：精誠/XQ 仿真高密度經典看盤終端機 (無縫緊貼終極版)
-    # ----------------------------------------------------------------
     with tab_portfolio:
-        # 🎨 核心終極 CSS 壓縮：全面抽乾 Streamlit 外層容器與元件之間的所有隱藏留白
+        # 💡 修正 2：核心終極 CSS 壓縮 (100% 維持您最滿意的極致窄間隔，純用高度解封清除字體切半蓋子)
         st.markdown("""
-            <style>
-            /* ================================================================= */
-            /* 0. 核心主容器全面抽乾：直接拔除 Streamlit 最外層的預設大留白 */
-            /* ================================================================= */
-            .block-container {
-                padding-top: 5px !important;
-                padding-bottom: 5px !important;
-                padding-left: 10px !important;
-                padding-right: 10px !important;
-            }
-
-            /* 拔除可能包裹在自訂區塊外圍的 Streamlit 預設 Gap */
-            div[data-testid="stVerticalBlock"] {
-                gap: 0px !important;
-            }
-
-            /* ================================================================= */
-            /* 1. 抽乾每一行 column 容器的上下內襯與外邊距 */
-            /* ================================================================= */
-            div[data-testid="stColumn"] {
-                background-color: transparent !important;
-                border: none !important;
-                box-shadow: none !important;
-                padding-top: 0px !important;
-                padding-bottom: 0px !important;
-                padding-left: 2px !important;
-                padding-right: 2px !important;
-                margin: 0px !important;
-            }
-
-            /* ================================================================= */
-            /* 2. 橫向區塊零縫隙修正：阻止 flex 撐開間距，並可視需求調整 gap */
-            /* ================================================================= */
-            div[data-testid="stHorizontalBlock"] {
-                gap: 0px !important;       /* 從 4px 直接壓縮到 0px，欄位間距完全對齊 */
-                margin-top: 0px !important;
-                margin-bottom: 0px !important;
-                padding: 0px !important;
-            }
-
-            /* ================================================================= */
-            /* 3. 核心隱藏死角：消除萬惡的 element-container 1rem 預設下留白 */
-            /* ================================================================= */
-            div[data-testid="stVerticalBlock"] > div {
-                margin-bottom: 0px !important;
-                padding-bottom: 0px !important;
-            }
-
-            div.element-container {
-                margin-bottom: 0px !important; 
-                margin-top: 0px !important;
-                padding: 0px !important;    /* 新增：抽乾元件容器內襯 */
-            }
-
-            /* ================================================================= */
-            /* 4. 鎖定按鈕本身的極窄高度與行高 */
-            /* ================================================================= */
-            div.stButton > button {
-                min-height: 22px !important; /* 從 24px 再壓縮到 22px */
-                height: 22px !important;
-                padding-top: 0px !important;
-                padding-bottom: 0px !important;
-                margin: 0px !important;
-                line-height: 22px !important;
-            }
-
-            /* ================================================================= */
-            /* 5. 商品按鈕專用設定 */
-            /* ================================================================= */
-            div.stButton > button[key^="btn_"] {
-                background-color: transparent !important;
-                border: none !important;
-                color: #FFFFFF !important;
-                text-align: left !important;
-                font-weight: bold !important;
-                font-size: 14px !important;
-                box-shadow: none !important;
-            }
-
-            div.stButton > button[key^="btn_"]:hover {
-                color: #00B0FF !important;
-                text-decoration: underline !important;
-            }
-
-            /* ================================================================= */
-            /* 6. ❌ 刪除按鈕專用 */
-            /* ================================================================= */
-            div.stButton > button[key^="del_fast_"] {
-                background-color: transparent !important;
-                color: #FF3333 !important;
-                border: none !important;
-                font-size: 13px !important;
-                box-shadow: none !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-            }
-
-            /* ================================================================= */
-            /* 7. 黑灰相間橫條行（Zebra Stripes）：高度調緊 */
-            /* ================================================================= */
-            .xq-row-even {
-                background-color: #131313 !important;
-                margin: 0px !important;
-                padding: 0px !important;       /* 從 2px 抽乾到 0px，改由行高控制 */
-                border-bottom: 1px solid #222222 !important;
-                height: 24px !important;       /* 自訂橫列高度從 28px 下修至 24px */
-            }
-
-            .xq-row-odd {
-                background-color: #1A1A1A !important;
-                margin: 0px !important;
-                padding: 0px !important;       /* 從 2px 抽乾到 0px */
-                border-bottom: 1px solid #222222 !important;
-                height: 24px !important;       /* 自訂橫列高度從 28px 下修至 24px */
-            }
-
-            /* ================================================================= */
-            /* 8. 數值文字行高壓縮 */
-            /* ================================================================= */
-            .xq-val {
-                font-family: 'Courier New', monospace !important;
-                font-weight: bold !important;
-                font-size: 14px !important;
-                text-align: right !important;
-                padding-right: 8px;
-                margin: 0px !important;
-                line-height: 24px !important;  /* 對齊橫列高度 24px，確保垂直置中 */
-            }
-
-            .val-up { color: #FF3333 !important; }
-            .val-down { color: #00AA00 !important; }
-            .val-even { color: #FFFFFF !important; }
-            </style>
-            """, unsafe_allow_html=True)
-
-
-        # 📊 經典券商藍底或灰底標題列 (與你提供的圖片欄位完全對齊)
+        <style>
+        /* 抽乾每一行 column 容器的上下內襯與外邊距 */
+        div[data-testid="stColumn"] {
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding-top: 0px !important;
+            padding-bottom: 0px !important;
+            padding-left: 2px !important;
+            padding-right: 2px !important;
+            margin: 0px !important;
+        }
+        
+        /* 強制將 Streamlit 的橫向區塊外邊距設為 0，阻止外層 flex 撐開間距 */
+        div[data-testid="stHorizontalBlock"] {
+            gap: 4px !important;
+            margin-top: 0px !important;
+            margin-bottom: 0px !important;
+            padding: 0px !important;
+        }
+        
+        /* 💡 修正：解封高度限制！間隔維持 0px 絕對不變大，純粹解除藍色文字說明的裁切限制 */
+        div[data-testid="stHorizontalBlock"] p {
+            line-height: 1.4 !important;
+            height: auto !important;
+            min-height: max-content !important;
+            overflow: visible !important;
+            margin: 0px !important;
+            padding-top: 0px !important;
+            padding-bottom: 0px !important;
+            display: block !important;
+        }
+        
+        /* 消除 Streamlit 自動為每個元件包裹的 block 容器所產生的固定下留白 */
+        div[data-testid="stVerticalBlock"] > div {
+            margin-bottom: 0px !important;
+            padding-bottom: 0px !important;
+        }
+        div.element-container {
+            margin-bottom: 0px !important; 
+            margin-top: 0px !important;
+            padding: 0px !important;
+        }
+        
+        /* 鎖定按鈕本身的極窄高度與行高 */
+        div.stButton > button {
+            min-height: 24px !important;
+            height: 24px !important;
+            padding-top: 0px !important;
+            padding-bottom: 0px !important;
+            margin: 0px !important;
+            line-height: 24px !important;
+        }
+        
+        /* 商品按鈕專用設定 */
+        div.stButton > button[key^="btn_"] {
+            background-color: transparent !important;
+            border: none !important;
+            color: #FFFFFF !important;
+            text-align: left !important;
+            font-weight: bold !important;
+            font-size: 14px !important;
+            box-shadow: none !important;
+        }
+        div.stButton > button[key^="btn_"]:hover {
+            color: #00B0FF !important;
+            text-decoration: underline !important;
+        }
+        
+        /* ❌ 刪除按鈕專用 */
+        div.stButton > button[key^="del_fast_"] {
+            background-color: transparent !important;
+            color: #FF3333 !important;
+            border: none !important;
+            font-size: 13px !important;
+            box-shadow: none !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        
+        /* 黑灰相間橫條行：強制無縫銜接 */
+        .xq-row-even {
+            background-color: #131313 !important;
+            margin: 0px !important;
+            padding: 2px 0px !important;
+            border-bottom: 1px solid #222222 !important;
+            height: 28px !important;
+        }
+        .xq-row-odd {
+            background-color: #1A1A1A !important;
+            margin: 0px !important;
+            padding: 2px 0px !important;
+            border-bottom: 1px solid #222222 !important;
+            height: 28px !important;
+        }
+        
+        /* 數值文字行高壓縮 */
+        .xq-val {
+            font-family: 'Courier New', monospace !important;
+            font-weight: bold !important;
+            font-size: 14px !important;
+            text-align: right !important;
+            padding-right: 8px;
+            margin: 0px !important;
+            line-height: 24px !important;
+        }
+        .val-up { color: #FF3333 !important; }
+        .val-down { color: #00AA00 !important; }
+        .val-even { color: #FFFFFF !important; }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # 藍底抬頭藍色列標題 (精準對齊比例)
         h_col1, h_col2, h_col3, h_col4, h_col5, h_col6, h_col7 = st.columns([1.5, 0.9, 0.9, 1.1, 0.9, 1.0, 0.4])
-        h_col1.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:left; padding-left:5px;'>商品</p>", unsafe_allow_html=True)
-        h_col2.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:right;'>買進</p>", unsafe_allow_html=True)
-        h_col3.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:right;'>賣出</p>", unsafe_allow_html=True)
-        h_col4.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:right;'>成交</p>", unsafe_allow_html=True)
-        h_col5.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:right;'>漲跌</p>", unsafe_allow_html=True)
-        h_col6.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:right;'>漲幅%</p>", unsafe_allow_html=True)
-        h_col7.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:center;'>移</p>", unsafe_allow_html=True)
+        h_col1.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:left; padding-left:5px;'>商品</p>", unsafe_allow_html=True)
+        h_col2.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;'>買進</p>", unsafe_allow_html=True)
+        h_col3.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;'>賣出</p>", unsafe_allow_html=True)
+        h_col4.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;'>成交</p>", unsafe_allow_html=True)
+        h_col5.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;'>漲跌</p>", unsafe_allow_html=True)
+        h_col6.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;'>漲幅%</p>", unsafe_allow_html=True)
+        h_col7.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:center;'>移</p>", unsafe_allow_html=True)
         st.markdown("<div style='border-top:2px solid #0D47A1; margin-top:2px; margin-bottom:2px;'></div>", unsafe_allow_html=True)
         
-                # 1. 提取自選股清單並進行「加權指數分離」
+        # 1. 提取自選股清單並進行「加權指數分離」
         watchlist_items = list(st.session_state["watchlist_dict"].items())
         
         # 找出加權指數
