@@ -27,36 +27,53 @@ if "api" not in st.session_state:
         st.session_state["api_error"] = str(e)
 
 # ====================================================================
-# 2. 網頁全域設定與 CSS 科技黑化排版 (精準分頁容器隔離灰框版) 🖥️
+# 2. 網頁全域設定與 CSS 科技黑化排版 (四宮格獨立窗格背板大突破版) 🖥️
 # ====================================================================
 st.markdown("""
 <style>
-/* 1. 全域主容器全面抽乾：直接拔除 Streamlit 最外層的預設大留白 */
-.block-container {
-    padding-top: 5px !important;
-    padding-bottom: 5px !important;
-    padding-left: 10px !important;
-    padding-right: 10px !important;
+/* ================================================================= */
+/* 1. 舞台底色與最外圍設定 */
+/* ================================================================= */
+.stApp {
+    background-color: #0A0A0A !important; /* 整個大網頁最底層用「純黑」，當作格子間的走道 */
 }
 
-/* 拔除可能包裹在自訂區塊外圍的 Streamlit 預設 Gap */
+.block-container {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    background-color: #0A0A0A !important;
+}
+
 div[data-testid="stVerticalBlock"] {
     gap: 0px !important;
 }
 
 /* ================================================================= */
-/* 💡 核心隔離：精準抓取「四個大分頁容器的內容方框」，為它們加上各自獨立的專業灰色外框 */
+/* 💡 核心優化：把四個大分頁內容方框，直接變成五宮格那種獨立的「科技黑卡背板」 */
 /* ================================================================= */
 div[data-testid="stTabContent"] {
-    border: 2px solid #555555 !important;  /* 💡 2像素粗、專業看盤中灰色框線 */
-    border-radius: 4px !important;         /* 微微圓角 */
-    padding: 6px !important;               /* 💡 內容與灰框保持 6px 精緻距離，不壓縮看盤空間 */
-    background-color: #141414 !important;  /* 四個方框內部採用一致的暗黑底色 */
-    margin-top: 4px !important;            /* 讓灰框與上方分頁中文字保持一小點距離 */
+    /* 變更底色：改為明顯的券商專業「鐵灰色/碳黑色」背板，與背景純黑拉開色差 */
+    background-color: #1A1A1E !important; 
+    
+    /* 四周加上細緻的微亮灰色邊框 */
+    border: 1px solid #333333 !important; 
+    border-radius: 6px !important;         /* 視窗圓角 */
+    
+    /* 核心推開：給方框底部加上 16px 的黑色推開距離，強制左右與下方產生清晰的黑色走道區隔 */
+    margin-top: 4px !important;
+    margin-bottom: 16px !important;        
+    
+    /* 舒適留白：讓內部的圖表與表格文字，離自己的鐵灰背板邊緣有 10px 距離 */
+    padding: 10px !important;               
+    
+    /* 讓區塊微微浮起來的深色立體陰影 */
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5) !important;
 }
 
 /* ================================================================= */
-/* 防禦機制：100% 歸零所有 column 容器的框線，保證內部小按鈕絕不碎裂變動 */
+/* 防禦機制：100% 歸零所有隱藏欄位框線，保證內部小按鈕完全維持原樣不位移 */
 /* ================================================================= */
 div[data-testid="stColumn"] {
     background-color: transparent !important;
@@ -67,17 +84,13 @@ div[data-testid="stColumn"] {
 }
 
 div[data-testid="stHorizontalBlock"] {
-    gap: 12px !important; /* 💡 調整左右兩大主欄之間的黑色走道寬度為 12px */
+    /* 💡 強制讓左邊兩個大區塊與右邊兩個大區塊之間，保持 16px 寬的純黑垂直大走道 */
+    gap: 16px !important; 
 }
 
 /* ================================================================= */
-/* 側邊欄與其餘科技黑化通用設定 */
+/* 側邊欄與其餘通用設定 */
 /* ================================================================= */
-.stApp {
-    background-color: #0A0A0A !important;
-}
-
-/* 側邊欄收納箭頭黃金加亮 */
 button[data-testid="collapsedControl"] {
     color: #FFD700 !important;
     background-color: #222222 !important;
