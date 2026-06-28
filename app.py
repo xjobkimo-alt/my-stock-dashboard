@@ -311,77 +311,28 @@ def get_ai_analysis(stock_name, price, change, pct, ma5, k_val, d_val):
         return f"AI 暫時繁忙中。錯誤訊息: {e}"
     
 # ====================================================================
-# 7. 🔧 左側邊欄自選股管理面板 (完全交給官方箭頭控制縮進)
-# ====================================================================
-# 🟢 修正：移除 Checkbox，讓所有元件直接全域發動，交由官方自帶的箭頭控制展開與縮進
-st.sidebar.header("🔧 我的自選股管理面版")
-with st.sidebar.expander("➕ 新增自選股", expanded=True):
-        new_code = st.text_input("輸入股票代碼", placeholder="防禦限制：請輸入 4 碼或 5 碼代碼", key="manage_add_input").strip()
-        if st.button("🚀 確認加入自選清單", use_container_width=True, key="manage_add_btn"):
-            if new_code:
-                # ====================================================================
-                # 關鍵修正：直接拿原始字串 new_code 判斷是否全為數字，防止 split('.') 列表報錯
-                # ====================================================================
-                target_code = new_code.upper()
-                
-                # 如果使用者只輸入 4 碼純數字（例如 2886），自動幫他補上台灣市場後綴 .TW
-                if target_code.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
-                    pure_number = target_code
-                    target_code = f"{pure_number}.TW"
-                else:
-                    # 如果原本就帶有點號，才去拆分出純數字
-                    pure_number = target_code.split('.')[0] if '.' in target_code else target_code
-                
-                try:
-                    test_stock = yf.Ticker(target_code)
-                    test_df = test_stock.history(period="1d")
-                    if test_df.empty:
-                        st.error(f"❌ 查無此代碼 [{target_code}]")
-                    else:
-                        # 從名單字典中查找中文名稱，若找不到則抓取 Yahoo 的英文簡稱
-                        detected_name = TAIWAN_STOCK_DICT.get(pure_number, test_stock.info.get('shortName', pure_number))
-                        display_key = f"{detected_name} ({target_code})" if "(" not in detected_name else detected_name
-                        st.session_state["watchlist_dict"][display_key] = target_code
-                        save_my_watchlist()
-                        st.success(f"成功加入: {detected_name}")
-                        st.rerun()
-                except:
-                    st.error("❌ 無法連線驗證該商品代碼。")
-
-# ====================================================================
-# 雙向聯動大腦：優先讀取左上角格子的點擊狀態，若無則依循清單順序
+# 7. 全域防禦與自選股清單雙向狀態校正 (已完全移除舊側邊欄)
 # ====================================================================
 watchlist_keys = list(st.session_state["watchlist_dict"].keys())
 
-# 防禦：確保索引沒有越界
+# 防禦機制：確保目前的選取索引沒有超過自選股總數（避免刪除股票時越界崩潰）
 if "current_selected_idx" not in st.session_state or st.session_state["current_selected_idx"] >= len(watchlist_keys):
     st.session_state["current_selected_idx"] = 0
 
-# 自動校正目前關注的商品名稱
+# 自動校正與綁定目前主畫面關注的商品名稱
 if "main_stock_selector" not in st.session_state:
     st.session_state["main_stock_selector"] = watchlist_keys[st.session_state["current_selected_idx"]]
 else:
-    # 如果選單名稱在清單中，同步更新索引，避免刪除股票時出錯
+    # 雙重防禦：如果選中的股票存在於清單中，同步更新索引；若剛剛被刪除了，則自動重置回第 0 檔
     if st.session_state["main_stock_selector"] in watchlist_keys:
         st.session_state["current_selected_idx"] = watchlist_keys.index(st.session_state["main_stock_selector"])
     else:
         st.session_state["current_selected_idx"] = 0
         st.session_state["main_stock_selector"] = watchlist_keys[0]
 
-# 最終導出提供給四宮格所有元件使用的變數
+# 導出最終的核心商品變數，提供給全網頁後續的所有圖表與 AI 大腦使用
 selected_display = st.session_state["main_stock_selector"]
 stock_code = st.session_state["watchlist_dict"][selected_display]
-
-if st.sidebar.button("❌ 從清單中刪除目前股票"):
-    if len(st.session_state["watchlist_dict"]) > 1:
-        del st.session_state["watchlist_dict"][selected_display]
-        save_my_watchlist()
-        st.session_state["current_selected_idx"] = 0
-        st.rerun()
-    else:
-        st.sidebar.warning("清單內至少需保留一檔股票！")
-
-refresh_rate = st.sidebar.slider("即時報價刷新頻率 (秒)", min_value=5, max_value=60, value=10, step=5)
 
 # ====================================================================
 # 8. 智慧分流加載大腦 (可轉債 5 碼/普通股 4 碼 安全不崩潰)
@@ -390,22 +341,48 @@ df = pd.DataFrame()
 info = {}
 is_cb_bond = False
 
-# 判斷是否為 5 碼可轉債
+# 檢查是否為 5 碼的可轉債商品
 pure_num_check = stock_code.split('.')[0]
 if len(pure_num_check) == 5 and pure_num_check.isdigit():
     is_cb_bond = True
     info = {"shortName": f"可轉債 {pure_num_check}", "currentPrice": 100.0, "previousClose": 100.0, "news": []}
-    # 補上完整的 20 天假 K 線數據，讓可轉債切換時不留白、不報錯
+    
+    # 可轉債 20 天動態微幅波動假數據，防止 Plotly 繪圖報錯
     dates = [pd.Timestamp(datetime.date.today() - datetime.timedelta(days=i)) for i in range(20)][::-1]
     df = pd.DataFrame({
-        "Open": [100.0]*20, "High": [102.0]*20, "Low": [99.5]*20, "Close": [100.5]*20, "Volume": [1000]*20
+        "Open": [100.0 + (i % 3 - 1) * 0.5 for i in range(20)],
+        "High": [101.5 + (i % 2) * 0.5 for i in range(20)],
+        "Low": [99.0 - (i % 2) * 0.5 for i in range(20)],
+        "Close": [100.2 + (i % 3 - 1) * 0.4 for i in range(20)],
+        "Volume": [1000 + (i * 50) for i in range(20)]
     }, index=dates)
     current_price, price_change, price_change_pct, color_text, sign = 100.0, 0.0, 0.0, "#00E676", ""
 else:
+    # 普通股或大盤指數載入邏輯
     try:
         df, info = fetch_safe_stock_data(stock_code)
-        current_price = info.get("currentPrice", df['Close'].iloc[-1] if not df.empty else 0.0)
-        prev_close = info.get("previousClose", df['Close'].iloc[-2] if len(df) > 1 else current_price)
+        
+        # 核心防禦：若 df 為空或缺少 Close 欄位（可能受到流量限制），自動補上安全資料，防止 KeyError
+        if df.empty or 'Close' not in df.columns:
+            dates = [pd.Timestamp(datetime.date.today() - datetime.timedelta(days=i)) for i in range(20)][::-1]
+            df = pd.DataFrame({
+                "Open": [100.0] * 20, "High": [101.0] * 20, "Low": [99.0] * 20, 
+                "Close": [100.0] * 20, "Volume": [1000] * 20
+            }, index=dates)
+            st.warning("⚠️ 當前商品數據獲取失敗（可能受到流量限制），已啟動防禦性安全面板。")
+            
+        if not info:
+            info = {}
+            
+        # 雙重保險取價機制，避免 NoneType 與 float 相減引發 TypeError
+        current_price = info.get("currentPrice")
+        if current_price is None:
+            current_price = float(df['Close'].iloc[-1])
+            
+        prev_close = info.get("previousClose")
+        if prev_close is None:
+            prev_close = float(df['Close'].iloc[-2]) if len(df) > 1 else current_price
+            
         price_change = current_price - prev_close
         price_change_pct = (price_change / prev_close) * 100 if prev_close != 0 else 0.0
         color_text = "#FF3333" if price_change >= 0 else "#00AA00"
