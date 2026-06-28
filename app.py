@@ -325,38 +325,40 @@ else:
         st.stop()
 
 # ====================================================================
-# 9. XQ 仿真四宮格主排版控制 (V7.9 優化：自選股分頁、欄位標題與圖例補完)
+# 9. XQ 仿真四宮格主排版控制 (V7.9 完全體細節優化版)
 # ====================================================================
 st.markdown(f"### 📊 XQ 操盤模擬器 | 當前關注：<span style='color:{color_text};'>{selected_display}</span>", unsafe_allow_html=True)
 row1_col1, row1_col2 = st.columns(2)
 
-# --- 左上格：商品報價組合 (🟢 升級：自帶項目說明與 5 檔分頁器) ---
+# --- 左上格：商品報價組合 (每頁固定 4 筆、完美對齊高度) ---
 with row1_col1:
     st.markdown("📈 **【看盤重點/報價組合】**")
     
-    # 🟢 1. 補上項目說明標題列
+    # 補上項目說明標題列
     h_col1, h_col2, h_col3, h_col4 = st.columns([2, 1.2, 1, 1.2])
-    h_col1.markdown("<p style='color:#888888; font-size:12px; margin-bottom:2px;'>商品名稱</p>", unsafe_allow_html=True)
-    h_col2.markdown("<p style='color:#888888; font-size:12px; margin-bottom:2px; text-align:center;'>成交價</p>", unsafe_allow_html=True)
-    h_col3.markdown("<p style='color:#888888; font-size:12px; margin-bottom:2px; text-align:center;'>漲跌</p>", unsafe_allow_html=True)
-    h_col4.markdown("<p style='color:#888888; font-size:12px; margin-bottom:2px; text-align:center;'>漲跌幅</p>", unsafe_allow_html=True)
-    st.markdown("<hr style='margin:2px 0px; border-top:1px solid #444;'>", unsafe_allow_html=True)
+    h_col1.markdown("<p style='color:#BBBBBB; font-size:13px; font-weight:bold; margin-bottom:2px;'>商品名稱</p>", unsafe_allow_html=True)
+    h_col2.markdown("<p style='color:#BBBBBB; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:center;'>成交價</p>", unsafe_allow_html=True)
+    h_col3.markdown("<p style='color:#BBBBBB; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:center;'>漲跌</p>", unsafe_allow_html=True)
+    h_col4.markdown("<p style='color:#BBBBBB; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:center;'>漲跌幅</p>", unsafe_allow_html=True)
+    st.markdown("<hr style='margin:2px 0px; border-top:1px solid #555;'>", unsafe_allow_html=True)
     
-    # 🟢 2. 實作分頁控制邏輯 (每頁固定 5 筆)
-    ITEMS_PER_PAGE = 5
+    # 🟢 1. 修正：每頁固定放置 4 筆
+    ITEMS_PER_PAGE = 4
     watchlist_items = list(st.session_state["watchlist_dict"].items())
     total_items = len(watchlist_items)
     
-    # 初始化分頁狀態
     if "current_page" not in st.session_state:
         st.session_state["current_page"] = 0
         
-    # 計算最大頁數
     max_page = (total_items - 1) // ITEMS_PER_PAGE
+    # 安全防護：避免清單變動導致頁數超標
+    if st.session_state["current_page"] > max_page:
+        st.session_state["current_page"] = max_page
+        
     start_idx = st.session_state["current_page"] * ITEMS_PER_PAGE
     end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
     
-    # 只渲染當前頁面的 5 筆資料
+    # 渲染當前頁面的 4 筆資料
     for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
         global_idx = start_idx + idx_offset
         try:
@@ -377,25 +379,25 @@ with row1_col1:
             if st.button(f"🔍 {name}", key=f"btn_{code}_{global_idx}", use_container_width=True):
                 st.session_state["current_selected_idx"] = global_idx
                 st.rerun()
-        with b_col2: st.markdown(f"<p style='text-align:center; padding-top:6px;'>{c_p:,.2f}</p>", unsafe_allow_html=True)
+        with b_col2: st.markdown(f"<p style='text-align:center; padding-top:6px; font-weight:bold;'>{c_p:,.2f}</p>", unsafe_allow_html=True)
         with b_col3: st.markdown(f"<p style='text-align:center; padding-top:6px;' class='{css_class}'>{b_sign}{chg:,.2f}</p>", unsafe_allow_html=True)
         with b_col4: st.markdown(f"<p style='text-align:center; padding-top:6px;' class='{css_class}'>{b_sign}{pct:.2f}%</p>", unsafe_allow_html=True)
 
-    # 🟢 3. 補上分頁按鈕控制列
-    st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
-    p_col1, p_col2, p_col3 = st.columns([1, 2, 1])
+    # 分頁按鈕控制列
+    st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
+    p_col1, p_col2, p_col3 = st.columns()
     with p_col1:
         if st.button("⬅️ 上一頁", disabled=(st.session_state["current_page"] == 0), use_container_width=True, key="prev_page_btn"):
             st.session_state["current_page"] -= 1
             st.rerun()
     with p_col2:
-        st.markdown(f"<p style='text-align:center; padding-top:6px; font-size:13px; color:#aaa;'>第 {st.session_state['current_page']+1} / {max_page+1} 頁 (共 {total_items} 檔)</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align:center; padding-top:6px; font-size:13px; color:#FFFFFF; font-weight:bold;'>第 {st.session_state['current_page']+1} / {max_page+1} 頁</p>", unsafe_allow_html=True)
     with p_col3:
         if st.button("下一頁 ➡️", disabled=(st.session_state["current_page"] >= max_page), use_container_width=True, key="next_page_btn"):
             st.session_state["current_page"] += 1
             st.rerun()
 
-# --- 右上格：技術分析 (🟢 升級：圖示內部直接加入藍線、紫線圖例說明) ---
+# --- 右上格：技術分析 (🟢 升級：圖例文字放大加粗、底色加深高對比) ---
 with row1_col2:
     st.markdown("📈 **【技術分析 K 線與均線】**")
     time_frame = st.radio("選擇時間區間", ["當日", "近月", "一年", "五年"], index=1, horizontal=True, key="tech_radio")
@@ -413,26 +415,31 @@ with row1_col2:
         decreasing_line_color='#00AA00', decreasing_fillcolor='#00AA00', showlegend=True
     ), row=1, col=1)
     
-    # 🟢 補回並開啟圖例：藍線 (5MA) 與 紫線 (20MA)
-    fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA5'], mode='lines', line=dict(color='#00B0FF', width=1.5), name="藍線: 5MA", showlegend=True), row=1, col=1)
-    fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA20'], mode='lines', line=dict(color='#E040FB', width=1.5), name="紫線: 20MA", showlegend=True), row=1, col=1)
+    # 藍線 (5MA) 與 紫線 (20MA)
+    fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA5'], mode='lines', line=dict(color='#00B0FF', width=2.0), name="藍線: 5MA", showlegend=True), row=1, col=1)
+    fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA20'], mode='lines', line=dict(color='#E040FB', width=2.0), name="紫線: 20MA", showlegend=True), row=1, col=1)
     
     # 成交量
     vol_colors = ['#FF3333' if c >= o else '#00AA00' for o, c in zip(plot_df['Open'], plot_df['Close'])]
     fig.add_trace(go.Bar(x=plot_df.index, y=plot_df['Volume'], marker_color=vol_colors, name="成交量", showlegend=False), row=2, col=1)
     
-    # 🟢 配置調整：將 Legend 圖例說明移到圖表右上角，不遮擋圖表
+    # 🟢 2. 修正：強制放大圖例文字 (font_size=13, color=pure_white) 並將圖例背景調黑
     fig.update_layout(
         template="plotly_dark", paper_bgcolor="#121212", plot_bgcolor="#121212", 
         xaxis_rangeslider_visible=False, height=240, margin=dict(l=10, r=40, t=5, b=5),
-        showlegend=True, legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(0,0,0,0.5)")
+        showlegend=True, 
+        legend=dict(
+            yanchor="top", y=0.99, xanchor="left", x=0.01, 
+            bgcolor="rgba(10, 10, 10, 0.85)", bordercolor="#444444", borderwidth=1,
+            font=dict(size=13, color="#FFFFFF", family="Arial, sans-serif")
+        )
     )
     fig.update_yaxes(side="right", gridcolor="#2D2D2D")
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
 row2_col1, row2_col2 = st.columns(2)
 
-# --- 左下格：走勢與即時明細 (🟢 升級：圖示內部直接加入綠線、藍柱圖例說明) ---
+# --- 左下格：走勢與即時明細 (🟢 升級：圖例文字放大加粗) ---
 with row2_col1:
     st.markdown(f"🎯 **【市場焦點動態】** <span style='color:{color_text}; font-weight:bold;'>{current_price:,.2f} ({sign}{price_change_pct:.2f}%)</span>", unsafe_allow_html=True)
     tab_trend, tab_ticks = st.tabs(["📊 當日分時走勢", "🧾 即時成交明細"])
@@ -440,31 +447,36 @@ with row2_col1:
     with tab_trend:
         fig_line = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.7, 0.3])
         
-        # 🟢 補回並開啟圖例：綠線 (價格走勢)
-        fig_line.add_trace(go.Scatter(x=plot_df.index[-10:], y=plot_df['Close'].tail(10), mode='lines+markers', line=dict(color='#00E676', width=2), name="綠線: 分時價格", showlegend=True), row=1, col=1)
-        # 🟢 補回並開啟圖例：藍柱 (量能)
+        # 價格與量能線圖
+        fig_line.add_trace(go.Scatter(x=plot_df.index[-10:], y=plot_df['Close'].tail(10), mode='lines+markers', line=dict(color='#00E676', width=2.5), name="綠線: 分時價格", showlegend=True), row=1, col=1)
         fig_line.add_trace(go.Bar(x=plot_df.index[-10:], y=plot_df['Volume'].tail(10), marker_color='#00B0FF', name="藍柱: 即時量能", showlegend=True), row=2, col=1)
         
-        # 🟢 配置調整：開啟圖例並擺在左上角
+        # 🟢 2. 修正：左下角圖例同步放大、加粗並加深背景
         fig_line.update_layout(
             template="plotly_dark", paper_bgcolor="#121212", plot_bgcolor="#121212", height=200, margin=dict(l=10, r=40, t=5, b=5),
-            showlegend=True, legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(0,0,0,0.5)")
+            showlegend=True, 
+            legend=dict(
+                yanchor="top", y=0.99, xanchor="left", x=0.01, 
+                bgcolor="rgba(10, 10, 10, 0.85)", bordercolor="#444444", borderwidth=1,
+                font=dict(size=13, color="#FFFFFF", family="Arial, sans-serif")
+            )
         )
         st.plotly_chart(fig_line, use_container_width=True, config={'displayModeBar': False})
         
     with tab_ticks:
-        html_table = "<table style='width:100%; border-collapse: collapse; font-size:12px; text-align:center;'><tr><th>時間</th><th>價格</th><th>單量</th><th>狀態</th></tr>"
-        for i in range(1, 6):
+        # 🟢 3. 修正：確保 HTML 語法表格完全閉合，釋放右下角大火箭按鈕！
+        html_table = "<table style='width:100%; border-collapse: collapse; font-size:12px; text-align:center;'><thead><tr><th>時間</th><th>價格</th><th>單量</th><th>狀態</th></tr></thead><tbody>"
+        for i in range(1, 5):
             p_val = current_price if is_cb_bond else df['Close'].iloc[-i]
             v_val = 15 if is_cb_bond else int(df['Volume'].iloc[-i] // 1000 + 1)
             t_class = "stock-up" if i % 2 == 0 else "stock-down"
             t_state = "外盤" if i % 2 == 0 else "內盤"
             html_table += f"<tr><td>13:2{i}</td><td>{p_val:,.2f}</td><td class='{t_class}'>{v_val}</td><td class='{t_class}'>{t_state}</td></tr>"
-        html_table += "</table>"
+        html_table += "</tbody></table>" # 精準閉合！
         st.write(html_table, unsafe_allow_html=True)
 
 # ====================================================================
-# 10. 右下格：唯一的融合去重四分頁控制台
+# 10. 右下格：唯一的融合去重四分頁控制台 (按鈕強制解鎖歸來)
 # ====================================================================
 with row2_col2:
     tab_news, tab_ai, tab_shioaji, tab_picker = st.tabs(["📰 相關即時新聞", "🧠 AI 策略分析", "📊 永豐單股指標", "🤖 永豐全市場選股"])
@@ -492,15 +504,3 @@ with row2_col2:
             st.markdown("##### 👥 當日三大法人動態 (張)")
             col_f, col_i, col_d = st.columns(3)
             col_f.metric(label="外資買賣超", value="+0 張", delta="假日無數據")
-            col_i.metric(label="投信買賣超", value="+0 張", delta="假日無數據")
-            col_d.metric(label="自營商買賣超", value="+0 張", delta="假日無數據")
-        else: st.warning("⚠️ 永豐金 API 未啟動。")
-
-    with tab_picker:
-        st.markdown("🔍 <h4 style='color: #FFFFFF; font-weight: bold; margin-top: 0px;'>永豐金量化大腦 × 新聞輿情與可轉債 (CB)</h4>", unsafe_allow_html=True)
-        pick_strategy = st.selectbox(
-            "請選擇篩選核心策略：",
-            ["外資投信同步買超股 (普通股)", "技術面均線多頭排列 (普通股)", "新聞輿情爆量突破股 (普通股)", "主力低溢價可轉債 (CB 黃金池)"],
-            key="main_page_strategy_picker"
-        )
-        st.write("")
