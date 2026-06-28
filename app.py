@@ -210,7 +210,7 @@ with st.sidebar:
     # (中間可能會有很多行 st.sidebar.xxx 或普通的 st.xxx)
     
     # ====================================================================
-    # 🤖 永豐金 V6.3 智慧選股控制台 (完全不失誤：元件級文字加亮版)
+    # 🤖 永豐金 V6.4 智慧選股控制台 (極致暗黑護眼版)
     # ====================================================================
     st.markdown("---")
     st.subheader("🤖 永豐金智慧選股")
@@ -224,7 +224,30 @@ with st.sidebar:
     # 2. 宣告一個彈出式視窗函式 (在點擊按鈕時觸發)
     @st.dialog("🎯 AI 智慧選股黃金報告", width="large")
     def show_picked_report(stocks):
-        # 🟢 修正 1：最上方大標題文字加白加粗
+        # 🟢 修正：強制將 Streamlit 彈出視窗的外殼底色、外框與打叉按鈕全部改成暗黑模式
+        st.markdown("""
+            <style>
+                /* 1. 將整個彈出視窗的白色底色改成深黑色 */
+                div[role="dialog"] {
+                    background-color: #121212 !important;
+                    color: #FFFFFF !important;
+                    border: 1px solid #2D2D2D !important;
+                }
+                /* 2. 強制將彈出視窗底下的容器也改成深黑色 */
+                div[data-testid="stDialog"] div[data-testid="stVerticalBlock"] {
+                    background-color: #121212 !important;
+                }
+                /* 3. 將右上角關閉視窗的 (X) 按鈕顏色變白，避免看不見 */
+                div[role="dialog"] button[p-content="close"] svg {
+                    fill: #FFFFFF !important;
+                }
+                div[role="dialog"] button {
+                    color: #FFFFFF !important;
+                }
+            </style>
+        """, unsafe_allow_html=True)
+        
+        # 標題文字
         st.markdown(f"<h4 style='color: #FFFFFF; font-weight: bold;'>根據您選擇的策略：【<span style='color: #00E676;'>{pick_strategy}</span>】，為您篩選出以下最具潛力的個股：</h4>", unsafe_allow_html=True)
         st.markdown("---")
         
@@ -234,17 +257,15 @@ with st.sidebar:
             
             # 顯示代號與名稱
             with col_info:
-                # 🟢 修正 2：股票代號與名稱強制變純白與明亮淺藍
                 st.markdown(f"<h3 style='color: #00B0FF; margin-bottom: 0px;'>📈 {stock['code']}</h3>", unsafe_allow_html=True)
                 st.markdown(f"<p style='color: #FFFFFF; font-size: 1.2rem; font-weight: bold;'>{stock['name']}</p>", unsafe_allow_html=True)
             
-            # 顯示 AI 診斷原因
+            # 顯示 AI 診斷原因 (底色調深，與黑背景做出完美層次)
             with col_reason:
-                # 🟢 修正 3：利用自訂的 div 來包裝診斷原因，底色維持半透明深色，文字強制變純白
                 html_reason = f"""
-                <div style='background-color: #1E1E1E; padding: 12px; border-radius: 8px; border-left: 5px solid #FF9100;'>
+                <div style='background-color: #1C1C1E; padding: 12px; border-radius: 8px; border-left: 5px solid #FF9100;'>
                     <strong style='color: #FF9100;'>💡 篩選原因與 AI 診斷：</strong><br>
-                    <span style='color: #FFFFFF; font-size: 0.95rem; line-height: 1.5;'>{stock['reason']}</span>
+                    <span style='color: #E0E0E0; font-size: 0.95rem; line-height: 1.5;'>{stock['reason']}</span>
                 </div>
                 """
                 st.markdown(html_reason, unsafe_allow_html=True)
@@ -254,9 +275,8 @@ with st.sidebar:
                 st.write("") # 空出一點上方間距對齊
                 full_code = f"{stock['code']}.TW"
                 
-                # 建立按鈕 (按鈕外觀維持 Streamlit 樣式)
+                # 建立按鈕
                 if st.button(f"➕ 納入自選", key=f"add_btn_{stock['code']}", use_container_width=True):
-                    # ⚠️ 請確認您原本加入自選股的 session_state 名稱，這裡預設為常見的 watchlist_dict
                     if "watchlist_dict" in st.session_state:
                         display_name = f"{stock['name']} ({full_code})"
                         st.session_state["watchlist_dict"][display_name] = full_code
@@ -266,7 +286,7 @@ with st.sidebar:
                         st.error("找不到自選股清單變數")
         
         st.markdown("---")
-        # 🟢 修正 4：下方免責聲明同樣做顯眼的黃色處理
+        # 免責聲明
         st.markdown("<p style='color: #FFD600; font-size: 0.9rem; font-weight: bold;'>⚠️ 本報告由永豐金 API 籌碼數據結合 Gemini AI 進行綜合運算，僅供參考，投資請謹慎評估風險。</p>", unsafe_allow_html=True)
 
     # 3. 觸發選股按鈕
@@ -282,7 +302,6 @@ with st.sidebar:
             
             # 直接呼叫彈出視窗並把清單丟進去
             show_picked_report(mock_picked)
-
 
 # ==================================================================== 
 # 📊 XQ 仿真四宮格主排版控制
