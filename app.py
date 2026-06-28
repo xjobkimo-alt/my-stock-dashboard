@@ -491,9 +491,9 @@ with row1_col1:
             }
 
             div.element-container {
-                margin-bottom: 2px !important; 
-                margin-top: 2px !important;    /* 💡 從 0px 稍微上調至 2px，防止大標題被削頭 */
-                padding: 0px !important;    
+                margin-bottom: 0px !important; 
+                margin-top: 0px !important;
+                padding: 0px !important;    /* 新增：抽乾元件容器內襯 */
             }
 
             /* ================================================================= */
@@ -716,6 +716,7 @@ with row1_col1:
             if st.button("下一頁 ➡", disabled=(st.session_state["current_page"] >= max_page), use_container_width=True, key="next_page_btn"):
                 st.session_state["current_page"] += 1
                 st.rerun()
+
     # ----------------------------------------------------------------
     # 【分頁二】：原側邊欄移過來的自選股管理面板 (完美消滅側邊欄且具唯一 Key 防禦)
     # ----------------------------------------------------------------
