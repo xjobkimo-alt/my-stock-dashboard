@@ -10,17 +10,56 @@ import json
 import os
 import shioaji as sj     # 1. 正式引入永豐金 API
 
-# ====================================================================
-# 🟢 搬移至此：全域智慧選股彈出視窗 (最左邊完全不縮排，靠左對齊)
-# ====================================================================
 @st.dialog("🎯 AI 智慧選股黃金報告", width="large")
 def show_picked_report(stocks, strategy_name):
+    # ====================================================================
+    # 🟢 終極護眼：利用全域選擇器將 Streamlit 新版 Dialog 強制改造為科技消光黑
+    # ====================================================================
+    st.markdown("""
+        <style>
+            /* 1. 將彈出視窗的最外層毛玻璃遮罩背景與外框強制漆黑 */
+            div[data-testid="stDialog"] {
+                background-color: rgba(0, 0, 0, 0.7) !important;
+            }
+            
+            /* 2. 將彈出視窗的主白底卡片強制變更為消光黑 (#121212) */
+            div[data-testid="stDialog"] div[role="dialog"] {
+                background-color: #121212 !important;
+                color: #FFFFFF !important;
+                border: 1px solid #2D2D2D !important;
+                box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.5) !important;
+            }
+            
+            /* 3. 強制將視窗內部所有的垂直區塊底色全部同化為消光黑 */
+            div[data-testid="stDialog"] div[data-testid="stVerticalBlock"] {
+                background-color: #121212 !important;
+            }
+            
+            /* 4. 強制將原本發白看不見的側邊文字與標籤一律增亮為純白 */
+            div[data-testid="stDialog"] p, 
+            div[data-testid="stDialog"] span, 
+            div[data-testid="stDialog"] label {
+                color: #FFFFFF !important;
+            }
+            
+            /* 5. 將右上角的關閉打叉按鈕圖示強制變白 */
+            div[data-testid="stDialog"] button[aria-label="Close"] svg,
+            div[data-testid="stDialog"] button p-content="close" svg {
+                fill: #FFFFFF !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # ====================================================================
+    # 下方維持您原本精美的文字與按鈕排版 (不要動它)
+    # ====================================================================
     st.markdown(f"<h4 style='color: #FFFFFF; font-weight: bold;'>根據您選擇的策略：【<span style='color: #00E676;'>{strategy_name}</span>】，為您篩選出以下最具潛力的個股：</h4>", unsafe_allow_html=True)
     st.markdown("---")
     
     for stock in stocks:
         col_info, col_reason, col_action = st.columns([1.5, 3, 1.2])
         with col_info:
+            # 代號強制改為顯眼的科技淺藍，名稱為粗白體
             st.markdown(f"<h3 style='color: #00B0FF; margin-bottom: 0px;'>📈 {stock['code']}</h3>", unsafe_allow_html=True)
             st.markdown(f"<p style='color: #FFFFFF; font-size: 1.2rem; font-weight: bold;'>{stock['name']}</p>", unsafe_allow_html=True)
         
@@ -46,7 +85,9 @@ def show_picked_report(stocks, strategy_name):
                         pass
                     st.success(f"已加入 {stock['name']}！")
                     st.rerun()
+                    
     st.markdown("---")
+    # 免責聲明強制改為鮮艷的明黃色
     st.markdown("<p style='color: #FFD600; font-size: 0.9rem; font-weight: bold;'>⚠️ 本報告由永豐金 API 籌碼數據結合 Gemini AI 進行綜合運算，僅供參考，投資請謹慎評估風險。</p>", unsafe_allow_html=True)
 
 # ====================================================================
