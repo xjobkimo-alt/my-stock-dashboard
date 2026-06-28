@@ -249,49 +249,60 @@ def get_ai_analysis(stock_name, price, change, pct, ma5, k_val, d_val):
             return "【系統提示】目前您的 Gemini 帳戶今日免費流量已達上限。請更換 API 金鑰或靜候跨日解鎖。"
         return f"AI 暫時繁忙中。錯誤訊息: {e}"
 # ====================================================================
-# 7. 🔧 左側邊欄自選股管理面板 (完全淨化無殘留)
+# 7. 🔧 左側邊欄自選股管理面板 (支援一鍵完全顯示與隱藏)
 # ====================================================================
-st.sidebar.header("🔧 我的自選股管理面版")
-with st.sidebar.expander("➕ 新增自選股", expanded=True):
-    new_code = st.text_input("輸入股票代碼", placeholder="例如: 2882").strip()
-    if st.button("確認加入自選"):
-        if new_code:
-            target_code = new_code.upper()
-            pure_number = target_code.split('.')[0]
-            if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
-                target_code = f"{pure_number}.TW"
-            try:
-                test_stock = yf.Ticker(target_code)
-                test_df = test_stock.history(period="1d")
-                if test_df.empty:
-                    st.sidebar.error(f"❌ 查無此代碼 [{target_code}]")
-                else:
-                    detected_name = TAIWAN_STOCK_DICT.get(pure_number, test_stock.info.get('shortName', pure_number))
-                    display_key = f"{detected_name} ({target_code})" if "(" not in detected_name else detected_name
-                    st.session_state["watchlist_dict"][display_key] = target_code
-                    save_my_watchlist()
-                    st.sidebar.success(f"成功加入: {detected_name}")
-                    st.rerun()
-            except:
-                st.sidebar.error("❌ 無法連線驗證。")
+# 在側邊欄最頂端放一個控制開關
+show_sidebar_panel = st.sidebar.checkbox("👁️ 顯示自選股管理工具", value=True)
 
+# 初始化自選股選擇索引狀態
 watchlist_keys = list(st.session_state["watchlist_dict"].keys())
 if "current_selected_idx" not in st.session_state or st.session_state["current_selected_idx"] >= len(watchlist_keys):
     st.session_state["current_selected_idx"] = 0
 
-selected_display = watchlist_keys[st.session_state["current_selected_idx"]]
-stock_code = st.session_state["watchlist_dict"][selected_display]
+# 如果勾選「顯示」，才把管理工具渲染出來；取消勾選則自動隱藏
+if show_sidebar_panel:
+    st.sidebar.markdown("---")
+    st.sidebar.header("🔧 我的自選股管理面版")
+    with st.sidebar.expander("➕ 新增自選股", expanded=True):
+        new_code = st.text_input("輸入股票代碼", placeholder="例如: 2882").strip()
+        if st.button("確認加入自選"):
+            if new_code:
+                target_code = new_code.upper()
+                pure_number = target_code.split('.')[0]
+                if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
+                    target_code = f"{pure_number}.TW"
+                try:
+                    test_stock = yf.Ticker(target_code)
+                    test_df = test_stock.history(period="1d")
+                    if test_df.empty:
+                        st.sidebar.error(f"❌ 查無此代碼 [{target_code}]")
+                    else:
+                        detected_name = TAIWAN_STOCK_DICT.get(pure_number, test_stock.info.get('shortName', pure_number))
+                        display_key = f"{detected_name} ({target_code})" if "(" not in detected_name else detected_name
+                        st.session_state["watchlist_dict"][display_key] = target_code
+                        save_my_watchlist()
+                        st.sidebar.success(f"成功加入: {detected_name}")
+                        st.rerun()
+                except:
+                    st.sidebar.error("❌ 無法連線驗證。")
 
-if st.sidebar.button("❌ 從清單中刪除目前股票"):
-    if len(st.session_state["watchlist_dict"]) > 1:
-        del st.session_state["watchlist_dict"][selected_display]
-        save_my_watchlist()
-        st.session_state["current_selected_idx"] = 0
-        st.rerun()
-    else:
-        st.sidebar.warning("清單內至少需保留一檔股票！")
+    selected_display = watchlist_keys[st.session_state["current_selected_idx"]]
+    stock_code = st.session_state["watchlist_dict"][selected_display]
 
-refresh_rate = st.sidebar.slider("即時報價刷新頻率 (秒)", min_value=5, max_value=60, value=10, step=5)
+    if st.sidebar.button("❌ 從清單中刪除目前股票"):
+        if len(st.session_state["watchlist_dict"]) > 1:
+            del st.session_state["watchlist_dict"][selected_display]
+            save_my_watchlist()
+            st.session_state["current_selected_idx"] = 0
+            st.rerun()
+        else:
+            st.sidebar.warning("清單內至少需保留一檔股票！")
+
+    refresh_rate = st.sidebar.slider("即時報價刷新頻率 (秒)", min_value=5, max_value=60, value=10, step=5)
+else:
+    # 隱藏時，預設保持當前選擇的股票，讓主畫面不會出錯
+    selected_display = watchlist_keys[st.session_state["current_selected_idx"]]
+    stock_code = st.session_state["watchlist_dict"][selected_display]
 
 # ====================================================================
 # 8. 智慧分流加載大腦 (可轉債 5 碼/普通股 4 碼 安全不崩潰)
@@ -305,10 +316,10 @@ pure_num_check = stock_code.split('.')[0]
 if len(pure_num_check) == 5 and pure_num_check.isdigit():
     is_cb_bond = True
     info = {"shortName": f"可轉債 {pure_num_check}", "currentPrice": 100.0, "previousClose": 100.0, "news": []}
-    # 🟢 修正：補上完整的 20 天假 K 線數據，讓可轉債切換時右上角和左下角圖表不留白、不報錯！
+    # 補上完整的 20 天假 K 線數據，讓可轉債切換時不留白、不報錯
     dates = [pd.Timestamp(datetime.date.today() - datetime.timedelta(days=i)) for i in range(20)][::-1]
     df = pd.DataFrame({
-        "Open": [100.0]*20, "High": [102.0]*20, "Low": [99.5]*20, "Close": [100.5]*20, "Volume": [150]*20
+        "Open": [100.0]*20, "High": [102.0]*20, "Low": [99.5]*20, "Close": [100.5]*20, "Volume": [1000]*20
     }, index=dates)
     current_price, price_change, price_change_pct, color_text, sign = 100.0, 0.0, 0.0, "#00E676", ""
 else:
@@ -325,16 +336,16 @@ else:
         st.stop()
 
 # ====================================================================
-# 9. XQ 仿真四宮格主排版控制 (V8.0 純淨原生完全體 - 徹底逼出選股按鈕)
+# 9. XQ 仿真四宮格主排版控制 (自選股 3 檔分頁、橫向右上圖例)
 # ====================================================================
 st.markdown(f"### 📊 XQ 操盤模擬器 | 當前關注：<span style='color:{color_text};'>{selected_display}</span>", unsafe_allow_html=True)
 row1_col1, row1_col2 = st.columns(2)
 
-# --- 左上格：商品報價組合 (每頁 4 筆，黃金高度對稱) ---
+# --- 左上格：商品報價組合 (每頁固定 3 檔) ---
 with row1_col1:
     st.markdown("📈 **【看盤重點/報價組合】**")
     
-    # 補上項目說明標題列
+    # 項目說明標題列
     h_col1, h_col2, h_col3, h_col4 = st.columns([2, 1.2, 1, 1.2])
     h_col1.markdown("<p style='color:#BBBBBB; font-size:13px; font-weight:bold; margin-bottom:2px;'>商品名稱</p>", unsafe_allow_html=True)
     h_col2.markdown("<p style='color:#BBBBBB; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:center;'>成交價</p>", unsafe_allow_html=True)
@@ -342,7 +353,8 @@ with row1_col1:
     h_col4.markdown("<p style='color:#BBBBBB; font-size:13px; font-weight:bold; margin-bottom:2px; text-align:center;'>漲跌幅</p>", unsafe_allow_html=True)
     st.markdown("<hr style='margin:2px 0px; border-top:1px solid #555;'>", unsafe_allow_html=True)
     
-    ITEMS_PER_PAGE = 4
+    # 修正：每頁固定放置 3 檔
+    ITEMS_PER_PAGE = 3
     watchlist_items = list(st.session_state["watchlist_dict"].items())
     total_items = len(watchlist_items)
     
@@ -365,7 +377,7 @@ with row1_col1:
             chg = c_p - p_c
             pct = (chg / p_c) * 100
         except: 
-            if len(code.split('.')) == 5:
+            if len(code.split('.')[0]) == 5:
                 c_p, chg, pct = 100.5, 0.5, 0.5
             else:
                 c_p, chg, pct = 0.0, 0.0, 0.0
@@ -380,9 +392,8 @@ with row1_col1:
         with b_col3: st.markdown(f"<p style='text-align:center; padding-top:6px;' class='{css_class}'>{b_sign}{chg:,.2f}</p>", unsafe_allow_html=True)
         with b_col4: st.markdown(f"<p style='text-align:center; padding-top:6px;' class='{css_class}'>{b_sign}{pct:.2f}%</p>", unsafe_allow_html=True)
 
-    # 分頁按鈕控制
+    # 分頁按鈕控制列 (精準填入寬度參數)
     st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
-    # 🟢 完美修正：在括號內填入 [1.2, 2, 1.2] 代表建立左、中、右三個對齊的按鈕欄位
     p_col1, p_col2, p_col3 = st.columns([1.2, 2, 1.2])
     with p_col1:
         if st.button("⬅️ 上一頁", disabled=(st.session_state["current_page"] == 0), use_container_width=True, key="prev_page_btn"):
@@ -395,7 +406,7 @@ with row1_col1:
             st.session_state["current_page"] += 1
             st.rerun()
 
-# --- 右上格：技術分析 (高清高對比度圖例小窗) ---
+# --- 右上格：技術分析 (圖例改為右上角橫向橫排) ---
 with row1_col2:
     st.markdown("📈 **【技術分析 K 線與均線】**")
     time_frame = st.radio("選擇時間區間", ["當日", "近月", "一年", "五年"], index=1, horizontal=True, key="tech_radio")
@@ -412,8 +423,8 @@ with row1_col2:
         decreasing_line_color='#00AA00', decreasing_fillcolor='#00AA00', showlegend=True
     ), row=1, col=1)
     
-    fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA5'], mode='lines', line=dict(color='#00B0FF', width=2.0), name="藍線: 5MA", showlegend=True), row=1, col=1)
-    fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA20'], mode='lines', line=dict(color='#E040FB', width=2.0), name="紫線: 20MA", showlegend=True), row=1, col=1)
+    fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA5'], mode='lines', line=dict(color='#00B0FF', width=2.0), name="5MA", showlegend=True), row=1, col=1)
+    fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA20'], mode='lines', line=dict(color='#E040FB', width=2.0), name="20MA", showlegend=True), row=1, col=1)
     
     vol_colors = ['#FF3333' if c >= o else '#00AA00' for o, c in zip(plot_df['Open'], plot_df['Close'])]
     fig.add_trace(go.Bar(x=plot_df.index, y=plot_df['Volume'], marker_color=vol_colors, name="成交量", showlegend=False), row=2, col=1)
@@ -423,52 +434,50 @@ with row1_col2:
         xaxis_rangeslider_visible=False, height=240, margin=dict(l=10, r=40, t=5, b=5),
         showlegend=True, 
         legend=dict(
-            yanchor="top", y=0.99, xanchor="left", x=0.01, 
-            bgcolor="rgba(10, 10, 10, 0.85)", bordercolor="#444444", borderwidth=1,
-            font=dict(size=13, color="#FFFFFF", family="Arial, sans-serif")
+            orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1.0,
+            bgcolor="rgba(0, 0, 0, 0)", font=dict(size=12, color="#FFFFFF", family="Arial, sans-serif")
         )
     )
     fig.update_yaxes(side="right", gridcolor="#2D2D2D")
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
+# 定義下方橫列欄位
 row2_col1, row2_col2 = st.columns(2)
 
-# --- 左下格：走勢與即時明細 (🟢 全面改用官方原生元件，絕不干擾按鈕) ---
+# --- 左下格：走勢與即時明細 (圖例改為右上角橫向橫排，去原生成交明細) ---
 with row2_col1:
     st.markdown(f"🎯 **【市場焦點動態】** <span style='color:{color_text}; font-weight:bold;'>{current_price:,.2f} ({sign}{price_change_pct:.2f}%)</span>", unsafe_allow_html=True)
     tab_trend, tab_ticks = st.tabs(["📊 當日分時走勢", "🧾 即時成交明細"])
     
     with tab_trend:
         fig_line = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.7, 0.3])
-        fig_line.add_trace(go.Scatter(x=plot_df.index[-10:], y=plot_df['Close'].tail(10), mode='lines+markers', line=dict(color='#00E676', width=2.5), name="綠線: 分時價格", showlegend=True), row=1, col=1)
-        fig_line.add_trace(go.Bar(x=plot_df.index[-10:], y=plot_df['Volume'].tail(10), marker_color='#00B0FF', name="藍柱: 即時量能", showlegend=True), row=2, col=1)
+        fig_line.add_trace(go.Scatter(x=plot_df.index[-10:], y=plot_df['Close'].tail(10), mode='lines+markers', line=dict(color='#00E676', width=2.5), name="分時價格", showlegend=True), row=1, col=1)
+        fig_line.add_trace(go.Bar(x=plot_df.index[-10:], y=plot_df['Volume'].tail(10), marker_color='#00B0FF', name="即時量能", showlegend=True), row=2, col=1)
         
         fig_line.update_layout(
             template="plotly_dark", paper_bgcolor="#121212", plot_bgcolor="#121212", height=200, margin=dict(l=10, r=40, t=5, b=5),
             showlegend=True, 
             legend=dict(
-                yanchor="top", y=0.99, xanchor="left", x=0.01, 
-                bgcolor="rgba(10, 10, 10, 0.85)", bordercolor="#444444", borderwidth=1,
-                font=dict(size=13, color="#FFFFFF", family="Arial, sans-serif")
+                orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1.0, bgcolor="rgba(0, 0, 0, 0)",
+                font=dict(size=12, color="#FFFFFF", family="Arial, sans-serif")
             )
         )
         st.plotly_chart(fig_line, use_container_width=True, config={'displayModeBar': False})
         
     with tab_ticks:
-        # 🟢 徹底根除 HTML 衝突：改用 Streamlit 原生的高質量明細 DataFrame 表格
+        # 改用官方原生表格元件，絕不殘留未閉合網頁程式碼
         ticks_data = []
-        for i in range(1, 5):
+        i_end = max(2, min(5, len(df)))
+        for i in range(1, i_end):
             p_val = current_price if is_cb_bond else df['Close'].iloc[-i]
             v_val = 15 if is_cb_bond else int(df['Volume'].iloc[-i] // 1000 + 1)
             t_state = "外盤" if i % 2 == 0 else "內盤"
             ticks_data.append({"時間": f"13:2{i}", "價格": round(p_val, 2), "單量(張)": v_val, "狀態": t_state})
-        
         ticks_df = pd.DataFrame(ticks_data)
-        # 渲染原生表格，自帶高對比白字與黑色格線，絕不干擾任何網頁元件！
         st.dataframe(ticks_df, use_container_width=True, hide_index=True)
 
 # ====================================================================
-# 10. 右下格：唯一的融合去重四分頁控制台 (大火箭按鈕王者回歸！)
+# 10. 右下格：唯一的融合去重四分頁控制台 (大火箭按鈕王者重裝回歸)
 # ====================================================================
 with row2_col2:
     tab_news, tab_ai, tab_shioaji, tab_picker = st.tabs(["📰 相關即時新聞", "🧠 AI 策略分析", "📊 永豐單股指標", "🤖 永豐全市場選股"])
@@ -500,11 +509,10 @@ with row2_col2:
             col_d.metric(label="自營商買賣超", value="+0 張", delta="假日無數據")
         else: st.warning("⚠️ 永豐金 API 未啟動。")
 
-    # --- 分頁 4：🤖 永豐全市場智慧選股 (與其他 with 平起平坐) ---
     with tab_picker:
         st.markdown("🔍 <h4 style='color: #FFFFFF; font-weight: bold; margin-top: 0px;'>永豐金量化大腦 × 新聞輿情與可轉債 (CB)</h4>", unsafe_allow_html=True)
         
-        # 🟢 修正：精準補齊右括號 )，消除第 504 行未關閉錯誤！
+        # 🟢 修正：完美閉合右括號，100% 消除語法解析錯誤！
         pick_strategy = st.selectbox(
             "請選擇篩選核心策略：",
             ["外資投信同步買超股 (普通股)", "技術面均線多頭排列 (普通股)", "新聞輿情爆量突破股 (普通股)", "主力低溢價可轉債 (CB 黃金池)"],
@@ -512,7 +520,7 @@ with row2_col2:
         )
         st.write("")
         
-        # 大火箭按鈕強制解鎖現身！
+        # 大火箭按鈕強制現身！
         if st.button("🚀 開始全市場 AI 智慧掃描", use_container_width=True, key="main_pick_btn_real"):
             with st.spinner("正在連線數據庫..."):
                 if "可轉債" in pick_strategy:
