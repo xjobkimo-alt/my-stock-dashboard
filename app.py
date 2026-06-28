@@ -14,7 +14,7 @@ import shioaji as sj     # 1. 正式引入永豐金 API
 @st.dialog("🎯 AI 智慧選股黃金報告", width="large")
 def show_picked_report(stocks, strategy_name):
     # ====================================================================
-    # 1. 科技消光黑全域 CSS 樣式控制 (維持原樣)
+    # 1. 科技消光黑全域 CSS 樣式控制
     # ====================================================================
     st.markdown("""
         <style>
@@ -34,7 +34,7 @@ def show_picked_report(stocks, strategy_name):
     st.markdown("---")
     
     # ====================================================================
-    # 2. 🟢 核心防禦：強制進行「個股去重」，避免傳入重複清單導致畫面疊加
+    # 2. 核心防禦：強制進行「個股去重」
     # ====================================================================
     unique_stocks = []
     seen_codes = set()
@@ -46,7 +46,7 @@ def show_picked_report(stocks, strategy_name):
     # 讀取當前已經存在於自選股清單中的所有代碼
     current_watchlist_codes = list(st.session_state.get("watchlist_dict", {}).values())
     
-    # 使用去重後的乾淨清單進行渲染
+    # 使用去重後的乾淨清單進行「唯一一次」渲染
     for stock in unique_stocks:
         col_info, col_reason, col_action = st.columns([1.5, 3, 1.2])
         
@@ -68,7 +68,7 @@ def show_picked_report(stocks, strategy_name):
             """
             st.markdown(html_reason, unsafe_allow_html=True)
         
-        # 🟢 智慧型狀態按鈕判定：確保 key 加入動態亂數尾綴，絕不重複打架！
+        # 智慧型狀態按鈕判定：鎖定按鈕連擊不關閉
         with col_action:
             st.write("") 
             session_btn_key = f"has_added_{stock['code']}"
@@ -94,6 +94,7 @@ def show_picked_report(stocks, strategy_name):
                         st.rerun() 
                         
     st.markdown("---")
+    # 免責聲明
     st.markdown("<p style='color: #FFD600; font-size: 0.9rem; font-weight: bold;'>⚠️ 本報告由永豐金 API 籌碼數據結合 Gemini AI 進行綜合運算，僅供參考，投資請謹慎評估風險。</p>", unsafe_allow_html=True)
 
     # ====================================================================
