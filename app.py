@@ -483,17 +483,17 @@ with row1_col1:
     total_items = len(watchlist_items)
     
     with tab_portfolio:
-        # 採用標準 XQ 終端一體化 HTML 表頭，文字與下方數值完全對齊
+        # 【關鍵修正】調整表頭百分比：縮小商品寬度，欄位整體集體左移，並將右側「移」欄位擴大至 10%
         st.markdown("""
         <table style="width:100%; border-collapse:collapse; margin-bottom:4px;">
             <tr style="border-bottom:2px solid #0D47A1; height:24px;">
-                <td style="width:25%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:left; padding-left:5px;">商品</td>
-                <td style="width:13%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">買進</td>
-                <td style="width:13%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">賣出</td>
-                <td style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">成交</td>
+                <td style="width:20%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:left; padding-left:5px;">商品</td>
+                <td style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">買進</td>
+                <td style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">賣出</td>
+                <td style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">成交</td>
                 <td style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲跌</td>
                 <td style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲幅%</td>
-                <td style="width:6%;  color:#64B5F6; font-size:13px; font-weight:bold; text-align:center;">移</td>
+                <td style="width:10%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:center;">移除</td>
             </tr>
         </table>
         """, unsafe_allow_html=True)
@@ -504,7 +504,6 @@ with row1_col1:
             st.session_state["current_page"] = 0
             
         max_page = max(0, (total_items - 1) // ITEMS_PER_PAGE)
-        # 如果因為刪除導致當前頁碼超出範圍，自動校正回最後一頁
         if st.session_state["current_page"] > max_page:
             st.session_state["current_page"] = max_page
             
@@ -529,18 +528,18 @@ with row1_col1:
                 else:
                     bid_str, ask_str, price_format = f"{c_p-0.05:,.2f}", f"{c_p+0.05:,.2f}", f"{c_p:,.2f}s"
             except:
-                # 網路超時或無數據時的標準保底
                 c_p, chg, pct, bid_str, ask_str = 248.5, -9.0, -3.5, "248.00", "248.50"
                 price_format = f"{c_p:,.2f}s"
             
-            # 根據漲跌動態套用標準 XQ 紅綠色標
             v_class = "val-up" if chg > 0 else ("val-down" if chg < 0 else "val-even")
             s_arrow = "▲" if chg > 0 else ("▼" if chg < 0 else " ")
             short_name = name.split(' ')[0] # 僅抓取前段中文名稱，防止代碼冗長擠壓排版
             
-            # 使用獨立 row 容器包裹，並利用 Streamlit 的 columns 精準填入數據
+            # 使用獨立 row 容器包裹
             st.markdown(f"<div class='{row_style}'>", unsafe_allow_html=True)
-            r_col1, r_col2, r_col3, r_col4, r_col5, r_col6, r_col7 = st.columns([25, 13, 13, 15, 14, 14, 6])
+            
+            # 【關鍵修正】這裡的數字代表欄位寬度比例，完全契合上方表頭的 [20%, 14%, 14%, 14%, 14%, 14%, 10%] 權重分配
+            r_col1, r_col2, r_col3, r_col4, r_col5, r_col6, r_col7 = st.columns([2.0, 1.4, 1.4, 1.4, 1.4, 1.4, 1.0])
             
             with r_col1:
                 if st.button(f" {short_name}", key=f"btn_{code}_{global_idx}"):
@@ -554,12 +553,11 @@ with row1_col1:
             r_col6.markdown(f"<p class='xq-val {v_class}'>{pct:+.2f}%</p>", unsafe_allow_html=True)
             
             with r_col7:
-                # 【核心防禦 1】：如果總清單只剩最後 1 筆項目，直接隱藏刪除鍵，死守底線，絕不崩潰！
+                # 保底安全機制：清單大於1筆才允許點擊刪除
                 if total_items > 1:
                     if st.button("❌", key=f"del_fast_{code}_{global_idx}"):
                         del st.session_state["watchlist_dict"][name]
                         save_my_watchlist()
-                        # 自動將主畫面指引回清單的第一檔商品，防止指針越界
                         remaining_keys = list(st.session_state["watchlist_dict"].keys())
                         st.session_state["current_selected_idx"] = 0
                         st.session_state["main_stock_selector"] = remaining_keys[0]
@@ -592,7 +590,6 @@ with row1_col1:
                 if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
                     target_code = f"{pure_number}.TW"
                 
-                # 【核心防禦 2】：查重機制！判斷該代碼是否已存在於目前的自選清單中
                 existing_codes = list(st.session_state["watchlist_dict"].values())
                 if target_code in existing_codes:
                     st.warning(f"💡 提示：商品代碼 [{target_code}] 已存在於您的自選股清單中，無需重複建立！")
