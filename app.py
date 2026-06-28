@@ -475,99 +475,100 @@ row1_col1, row1_col2 = st.columns(2)
 
 # --- 【左上格】：自選股與管理面板面板 ---
 with row1_col1:
-    st.markdown('<div class="xq-grid-card">', unsafe_allow_html=True) # 包裹獨立卡片
+    st.markdown('<div class="xq-grid-card">', unsafe_allow_html=True)
     tab_portfolio, tab_manage = st.tabs(["📊 報價組合清單", "🔧 自選股管理面版"])
     
+    # 獲取當前所有自選股清單項目
+    watchlist_items = list(st.session_state["watchlist_dict"].items())
+    total_items = len(watchlist_items)
+    
     with tab_portfolio:
-        # 表頭對齊，寬度權重分配
-        h_col1, h_col2, h_col3, h_col4, h_col5, h_col6, h_col7 = st.columns([1.5, 0.9, 0.9, 1.1, 0.9, 1.0, 0.4])
-        h_col1.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:left; padding-left:5px; margin:0;'>商品</p>", unsafe_allow_html=True)
-        h_col2.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>買進</p>", unsafe_allow_html=True)
-        h_col3.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>賣出</p>", unsafe_allow_html=True)
-        h_col4.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>成交</p>", unsafe_allow_html=True)
-        h_col5.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>漲跌</p>", unsafe_allow_html=True)
-        h_col6.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>漲幅%</p>", unsafe_allow_html=True)
-        h_col7.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:center; margin:0;'>移</p>", unsafe_allow_html=True)
-        st.markdown("<div style='border-top:2px solid #0D47A1; margin: 4px 0px;'></div>", unsafe_allow_html=True)
+        # 採用標準 XQ 終端一體化 HTML 表頭，文字與下方數值完全對齊
+        st.markdown("""
+        <table style="width:100%; border-collapse:collapse; margin-bottom:4px;">
+            <tr style="border-bottom:2px solid #0D47A1; height:24px;">
+                <td style="width:25%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:left; padding-left:5px;">商品</td>
+                <td style="width:13%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">買進</td>
+                <td style="width:13%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">賣出</td>
+                <td style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">成交</td>
+                <td style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲跌</td>
+                <td style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲幅%</td>
+                <td style="width:6%;  color:#64B5F6; font-size:13px; font-weight:bold; text-align:center;">移</td>
+            </tr>
+        </table>
+        """, unsafe_allow_html=True)
         
-        watchlist_items = list(st.session_state["watchlist_dict"].items())
-        index_item = [item for item in watchlist_items if "^TWII" in item[1] or "加權指數" in item[0]]
-        stock_items = [item for item in watchlist_items if item not in index_item]
-        
-        # 永遠置頂大盤指數行
-        if index_item:
-            idx_name, idx_code = index_item[0]
-            try:
-                idx_df, idx_info = fetch_safe_stock_data(idx_code)
-                i_cp = idx_info.get("currentPrice") if idx_info.get("currentPrice") is not None else idx_df['Close'].iloc[-1]
-                i_pc = idx_info.get("previousClose") if idx_info.get("previousClose") is not None else idx_df['Close'].iloc[-2]
-                i_chg = i_cp - i_pc
-                i_pct = (i_chg / i_pc) * 100
-            except:
-                i_cp, i_chg, i_pct = 44571.76, -1683.50, -3.64
-            i_class = "val-up" if i_chg > 0 else ("val-down" if i_chg < 0 else "val-even")
-            i_arrow = "▲" if i_chg > 0 else ("▼" if i_chg < 0 else " ")
+        # 分頁邏輯控制 (每頁顯示 4 筆項目)
+        ITEMS_PER_PAGE = 4
+        if "current_page" not in st.session_state: 
+            st.session_state["current_page"] = 0
             
-            st.markdown("<div class='xq-row-even'>", unsafe_allow_html=True)
-            b_col1, b_col2, b_col3, b_col4, b_col5, b_col6, b_col7 = st.columns([1.5, 0.9, 0.9, 1.1, 0.9, 1.0, 0.4])
-            with b_col1:
-                if st.button(f">> 加權指數", key=f"btn_fixed_index"):
-                    st.session_state["current_selected_idx"] = 0
-                    st.session_state["main_stock_selector"] = idx_name
-                    st.rerun()
-            b_col2.markdown("<p class='xq-val val-even'>--</p>", unsafe_allow_html=True)
-            b_col3.markdown("<p class='xq-val val-even'>--</p>", unsafe_allow_html=True)
-            b_col4.markdown(f"<p class='xq-val {i_class}'>{i_cp:,.2f}s</p>", unsafe_allow_html=True)
-            b_col5.markdown(f"<p class='xq-val {i_class}'>{i_arrow}{abs(i_chg):,.2f}</p>", unsafe_allow_html=True)
-            b_col6.markdown(f"<p class='xq-val {i_class}'>{i_pct:+.2f}%</p>", unsafe_allow_html=True)
-            b_col7.markdown("<p style='text-align:center; color:#444; margin:0;'>-</p>", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
-
-        # 個股相間分頁橫列顯示
-        ITEMS_PER_PAGE = 3
-        total_stocks = len(stock_items)
-        if "current_page" not in st.session_state: st.session_state["current_page"] = 0
-        max_page = max(0, (total_stocks - 1) // ITEMS_PER_PAGE)
+        max_page = max(0, (total_items - 1) // ITEMS_PER_PAGE)
+        # 如果因為刪除導致當前頁碼超出範圍，自動校正回最後一頁
+        if st.session_state["current_page"] > max_page:
+            st.session_state["current_page"] = max_page
+            
         start_idx = st.session_state["current_page"] * ITEMS_PER_PAGE
-        end_idx = min(start_idx + ITEMS_PER_PAGE, total_stocks)
+        end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
         
-        for idx_offset, (name, code) in enumerate(stock_items[start_idx:end_idx]):
+        # 循環渲染當前分頁的自選股商品
+        for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
             global_idx = start_idx + idx_offset
             row_style = "xq-row-odd" if idx_offset % 2 == 0 else "xq-row-even"
+            
+            # 即時抓取每檔商品的即時報價數據
             try:
                 s_df, s_info = fetch_safe_stock_data(code)
                 c_p = s_info.get("currentPrice") if s_info.get("currentPrice") is not None else s_df['Close'].iloc[-1]
                 p_c = s_info.get("previousClose") if s_info.get("previousClose") is not None else s_df['Close'].iloc[-2]
                 chg = c_p - p_c
                 pct = (chg / p_c) * 100
-                bid_p, ask_p = c_p - 0.05, c_p + 0.05
+                
+                if "^TWII" in code:
+                    bid_str, ask_str, price_format = "--", "--", f"{c_p:,.2f}s"
+                else:
+                    bid_str, ask_str, price_format = f"{c_p-0.05:,.2f}", f"{c_p+0.05:,.2f}", f"{c_p:,.2f}s"
             except:
-                c_p, chg, pct, bid_p, ask_p = 248.5, -9.0, -3.5, 248.0, 248.5
+                # 網路超時或無數據時的標準保底
+                c_p, chg, pct, bid_str, ask_str = 248.5, -9.0, -3.5, "248.00", "248.50"
+                price_format = f"{c_p:,.2f}s"
+            
+            # 根據漲跌動態套用標準 XQ 紅綠色標
             v_class = "val-up" if chg > 0 else ("val-down" if chg < 0 else "val-even")
             s_arrow = "▲" if chg > 0 else ("▼" if chg < 0 else " ")
-            short_name = name.split(' ')[0]
+            short_name = name.split(' ')[0] # 僅抓取前段中文名稱，防止代碼冗長擠壓排版
             
+            # 使用獨立 row 容器包裹，並利用 Streamlit 的 columns 精準填入數據
             st.markdown(f"<div class='{row_style}'>", unsafe_allow_html=True)
-            b_col1, b_col2, b_col3, b_col4, b_col5, b_col6, b_col7 = st.columns([1.5, 0.9, 0.9, 1.1, 0.9, 1.0, 0.4])
-            with b_col1:
-                if st.button(f"{short_name}", key=f"btn_{code}_{global_idx}"):
-                    st.session_state["current_selected_idx"] = global_idx + 1
+            r_col1, r_col2, r_col3, r_col4, r_col5, r_col6, r_col7 = st.columns([25, 13, 13, 15, 14, 14, 6])
+            
+            with r_col1:
+                if st.button(f" {short_name}", key=f"btn_{code}_{global_idx}"):
+                    st.session_state["current_selected_idx"] = global_idx
                     st.session_state["main_stock_selector"] = name
                     st.rerun()
-            b_col2.markdown(f"<p class='xq-val {v_class}'>{bid_p:,.2f}</p>", unsafe_allow_html=True)
-            b_col3.markdown(f"<p class='xq-val {v_class}'>{ask_p:,.2f}</p>", unsafe_allow_html=True)
-            b_col4.markdown(f"<p class='xq-val {v_class}'>{c_p:,.2f}s</p>", unsafe_allow_html=True)
-            b_col5.markdown(f"<p class='xq-val {v_class}'>{s_arrow}{abs(chg):,.2f}</p>", unsafe_allow_html=True)
-            b_col6.markdown(f"<p class='xq-val {v_class}'>{pct:+.2f}%</p>", unsafe_allow_html=True)
-            with b_col7:
-                if st.button("❌", key=f"del_fast_{code}_{global_idx}"):
-                    if len(st.session_state["watchlist_dict"]) > 1:
+            r_col2.markdown(f"<p class='xq-val {v_class}'>{bid_str}</p>", unsafe_allow_html=True)
+            r_col3.markdown(f"<p class='xq-val {v_class}'>{ask_str}</p>", unsafe_allow_html=True)
+            r_col4.markdown(f"<p class='xq-val {v_class}'>{price_format}</p>", unsafe_allow_html=True)
+            r_col5.markdown(f"<p class='xq-val {v_class}'>{s_arrow}{abs(chg):,.2f}</p>", unsafe_allow_html=True)
+            r_col6.markdown(f"<p class='xq-val {v_class}'>{pct:+.2f}%</p>", unsafe_allow_html=True)
+            
+            with r_col7:
+                # 【核心防禦 1】：如果總清單只剩最後 1 筆項目，直接隱藏刪除鍵，死守底線，絕不崩潰！
+                if total_items > 1:
+                    if st.button("❌", key=f"del_fast_{code}_{global_idx}"):
                         del st.session_state["watchlist_dict"][name]
                         save_my_watchlist()
+                        # 自動將主畫面指引回清單的第一檔商品，防止指針越界
+                        remaining_keys = list(st.session_state["watchlist_dict"].keys())
                         st.session_state["current_selected_idx"] = 0
+                        st.session_state["main_stock_selector"] = remaining_keys[0]
                         st.rerun()
+                else:
+                    st.markdown("<p style='text-align:center; color:#444446; margin:0;'>🔒</p>", unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
             
+        # 分頁導航底欄
         st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
         p_col1, p_col2, p_col3 = st.columns([1.2, 2, 1.2])
         with p_col1:
@@ -587,23 +588,30 @@ with row1_col1:
         if st.button("🚀 確認加入自選清單", use_container_width=True, key="manage_add_btn_unique"):
             if new_code:
                 target_code = new_code.upper()
-                pure_number = target_code.split('.')[0] if '.' in target_code else target_code
+                pure_number = target_code.split('.') if '.' in target_code else target_code
                 if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
                     target_code = f"{pure_number}.TW"
-                try:
-                    test_stock = yf.Ticker(target_code)
-                    test_df = test_stock.history(period="1d")
-                    if test_df.empty:
-                        st.error(f"查無此代碼 [{target_code}]")
-                    else:
-                        detected_name = TAIWAN_STOCK_DICT.get(pure_number, test_stock.info.get('shortName', pure_number))
-                        display_key = f"{detected_name} ({target_code})"
-                        st.session_state["watchlist_dict"][display_key] = target_code
-                        save_my_watchlist()
-                        st.success(f"成功加入: {detected_name}")
-                        st.rerun()
-                except Exception as e:
-                    st.error(f"連線驗證失敗: {e}")
+                
+                # 【核心防禦 2】：查重機制！判斷該代碼是否已存在於目前的自選清單中
+                existing_codes = list(st.session_state["watchlist_dict"].values())
+                if target_code in existing_codes:
+                    st.warning(f"💡 提示：商品代碼 [{target_code}] 已存在於您的自選股清單中，無需重複建立！")
+                else:
+                    try:
+                        with st.spinner("正在驗證商品代碼..."):
+                            test_stock = yf.Ticker(target_code)
+                            test_df = test_stock.history(period="1d")
+                            if test_df.empty:
+                                st.error(f"❌ 查無此代碼或暫無交易數據 [{target_code}]")
+                            else:
+                                detected_name = TAIWAN_STOCK_DICT.get(pure_number, test_stock.info.get('shortName', pure_number))
+                                display_key = f"{detected_name} ({target_code})"
+                                st.session_state["watchlist_dict"][display_key] = target_code
+                                save_my_watchlist()
+                                st.success(f"✅ 成功加入: {detected_name}")
+                                st.rerun()
+                    except Exception as e:
+                        st.error(f"連線驗證失敗: {e}")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- 【右上格】：技術分析 K 線與均線圖 ---
