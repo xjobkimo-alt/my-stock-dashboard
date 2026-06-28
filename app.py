@@ -484,11 +484,11 @@ with row1_col1:
             
             /* 💡 新增這段：強制解除藍色欄位說明字體被切一半的死角 */
             div[data-testid="stHorizontalBlock"] p {
-            line-height: 1.2 !important;   /* 💡 適度調整字體行高比例 */
+            line-height: 1.5 !important;
             height: auto !important;
             margin: 0px !important;
-            padding-top: 0px !important;   /* 💡 強制歸零！絕不撐開任何上下間隔 */
-            padding-bottom: 0px !important;/* 💡 強制歸零！保持原汁原味的緊貼感 */
+            padding-top: 3px !important;
+            padding-bottom: 3px !important;
             display: inline-block !important;
             }
 
