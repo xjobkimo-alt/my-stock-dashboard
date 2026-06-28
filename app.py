@@ -316,27 +316,37 @@ def get_ai_analysis(stock_name, price, change, pct, ma5, k_val, d_val):
 # 🟢 修正：移除 Checkbox，讓所有元件直接全域發動，交由官方自帶的箭頭控制展開與縮進
 st.sidebar.header("🔧 我的自選股管理面版")
 with st.sidebar.expander("➕ 新增自選股", expanded=True):
-    new_code = st.text_input("輸入股票代碼", placeholder="例如: 2882").strip()
-    if st.button("確認加入自選"):
-        if new_code:
-            target_code = new_code.upper()
-            pure_number = target_code.split('.')[0]
-            if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
-                target_code = f"{pure_number}.TW"
-            try:
-                test_stock = yf.Ticker(target_code)
-                test_df = test_stock.history(period="1d")
-                if test_df.empty:
-                    st.sidebar.error(f"❌ 查無此代碼 [{target_code}]")
+        new_code = st.text_input("輸入股票代碼", placeholder="防禦限制：請輸入 4 碼或 5 碼代碼", key="manage_add_input").strip()
+        if st.button("🚀 確認加入自選清單", use_container_width=True, key="manage_add_btn"):
+            if new_code:
+                # ====================================================================
+                # 關鍵修正：直接拿原始字串 new_code 判斷是否全為數字，防止 split('.') 列表報錯
+                # ====================================================================
+                target_code = new_code.upper()
+                
+                # 如果使用者只輸入 4 碼純數字（例如 2886），自動幫他補上台灣市場後綴 .TW
+                if target_code.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
+                    pure_number = target_code
+                    target_code = f"{pure_number}.TW"
                 else:
-                    detected_name = TAIWAN_STOCK_DICT.get(pure_number, test_stock.info.get('shortName', pure_number))
-                    display_key = f"{detected_name} ({target_code})" if "(" not in detected_name else detected_name
-                    st.session_state["watchlist_dict"][display_key] = target_code
-                    save_my_watchlist()
-                    st.sidebar.success(f"成功加入: {detected_name}")
-                    st.rerun()
-            except:
-                st.sidebar.error("❌ 無法連線驗證。")
+                    # 如果原本就帶有點號，才去拆分出純數字
+                    pure_number = target_code.split('.')[0] if '.' in target_code else target_code
+                
+                try:
+                    test_stock = yf.Ticker(target_code)
+                    test_df = test_stock.history(period="1d")
+                    if test_df.empty:
+                        st.error(f"❌ 查無此代碼 [{target_code}]")
+                    else:
+                        # 從名單字典中查找中文名稱，若找不到則抓取 Yahoo 的英文簡稱
+                        detected_name = TAIWAN_STOCK_DICT.get(pure_number, test_stock.info.get('shortName', pure_number))
+                        display_key = f"{detected_name} ({target_code})" if "(" not in detected_name else detected_name
+                        st.session_state["watchlist_dict"][display_key] = target_code
+                        save_my_watchlist()
+                        st.success(f"成功加入: {detected_name}")
+                        st.rerun()
+                except:
+                    st.error("❌ 無法連線驗證該商品代碼。")
 
 # ====================================================================
 # 雙向聯動大腦：優先讀取左上角格子的點擊狀態，若無則依循清單順序
