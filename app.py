@@ -566,15 +566,14 @@ with row1_col1:
             else:
                 v_color, s_arrow, sign_str = "#FFFFFF", " ", ""
             
-            # 安全切出純中文名稱字串
-            pure_name_str = str(name).split(' (').split('(')
+            # 【關鍵修復】：強制鎖定帶有陣列索引值的雙重防崩潰機制，100% 絕不拋出錯誤
+            pure_name_str = str(name).split(' (')[0].split('(')[0].strip()
             
             # 判斷是否為當前關注商品
             is_active = (name == st.session_state["main_stock_selector"])
             active_bullet = "🎯" if is_active else "🔹"
             
-            # 【一體化純網頁架構】：拋棄任何原生 st.button。直接利用 JS postMessage 跨沙盒發送點擊索引
-            # 這樣表格高度、寬度完全由網頁底層控制，大叉叉 100% 絕不可能出現，排版一秒恢復完美對齊！
+            # 內嵌 JS 點擊機制，將寬度硬性死鎖，數據完美前移靠攏貼齊
             html_code += f"""
             <tr style="background-color:{bg_color}; border-bottom:1px solid #222222; height:28px; vertical-align:middle;">
                 <td style="text-align:left; padding-left:4px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
@@ -594,10 +593,10 @@ with row1_col1:
         html_code += "</table>"
         clean_html_code = html_code.replace("\n", "").replace("\r", "")
         
-        # 3. 內嵌微型獨立組件，負責完美將 HTML 表格渲染呈現
+        # 3. 內嵌微型獨立組件渲染呈現
         st.components.v1.html(f"""<body style="margin:0; padding:0; background:transparent;">{clean_html_code}</body>""", height=196)
 
-                # 4. 原生 components 元件高感度監聽前端跨網域傳回的點擊參數，並精準重繪全螢幕四宮格
+                # 4. 原生 components 元件高感度監聽前端跨網域傳回的點擊參數
         import streamlit.components.v1 as components
         js_listener = """
         <script>
@@ -615,7 +614,7 @@ with row1_col1:
         });
         </script>
         """
-        components.html(js_listener, height=0, width=0) # 隱形骨架不佔空間
+        components.html(js_listener, height=0, width=0)
         
         # 5. 接收通道回傳寫入網址列的最新參數，強制更改全域關注狀態
         if hasattr(st.query_params, 'to_dict'):
@@ -627,15 +626,15 @@ with row1_col1:
             sel_idx = int(curr_params["fast_sel"])
             if sel_idx < len(watchlist_items):
                 st.session_state["current_selected_idx"] = sel_idx
-                # 【大腦同步鎖】：精準抽離元組拿取純字串顯示名稱，觸發其餘三宮格完全同步
-                st.session_state["main_stock_selector"] = watchlist_items[sel_idx]
+                # 【大腦同步鎖】：精準解鎖元組拿取純字串顯示名稱
+                st.session_state["main_stock_selector"] = watchlist_items[sel_idx][0]
                 st.query_params.clear()
                 st.rerun()
         
         if "fast_del" in curr_params:
             del_idx = int(curr_params["fast_del"])
             if total_items > 1 and del_idx < len(watchlist_items):
-                target_del_name = watchlist_items[del_idx]
+                target_del_name = watchlist_items[del_idx][0]
                 del st.session_state["watchlist_dict"][target_del_name]
                 save_my_watchlist()
                 
@@ -659,7 +658,6 @@ with row1_col1:
                 st.session_state["current_page"] += 1
                 st.rerun()
 
-                
             with tab_manage:
                 st.markdown("<p style='color:#BBBBBB; font-size:14px; font-weight:bold; margin-top:5px;'>➕ 新增自選股商品</p>", unsafe_allow_html=True)
         new_code = st.text_input("請在此輸入欲新增之股票代碼", placeholder="例如: 2330", key="manage_add_input_unique").strip()
