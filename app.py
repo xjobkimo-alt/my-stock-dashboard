@@ -42,28 +42,163 @@ st.set_page_config(
 
 st.markdown("""
 <style>
- /* 完美復刻：高質感大圓角灰色故事卡片（徹底拔除頂部殘留黑條版） */
- div.xq-grid-card, [data-testid="stExpander"], div[class*="stTabs"] {
-     background-color: #1A1A24 !important; /* 灰色故事卡片底色 */
-     border: 1px solid #3A3A4C !important; /* 照片中的微亮邊框 */
-     border-radius: 16px !important;       /* 強制大圓角 */
-     padding: 16px 18px !important; 
-     box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.6) !important; /* 立體深邃陰影 */
-     margin-bottom: 16px !important;
- }
+    /* 網頁與側邊欄全暗黑背景 */
+    .stApp { background-color: #121212 !important; color: #E0E0E0 !important; }
+    [data-testid="stSidebar"], section[data-testid="stSidebarViewPort"] { background-color: #1C1C1E !important; }
+    p, label, th, h1, h2, h3, .stMarkdown { color: #E0E0E0 !important; }
+    hr { border-top: 1px solid #2D2D2D !important; margin: 10px 0px !important; }
+    
+    /* 漲跌幅紅綠色設定 */
+    .stock-up { color: #FF3333 !important; font-weight: bold !important; }
+    .stock-down { color: #00AA00 !important; font-weight: bold !important; }
+    
+    /* 輸入框美化 */
+    input[type="text"], .stTextInput>div>div>input { background-color: #121212 !important; color: #FFFFFF !important; border: 1px solid #555555 !important; }
+    input[type="text"]::placeholder, .stTextInput>div>div>input::placeholder { color: #BBBBBB !important; opacity: 1 !important; }
+    [data-testid="stNotification"], div[data-testid="stNotificationV2"] { background-color: #222224 !important; color: #FFFFFF !important; }
+    
+    /* 徹底拔除頂端白色區塊與工具列 */
+    header[data-testid="stHeader"] { background-color: #121212 !important; border-bottom: 1px solid #1C1C1E !important; }
+    div[data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
 
- /* 核心修正：徹底消滅您看到的頂部深色殘留橫條，並讓內部容器完全透明 */
- div.xq-grid-card > div, div[data-baseweb="tab-panel"], [data-baseweb="tabs"], [data-baseweb="tab-list"] {
-     border-radius: 12px !important;
-     background-color: transparent !important; /* 強制變透明，不留黑條 */
-     background: transparent !important;
-     border: none !important;
- }
+     /* 完美復刻：高質感大圓角灰色故事卡片（加強鎖定版） */
+    div.xq-grid-card, [data-testid="stExpander"], div[class*="stTabs"] {
+        background-color: #1A1A24 !important; /* 強制換上灰色大基底 */
+        border: 1px solid #3A3A4C !important; /* 讓邊框顏色更明顯（仿照片中的微亮邊框） */
+        border-radius: 16px !important;       /* 強制 16px 大圓角 */
+        padding: 16px 18px !important; 
+        box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.6) !important; /* 強烈立體深邃陰影 */
+        margin-bottom: 16px !important;
+    }
 
- /* 讓滑鼠移過去卡片時，邊框能展現精緻的漸亮效果 */
- div.xq-grid-card:hover {
-     border-color: #4E4E66 !important;
- }
+    /* 強制將內部的 Streamlit 元件、容器與 Tab 面板的圓角也一併修圓，防止它把外框刺破 */
+    div.xq-grid-card > div, div[data-baseweb="tab-panel"] {
+        border-radius: 12px !important;
+        background-color: transparent !important;
+    }
+
+    /* 讓滑鼠移過去卡片時，邊框能展現精緻的漸亮效果 */
+    div.xq-grid-card:hover {
+        border-color: #4E4E66 !important;
+    }
+
+    /* ==================================================================== */
+    /* 【關鍵修正】強制拉開四宮格左右的縱向間距，並在中央降下直立科技灰分割線 */
+    /* ==================================================================== */
+    /* 讓兩大直欄的水平排列空出 24 像素的舒適寬度 */
+    div[data-testid="stHorizontalBlock"] { 
+        gap: 24px !important; 
+        margin: 0px !important; 
+        padding: 0px !important; 
+    }
+    
+    /* 精準鎖定左半邊的直欄容器 (Column 1)，在其右側刻出仿 XQ 的深灰直立中軸線 */
+    div[data-testid="stHorizontalBlock"] > div:nth-child(1) {
+        border-right: 1px solid #2D2D32 !important;
+        padding-right: 12px !important;
+    }
+    /* ==================================================================== */
+
+    /* 側邊欄拉出 (<<) (>>) 亮金加亮版 */
+    button[data-testid="stSidebarCollapseButton"], 
+    button[data-testid="stSidebarCollapseButton"] svg,
+    section[data-testid="stSidebarViewPort"] button svg {
+        fill: #FFD600 !important; color: #FFD600 !important; transform: scale(1.3) !important; transition: all 0.2s ease-in-out !important;
+    }
+    button[data-testid="stSidebarCollapseButton"]:hover svg {
+        fill: #00E676 !important; color: #00E676 !important; filter: drop-shadow(0px 0px 8px #00E676) !important;
+    }
+
+    /* 密實壓縮：全面抽乾單一卡片內部的垂直留白，維持緊湊操盤感 */
+    div[data-testid="stVerticalBlock"] { gap: 0px !important; }
+    div[data-testid="stVerticalBlock"] > div { margin-bottom: 0px !important; padding-bottom: 0px !important; }
+    div.element-container { margin-bottom: 0px !important; margin-top: 0px !important; padding: 0px !important; }
+
+    /* 強制破除原生按鈕的白色發光背景與邊框，完美融於暗黑背景 */
+    div.stButton > button {
+        background-color: #1A1A1E !important; 
+        color: #E0E0E0 !important; 
+        border: 1px solid #444446 !important; 
+        border-radius: 4px !important;
+        box-shadow: none !important;
+        transition: all 0.15s ease-in-out !important;
+    }
+    
+    /* 當鼠標移到普通按鈕時的冷冽科技藍發光效果 */
+    div.stButton > button:hover {
+        background-color: #2C2C2E !important;
+        border-color: #00B0FF !important;
+        color: #00B0FF !important;
+    }
+
+        /* 針對左上角「商品名稱安全切換按鈕」的專屬極簡透明化、防登出樣式 */
+    div.stButton > button[key^="stock_link_"] {
+        background-color: transparent !important; 
+        border: none !important; 
+        color: #FFFFFF !important; 
+        text-align: left !important; 
+        font-weight: bold !important; 
+        font-size: 14px !important; 
+        box-shadow: none !important;
+        min-height: 24px !important; 
+        height: 24px !important; 
+        padding: 0px !important; 
+        margin: 0px !important; 
+        line-height: 24px !important;
+        width: 100% !important;
+    }
+    /* 當鼠標移過去時，呈現高質感的 XQ 亮藍色下底線與發光效果 */
+    div.stButton > button[key^="stock_link_"]:hover { 
+        color: #00B0FF !important; 
+        background-color: transparent !important;
+        text-decoration: underline !important; 
+    }
+
+    /* 針對左上角個別「❌」刪除按鈕的客製美化（防止它變成白框橢圓） */
+    div.stButton > button[key^="del_btn_safe_"] {
+        background-color: transparent !important; 
+        color: #FF3333 !important; 
+        border: none !important; 
+        font-size: 13px !important; 
+        font-weight: bold !important;
+        box-shadow: none !important; 
+        min-height: 24px !important;
+        height: 24px !important;
+        line-height: 24px !important;
+        display: flex !important; 
+        align-items: center !important; 
+        justify-content: center !important;
+        width: 100% !important;
+    }
+    div.stButton > button[key^="del_btn_safe_"]:hover {
+        color: #FF8A80 !important;
+        background-color: rgba(255, 51, 51, 0.1) !important;
+        border-radius: 4px !important;
+    }
+
+    /* 右下角「全市場 AI 智慧掃描」大火箭按鈕的耀眼橘金 XQ 主力色強化樣式 */
+    div.stButton > button[key="main_pick_btn_real"] {
+        background-color: #E65100 !important; 
+        color: #FFFFFF !important; 
+        border: 1px solid #FF6D00 !important;
+        font-weight: bold !important;
+        font-size: 14px !important;
+        height: 36px !important; 
+    }
+    div.stButton > button[key="main_pick_btn_real"]:hover {
+        background-color: #FF6D00 !important;
+        box-shadow: 0px 0px 10px #FF6D00 !important;
+    }
+
+    /* 黑灰相間看盤橫條列 */
+    .xq-row-even { background-color: #131313 !important; margin: 0px !important; padding: 0px !important; border-bottom: 1px solid #222222 !important; height: 26px !important; display: flex; align-items: center; }
+    .xq-row-odd { background-color: #1A1A1A !important; margin: 0px !important; padding: 0px !important; border-bottom: 1px solid #222222 !important; height: 26px !important; display: flex; align-items: center; }
+    
+    /* 欄位文字與 Courier New 等寬對齊 */
+    .xq-val { font-family: 'Courier New', monospace !important; font-weight: bold !important; font-size: 14px !important; text-align: right !important; margin: 0px !important; line-height: 26px !important; width: 100%; }
+    .val-up { color: #FF3333 !important; }
+    .val-down { color: #00AA00 !important; }
+    .val-even { color: #FFFFFF !important; }
 </style>
 """, unsafe_allow_html=True)
 
