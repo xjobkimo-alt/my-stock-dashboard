@@ -607,7 +607,7 @@ with row1_col1:
             sel_idx = int(curr_params["fast_sel"])
             if sel_idx < len(watchlist_items):
                 st.session_state["current_selected_idx"] = sel_idx
-                # 修正綁定機制：拿對應的 Tuple 顯示字串作為 Key
+                # 【終極修復連動 Bug】: watchlist_items[sel_idx] 是 (Key, Value) 元組，必須取 [0] 拿顯示名稱字串！
                 st.session_state["main_stock_selector"] = watchlist_items[sel_idx][0]
                 st.query_params.clear()
                 st.rerun()
@@ -615,7 +615,7 @@ with row1_col1:
         if "fast_del" in curr_params:
             del_idx = int(curr_params["fast_del"])
             if total_items > 1 and del_idx < len(watchlist_items):
-                target_del_name = watchlist_items[del_idx][0]
+                target_del_name = watchlist_items[del_idx][0] # 同步修改元組取值
                 del st.session_state["watchlist_dict"][target_del_name]
                 save_my_watchlist()
                 remaining_keys = list(st.session_state["watchlist_dict"].keys())
@@ -644,7 +644,7 @@ with row1_col1:
         if st.button("🚀 確認加入自選清單", use_container_width=True, key="manage_add_btn_unique"):
             if new_code:
                 target_code = new_code.upper()
-                pure_number = target_code.split('.')[0] if '.' in target_code else target_code
+                pure_number = target_code.split('.') if '.' in target_code else target_code
                 if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
                     target_code = f"{pure_number}.TW"
                 
@@ -689,6 +689,20 @@ with row1_col2:
     
     fig.add_trace(go.Scatter(x=plot_df.index, y=df['MA5'].loc[plot_df.index], mode='lines', line=dict(color='#00B0FF', width=2.0), name="<b>5MA</b>"), row=1, col=1)
     fig.add_trace(go.Scatter(x=plot_df.index, y=df['MA20'].loc[plot_df.index], mode='lines', line=dict(color='#E040FB', width=2.0), name="<b>20MA</b>"), row=1, col=1)
+    
+    # 【修復 Bug】: 補回圖表成交量柱狀圖、版面佈局客製化與最重要的渲染指令
+    fig.add_trace(go.Bar(
+        x=plot_df.index, y=plot_df['Volume'], name="<b>成交量</b>",
+        marker=dict(color=list(map(lambda x: '#FF3333' if x >= 0 else '#00AA00', plot_df['Close'].diff().fillna(0))))
+    ), row=2, col=1)
+    
+    fig.update_layout(
+        margin=dict(l=10, r=10, t=10, b=10), template="plotly_dark",
+        xaxis_rangeslider_visible=False, height=340, showlegend=False
+    )
+    # 呼叫 Streamlit 渲染圖表到網頁畫面上
+    st.plotly_chart(fig, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # 建立四宮格的下半部分主要橫列布局
 row2_col1, row2_col2 = st.columns(2)
