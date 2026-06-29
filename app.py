@@ -510,9 +510,10 @@ with row1_col1:
     watchlist_keys = list(st.session_state["watchlist_dict"].keys())
     
     with tab_portfolio:
-        # 【鋼鐵強效隱形 CSS 注入】：利用最高階權重鎖，強制將原生按鈕的灰色外框與高度徹底蒸發，100% 絕不炸出大叉叉！
+        # 【重要！極致緊縮行高 CSS 注入】：硬性粉碎原生按鈕與欄位的巨大間距，將上下 Padding 縮減至極致！
         st.markdown("""
         <style>
+        /* 1. 物理閹割原生按鈕的死灰外框，並硬性鎖定高度與行高 */
         div[data-testid="stHorizontalBlock"] div.stButton button, 
         div.stButton button, 
         button[data-testid="baseButton-secondary"] {
@@ -528,9 +529,9 @@ with row1_col1:
             box-shadow: none !important;
             outline: none !important;
             font-weight: bold !important;
-            height: 28px !important;
-            min-height: 28px !important;
-            line-height: 28px !important;
+            height: 22px !important;      /* 壓縮商品按鈕高度至 22px */
+            min-height: 22px !important;
+            line-height: 22px !important;
             font-size: 14px !important;
             display: block !important;
             width: 100% !important;
@@ -538,7 +539,19 @@ with row1_col1:
         div.stButton button:hover {
             color: #00B0FF !important;
             background: transparent !important;
-            background-color: transparent !important;
+        }
+        /* 2. 強制壓縮 Streamlit 原生 columns 的上下內距與橫列容器間距 */
+        div[data-testid="stHorizontalBlock"] {
+            padding-top: 0px !important;   /* 完全拔除橫列頂部間距 */
+            padding-bottom: 0px !important;/* 完全拔除橫列底部間距 */
+            margin-top: -2px !important;   /* 輕微向上拉攏，校正縱向高度 */
+            margin-bottom: -2px !important;
+            gap: 0px !important;           /* 抹除局部雜訊間距 */
+        }
+        /* 3. 微調分隔線上下外邊距，維持高質感極細分割 */
+        div[data-testid="stHorizontalBlock"] + hr {
+            margin-top: 2px !important;
+            margin-bottom: 2px !important;
         }
         </style>
         """, unsafe_allow_html=True)
@@ -555,7 +568,7 @@ with row1_col1:
         start_idx = st.session_state["current_page"] * ITEMS_PER_PAGE
         end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
         
-        # 1. 宣告橫向死鎖表頭比例，徹底取消最右側刪除欄，數據強制往前挪移貼齊對齊！ [2.6, 1.4, 1.4, 1.6, 1.4, 1.6]
+        # 1. 宣告橫向死鎖表頭比例，[2.6, 1.4, 1.4, 1.6, 1.4, 1.6]，寬度完完全全對齊商品列
         t_col1, t_col2, t_col3, t_col4, t_col5, t_col6 = st.columns([2.6, 1.4, 1.4, 1.6, 1.4, 1.6])
         with t_col1: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin:0; text-align:left; padding-left:4px;'>商品</p>", unsafe_allow_html=True)
         with t_col2: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>買進</p>", unsafe_allow_html=True)
@@ -565,7 +578,7 @@ with row1_col1:
         with t_col6: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; padding-right:4px; margin:0;'>漲幅%</p>", unsafe_allow_html=True)
         st.markdown("<hr style='margin:4px 0px; border-top:1px solid #0D47A1 !important;'>", unsafe_allow_html=True)
 
-                # 2. 循環組裝資料列 (純 100% Python 控制流，去框透明按鈕點擊秒級重新渲染連動)
+        # 2. 循環組裝資料列 (純 100% Python 控制流，去框透明按鈕點擊秒級重新渲染連動)
         for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
             global_idx = start_idx + idx_offset
             
