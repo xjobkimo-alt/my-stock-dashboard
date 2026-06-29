@@ -10,9 +10,6 @@ from plotly.subplots import make_subplots
 import feedparser
 from bs4 import BeautifulSoup
 import numpy as np
-import random
-import streamlit.components.v1 as components
-
 
 # 【關鍵修正：解開 genai 報錯】
 from google import genai 
@@ -61,25 +58,14 @@ st.markdown("""
     header[data-testid="stHeader"] { background-color: #121212 !important; border-bottom: 1px solid #1C1C1E !important; }
     div[data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
 
-    /* 完美復刻：高質感大圓角灰色故事卡片（精準鎖定，不誤傷分頁外殼） */
-    div.xq-grid-card, [data-testid="stExpander"] {
-        background-color: #1A1A24 !important; /* 強制換上灰色大基底 */
-        border: 1px solid #3A3A4C !important; /* 讓邊框顏色更明顯（仿照片中的微亮邊框） */
-        border-radius: 16px !important;       /* 強制 16px 大圓角 */
-        padding: 16px 18px !important; 
-        box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.6) !important; /* 強烈立體深邃陰影 */
-        margin-bottom: 16px !important;
-    }
-
-    /* 強制將內部的 Streamlit 元件、容器與 Tab 面板的圓角也一併修圓，防止它把外框刺破 */
-    div.xq-grid-card > div, div[data-baseweb="tab-panel"] {
-        border-radius: 12px !important;
-        background-color: transparent !important;
-    }
-
-    /* 讓滑鼠移過去卡片時，邊框能展現精緻的漸亮效果 */
-    div.xq-grid-card:hover {
-        border-color: #4E4E66 !important;
+    /* 仿 XQ 專業四宮格獨立科技黑卡邊框 */
+    div.xq-grid-card {
+        background-color: #1A1A1E !important;
+        border: 1px solid #2D2D32 !important;
+        border-radius: 6px !important;
+        padding: 12px 14px !important;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.4) !important;
+        margin-bottom: 12px !important;
     }
 
     /* ==================================================================== */
@@ -199,87 +185,6 @@ st.markdown("""
     .val-up { color: #FF3333 !important; }
     .val-down { color: #00AA00 !important; }
     .val-even { color: #FFFFFF !important; }
-    
-    /* 終極修正：強制將 Streamlit 原生分頁（Tabs）的外殼底色全部變透明，徹底消滅那兩條橫條 */
-    div[data-baseweb="tabs"], 
-    [data-baseweb="tab-highlight-bar"],
-    div[class*="stTabs"] > div:first-child,
-    div[data-testid="stHorizontalBlock"] div[class*="stTabs"] {
-        background-color: transparent !important;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-
-    /* 確保分頁按鈕下方的橫線保留，但周圍的肥大黑框消失 */
-    [data-baseweb="tab-list"] {
-        background-color: transparent !important;
-        background: transparent !important;
-        border-bottom: 1px solid #2C2C3C !important;
-        padding: 0px !important;
-        gap: 12px !important;
-    }
-
-    /* ==================================================================== */
-    /* 【終極視覺強化】強制解放黑棒空間：第一行主標題、第二行分頁控制流 */
-    /* ==================================================================== */
-    /* 1. 解鎖黑棒（Tab Bar）的剛性限制，強制讓它有舒適的雙行高度與背景 */
-    [data-baseweb="tab-list"] {
-        background-color: #12121A !important; /* 讓黑棒呈現高質感深黑藍底色 */
-        border-radius: 10px !important;
-        padding: 8px 12px !important;
-        height: auto !important;             /* 解鎖高度限制，允許內容自然換行 */
-        display: flex !important;
-        flex-wrap: wrap !important;          /* 核心：允許按鈕在寬度不夠時自動換行成第二行 */
-        gap: 10px 16px !important;           /* 橫向與縱向的舒適間距 */
-        border-bottom: 2px solid #2C2C3C !important;
-    }
-
-    /* 2. 精準控制第一個分頁按鈕（主標題），強制它單獨佔據第一行，變成顯眼的大字體 */
-    [data-baseweb="tab-list"] button[data-baseweb="tab"]:first-child {
-        width: 100% !important;              /* 強制第一個分頁霸佔整整第一行 */
-        text-align: left !important;         /* 靠左對齊故事大標題 */
-        justify-content: flex-start !important;
-        padding-bottom: 6px !important;
-        border-bottom: 1px solid #252532 !important; /* 在標題下方刻出一條細緻的科技分割線 */
-        pointer-events: none !important;     /* 讓它變成純標題展示，滑鼠點擊無效（防止誤觸） */
-    }
-
-    /* 3. 精準拉大第一個分頁（主標題）的字級與顏色（耀眼科技藍與高亮紅綠） */
-    [data-baseweb="tab-list"] button[data-baseweb="tab"]:first-child p {
-        font-size: 16px !important;          /* 第一行：霸氣粗體大字 */
-        font-weight: 800 !important;
-        color: #00B0FF !important;           /* 主視覺科技藍 */
-        letter-spacing: 0.5px !important;
-    }
-
-    /* 4. 設定第二行其他分頁按鈕（次要功能鍵）的精緻膠囊外觀，與第一行產生強烈對比 */
-    [data-baseweb="tab-list"] button[data-baseweb="tab"]:not(:first-child) {
-        background-color: #1C1C28 !important; /* 膠囊按鈕微亮底色 */
-        border: 1px solid #323246 !important;
-        border-radius: 6px !important;
-        padding: 4px 12px !important;
-        height: 28px !important;
-        margin-top: 4px !important;          /* 完美推移到第二行 */
-    }
-
-    /* 5. 優化第二行分頁按鈕的文字與選中多空狀態 */
-    [data-baseweb="tab-list"] button[data-baseweb="tab"]:not(:first-child) p {
-        font-size: 12px !important;          /* 第二行：精緻小字功能鍵 */
-        font-weight: 600 !important;
-        color: #A1A1AA !important;           /* 未選中時柔和灰字 */
-    }
-
-    [data-baseweb="tab-list"] button[data-baseweb="tab"]:not(:first-child)[aria-selected="true"] {
-        border-color: #FF3333 !important;    /* 當前選中時的外框轉為熱血多頭紅（或依多空設定） */
-        background-color: rgba(255, 51, 51, 0.08) !important;
-    }
-
-    [data-baseweb="tab-list"] button[data-baseweb="tab"]:not(:first-child)[aria-selected="true"] p {
-        color: #FF3333 !important;           /* 當前選中時的文字變紅高亮 */
-    }
-    /* ==================================================================== */
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -594,58 +499,140 @@ st.markdown(f"### XQ 操盤模擬器 | 當前關注：<span style='color:{color_
 # 建立四宮格的上半部分橫列
 row1_col1, row1_col2 = st.columns(2)
 
-# --- 【左上格】：自選股與管理面板 ---
+# --- 【左上格】：自選股與管理面板面板 ---
 with row1_col1:
     st.markdown('<div class="xq-grid-card">', unsafe_allow_html=True)
     tab_portfolio, tab_manage = st.tabs(["📊 報價組合清單", "🔧 自選股管理面版"])
     
+    # 獲取當前所有自選股清單項目
+    watchlist_items = list(st.session_state["watchlist_dict"].items())
+    total_items = len(watchlist_items)
+    
     with tab_portfolio:
+        # 分頁邏輯控制 (每頁顯示 6 筆項目)
         ITEMS_PER_PAGE = 6
         if "current_page" not in st.session_state: 
             st.session_state["current_page"] = 0
-        max_page = max(0, (len(watchlist_keys) - 1) // ITEMS_PER_PAGE)
+            
+        max_page = max(0, (total_items - 1) // ITEMS_PER_PAGE)
+        if st.session_state["current_page"] > max_page:
+            st.session_state["current_page"] = max_page
+            
         start_idx = st.session_state["current_page"] * ITEMS_PER_PAGE
-        end_idx = min(start_idx + ITEMS_PER_PAGE, len(watchlist_keys))
+        end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
+
+        # 1. 宣告一體化表頭，橫向與縱向黃金配比鎖死 [18%, 14%, 14%, 15%, 14%, 15%, 10%]
+        html_code = """<table style="width:100%; border-collapse:collapse; font-family:'Courier New', monospace; font-size:14px; table-layout:fixed; line-height:1.2;"><tr style="border-bottom:2px solid #0D47A1; height:26px; vertical-align:middle;"><th style="width:18%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:left; padding-left:4px;">商品</th><th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">買進</th><th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">賣出</th><th style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">成交</th><th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲跌</th><th style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲幅%</th><th style="width:10%; color:#64B5F6; font-size:11px; font-weight:bold; text-align:center; padding-right:4px;">移除</th></tr>"""
         
-        html_code = """<table style="width:100%; border-collapse:collapse; font-family:'Courier New', monospace; font-size:14px; table-layout:fixed; line-height:1.2;"><tr style="border-bottom:2px solid #0D47A1; height:26px; vertical-align:middle;"><th style="width:18%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:left; padding-left:4px;">商品</th><th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">買進</th><th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">賣出</th><th style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">成交</th><th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲跌</th><th style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲幅%</th><th style="width:10%; color:#64B5F6; font-size:11px; font-weight:bold; text-align:center;">移除</th></tr>"""
-        
-        for idx_offset, name in enumerate(watchlist_keys[start_idx:end_idx]):
+        # 2. 循環組裝 6 檔商品的 HTML <tr> 資料行
+        for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
             global_idx = start_idx + idx_offset
             bg_color = "#131313" if idx_offset % 2 == 0 else "#1A1A1A"
-            code = st.session_state["watchlist_dict"][name]
             
+            # 即時數據抓取
             try:
                 s_df, s_info = fetch_safe_stock_data(code)
                 c_p = s_info.get("currentPrice") if s_info.get("currentPrice") is not None else s_df['Close'].iloc[-1]
                 p_c = s_info.get("previousClose") if s_info.get("previousClose") is not None else s_df['Close'].iloc[-2]
                 chg = c_p - p_c
                 pct = (chg / p_c) * 100
-                bid_str, ask_str, price_format = f"{c_p-0.05:,.2f}", f"{c_p+0.05:,.2f}", f"{c_p:,.2f}"
+                
+                if "^TWII" in code:
+                    bid_str, ask_str, price_format = "--", "--", f"{c_p:,.2f}"
+                else:
+                    bid_str, ask_str, price_format = f"{c_p-0.05:,.2f}", f"{c_p+0.05:,.2f}", f"{c_p:,.2f}"
             except:
-                c_p, chg, pct, bid_str, ask_str, price_format = 248.5, -9.0, -3.5, "248.00", "248.50", "248.50"
+                c_p, chg, pct, bid_str, ask_str = 248.5, -9.0, -3.5, "248.00", "248.50"
+                price_format = f"{c_p:,.2f}"
             
-            v_color = "#FF3333" if chg > 0 else ("#00AA00" if chg < 0 else "#FFFFFF")
-            s_arrow = "▲" if chg > 0 else ("▼" if chg < 0 else " ")
-            sign_str = "+" if chg > 0 else ""
-            pure_name_str = str(name).split(' (')
+            # 多空紅綠配色與符號判定
+            if chg > 0:
+                v_color, s_arrow, sign_str = "#FF3333", "▲", "+"
+            elif chg < 0:
+                v_color, s_arrow, sign_str = "#00AA00", "▼", ""
+            else:
+                v_color, s_arrow, sign_str = "#FFFFFF", " ", ""
+                
+            # 清洗並純化商品名稱（只拿第一段字串，消滅 tuple 與陣列符號）
+            pure_name_str = str(name).split(' (')[0].split('(')[0].replace("[", "").replace("]", "").replace("'", "").replace('"', '')
             
-            html_code += f"""<tr style="background-color:{bg_color}; border-bottom:1px solid #222222; height:28px; vertical-align:middle;"><td style="text-align:left; padding-left:4px; font-weight:bold;"><span style="color:#FFFFFF; cursor:pointer;" onclick="window.parent.postMessage({{type:'stock_click', val:{global_idx}}}, '*')">🔹{pure_name_str}</span></td><td style="text-align:right; font-weight:bold; color:{v_color};">{bid_str}</td><td style="text-align:right; font-weight:bold; color:{v_color};">{ask_str}</td><td style="text-align:right; font-weight:bold; color:{v_color};">{price_format}</td><td style="text-align:right; font-weight:bold; color:{v_color};">{s_arrow}{abs(chg):,.2f}</td><td style="text-align:right; font-weight:bold; color:{v_color};">{sign_str}{pct:.2f}%</td><td style="text-align:center;"><span style="color:#FF3333; cursor:pointer;" onclick="window.parent.postMessage({{type:'del_click', val:{global_idx}}}, '*')">[X]</span></td></tr>"""
+            # 【關鍵優化】點擊事件改用純前端 postMessage 通道發送，拋棄外部庫，改用網頁視窗原生機制
+            html_code += f"""
+            <tr style="background-color:{bg_color}; border-bottom:1px solid #222222; height:28px; vertical-align:middle;">
+                <td style="text-align:left; padding-left:4px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    <span style="color:#FFFFFF; cursor:pointer; display:block; width:100%;" onmouseover="this.style.color='#00B0FF'" onmouseout="this.style.color='#FFFFFF'" onclick="window.parent.postMessage({{type:'stock_click', val:{global_idx}}}, '*')">🔹{pure_name_str}</span>
+                </td>
+                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{bid_str}</td>
+                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{ask_str}</td>
+                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{price_format}</td>
+                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{s_arrow}{abs(chg):,.2f}</td>
+                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{sign_str}{pct:.2f}%</td>
+                <td style="text-align:center; padding-right:4px;">
+                    <span style="color:#FF3333; cursor:pointer; font-size:12px; font-weight:bold; white-space:nowrap;" onmouseover="this.style.color='#FF8A80'" onmouseout="this.style.color='#FF3333'" onclick="window.parent.postMessage({{type:'del_click', val:{global_idx}}}, '*')">[❌]</span>
+                </td>
+            </tr>
+            """
             
         html_code += "</table>"
-        st.markdown(html_code.replace("\n", ""), unsafe_allow_html=True)
         
-        js_listener = """<script>window.addEventListener('message', function(e) { if(e.data.type === 'stock_click') { const url = new URL(window.parent.location.href); url.searchParams.set('fast_sel', e.data.val); window.parent.location.replace(url.href); } if(e.data.type === 'del_click') { const url = new URL(window.parent.location.href); url.searchParams.set('fast_del', e.data.val); window.parent.location.replace(url.href); } });</script>"""
-        components.html(js_listener, height=0, width=0)
+        # 壓縮 HTML 字串防 Markdown 誤判原始碼
+        clean_html_code = html_code.replace("\n", "").replace("\r", "")
+        st.markdown(clean_html_code, unsafe_allow_html=True)
+
+        # 3. 用 Streamlit 內建的原生 components 元件監聽前端點擊，不需要匯入 elements 套件
+        import streamlit.components.v1 as components
+        js_listener = """
+        <script>
+        window.addEventListener('message', function(e) {
+            if(e.data.type === 'stock_click') {
+                const url = new URL(window.parent.location.href);
+                url.searchParams.set('fast_sel', e.data.val);
+                window.parent.location.replace(url.href);
+            }
+            if(e.data.type === 'del_click') {
+                const url = new URL(window.parent.location.href);
+                url.searchParams.set('fast_del', e.data.val);
+                window.parent.location.replace(url.href);
+            }
+        });
+        </script>
+        """
+        components.html(js_listener, height=0, width=0) # 高度設為 0，在頁面上完全不著痕跡
         
+        # 4. 接收通道回傳參數並在 Session 中高速響應切換，防禦登出
+        curr_params = st.query_params
+        
+        if "fast_sel" in curr_params:
+            sel_idx = int(curr_params["fast_sel"])
+            if sel_idx < len(watchlist_items):
+                st.session_state["current_selected_idx"] = sel_idx
+                st.session_state["main_stock_selector"] = watchlist_items[sel_idx][0] # 綁定正確的字串 key
+                st.query_params.clear()
+                st.rerun()
+                
+        if "fast_del" in curr_params:
+            del_idx = int(curr_params["fast_del"])
+            if total_items > 1 and del_idx < len(watchlist_items):
+                target_del_name = watchlist_items[del_idx][0] # 綁定正確的字串 key
+                del st.session_state["watchlist_dict"][target_del_name]
+                save_my_watchlist()
+                remaining_keys = list(st.session_state["watchlist_dict"].keys())
+                st.session_state["current_selected_idx"] = 0
+                st.session_state["main_stock_selector"] = remaining_keys[0] if remaining_keys else ""
+                st.query_params.clear()
+                st.rerun()
+            
+        # 分頁導航底欄 (緊湊對齊不跑位)
+        st.markdown("<div style='margin-top:8px;'></div>", unsafe_allow_html=True)
         p_col1, p_col2, p_col3 = st.columns([1.2, 2, 1.2])
         with p_col1:
-            if st.button("⬅ 上一頁", disabled=(st.session_state["current_page"] == 0), key="prev_page_btn"):
+            if st.button("⬅ 上一頁", disabled=(st.session_state["current_page"] == 0), use_container_width=True, key="prev_page_btn"):
                 st.session_state["current_page"] -= 1
                 st.rerun()
         with p_col2:
-            st.markdown(f"<p style='text-align:center; margin:4px 0px; font-size:12px; color:#888888; font-weight:bold;'>[ 頁次: {st.session_state['current_page']+1} / {max_page+1} ]</p>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align:center; margin:4px 0px 0px 0px; font-size:12px; color:#888888; font-weight:bold;'>[ 頁次: {st.session_state['current_page']+1} / {max_page+1} ]</p>", unsafe_allow_html=True)
         with p_col3:
-            if st.button("下一頁 ➡", disabled=(st.session_state["current_page"] >= max_page), key="next_page_btn"):
+            if st.button("下一頁 ➡", disabled=(st.session_state["current_page"] >= max_page), use_container_width=True, key="next_page_btn"):
                 st.session_state["current_page"] += 1
                 st.rerun()
                 
@@ -655,104 +642,164 @@ with row1_col1:
         if st.button("🚀 確認加入自選清單", use_container_width=True, key="manage_add_btn_unique"):
             if new_code:
                 target_code = new_code.upper()
-                pure_number = target_code.split('.')
+                pure_number = target_code.split('.') if '.' in target_code else target_code
                 if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
                     target_code = f"{pure_number}.TW"
                 
-                if target_code in st.session_state["watchlist_dict"].values():
-                    st.warning(f"💡 商品代碼 [{target_code}] 已存在！")
+                existing_codes = list(st.session_state["watchlist_dict"].values())
+                if target_code in existing_codes:
+                    st.warning(f"💡 提示：商品代碼 [{target_code}] 已存在於您的自選股清單中，無需重複建立！")
                 else:
-                    detected_name = TAIWAN_STOCK_DICT.get(pure_number, pure_number)
-                    st.session_state["watchlist_dict"][f"{detected_name} ({target_code})"] = target_code
-                    save_my_watchlist()
-                    st.success(f"✅ 成功加入: {detected_name}")
-                    st.rerun()
+                    try:
+                        with st.spinner("正在驗證商品代碼..."):
+                            test_stock = yf.Ticker(target_code)
+                            test_df = test_stock.history(period="1d")
+                            if test_df.empty:
+                                st.error(f"❌ 查無此代碼或暫無交易數據 [{target_code}]")
+                            else:
+                                detected_name = TAIWAN_STOCK_DICT.get(pure_number, test_stock.info.get('shortName', pure_number))
+                                display_key = f"{detected_name} ({target_code})"
+                                st.session_state["watchlist_dict"][display_key] = target_code
+                                save_my_watchlist()
+                                st.success(f"✅ 成功加入: {detected_name}")
+                                st.rerun()
+                    except Exception as e:
+                        st.error(f"連線驗證失敗: {e}")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- 【右上格】：技術分析 K 線與均線圖 ---
 with row1_col2:
-    st.markdown('<div class="xq-grid-card">', unsafe_allow_html=True)
-    st.markdown("**📈 【技術分析 K 線與均線】**")
+    st.markdown('<div class="xq-grid-card">', unsafe_allow_html=True) # 包裹獨立卡片
+    st.markdown("📈 **【技術分析 K 線與均線】**") # 【修正亂碼問題】
     time_frame = st.radio("選擇時間區間", ["當日", "近月", "一年", "五年"], index=1, horizontal=True, key="tech_radio")
     
     df['MA5'] = df['Close'].rolling(window=5).mean()
     df['MA20'] = df['Close'].rolling(window=20).mean()
     plot_df = df.tail(30) if time_frame == "近月" else (df.tail(250) if time_frame == "一年" else df)
     
+        # 建立具有共享 X 軸的雙列圖表（上圖為K線與均線，下圖為成交量能）
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.08, row_heights=[0.7, 0.3])
-    fig.add_trace(go.Candlestick(x=plot_df.index, open=plot_df['Open'], high=plot_df['High'], low=plot_df['Low'], close=plot_df['Close'], name="K線", increasing=dict(line=dict(color='#FF3333'), fillcolor='#FF3333'), decreasing=dict(line=dict(color='#00AA00'), fillcolor='#00AA00')), row=1, col=1)
-    fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA5'], mode='lines', line=dict(color='#00B0FF', width=2.0), name="5MA"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA20'], mode='lines', line=dict(color='#E040FB', width=2.0), name="20MA"), row=1, col=1)
     
+    # 1. 繪製台股專用標準實心紅綠 K 線
+    fig.add_trace(go.Candlestick(
+        x=plot_df.index, 
+        open=plot_df['Open'], 
+        high=plot_df['High'], 
+        low=plot_df['Low'], 
+        close=plot_df['Close'],
+        name="<b>K線圖</b>", 
+        increasing=dict(line=dict(color='#FF3333'), fillcolor='#FF3333'),  # 陽線：實心紅棒
+        decreasing=dict(line=dict(color='#00AA00'), fillcolor='#00AA00'),  # 陰線：實心綠棒
+        showlegend=True
+    ), row=1, col=1)
+    
+    # 2. 疊加短、中期經典均線系統
+    fig.add_trace(go.Scatter(
+        x=plot_df.index, 
+        y=plot_df['MA5'], 
+        mode='lines', 
+        line=dict(color='#00B0FF', width=2.0), 
+        name="<b>5MA</b>"
+    ), row=1, col=1)
+    
+    fig.add_trace(go.Scatter(
+        x=plot_df.index, 
+        y=plot_df['MA20'], 
+        mode='lines', 
+        line=dict(color='#E040FB', width=2.0), 
+        name="<b>20MA</b>"
+    ), row=1, col=1)
+    
+    # 3. 根據當日收盤狀況動態變更成交量柱狀體顏色 (上漲紅棒、下跌綠棒)
     vol_colors = ['#FF3333' if c >= o else '#00AA00' for o, c in zip(plot_df['Open'], plot_df['Close'])]
-    fig.add_trace(go.Bar(x=plot_df.index, y=plot_df['Volume'], marker_color=vol_colors, name="成交量", showlegend=False), row=2, col=1)
+    fig.add_trace(go.Bar(
+        x=plot_df.index, 
+        y=plot_df['Volume'], 
+        marker_color=vol_colors, 
+        name="成交量", 
+        showlegend=False
+    ), row=2, col=1)
     
+    # 4. 圖表全局排版美化設定
     fig.update_layout(
         template="plotly_dark", 
-        paper_bgcolor="#1A1A24", # 已修正為灰色卡片底色
-        plot_bgcolor="#1A1A24",  # 已修正為灰色卡片底色
-        xaxis_rangeslider_visible=False, 
+        paper_bgcolor="#1A1A1E", 
+        plot_bgcolor="#1A1A1E", 
+        xaxis_rangeslider_visible=False,  # 隱藏 X 軸滑塊，騰出空間給四宮格高密度排版
         height=205, 
         margin=dict(l=10, r=40, t=5, b=5),
-        showlegend=True,
+        showlegend=True, 
         legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1.0
+            orientation="h", 
+            yanchor="bottom", 
+            y=1.02, 
+            xanchor="right", 
+            x=1.0, 
+            bgcolor="rgba(0, 0, 0, 0)", 
+            font=dict(size=11, color="#FFFFFF")
         )
     )
+    
+    # 5. 強制將 Y 軸座標向右側對齊（完全同步 XQ 精誠系統終端排版）
     fig.update_yaxes(side="right", gridcolor="#2D2D2D")
-        # (這是右上格 K 線圖的結尾部分，請對齊貼在 st.plotly_chart 下方)
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)  # 閉合左上/右上排版容器
 
-# 建立下半部分橫列布局
+# 建立四宮格的下半部分主要橫列布局
 row2_col1, row2_col2 = st.columns(2)
 
-# --- 【左下格】：市場焦點動態與即時明細 ---
+# ----------------------------------------------------------------
+# 【左下格】：市場焦點動態、當日分時走勢與即時成交明細面版
+# ----------------------------------------------------------------
 with row2_col1:
     st.markdown('<div class="xq-grid-card">', unsafe_allow_html=True)
+    st.markdown(f"🎯 **【市場焦點動態】** <span style='color:{color_text}; font-weight:bold;'>{current_price:,.2f} ({sign}{price_change_pct:.2f}%)</span>", unsafe_allow_html=True)
     
-    # 【神修正】：把大標題與原本的分頁融合，黑棒第一行放字，第二行放分頁切換
-    tab_trend, tab_ticks = st.tabs([
-        f"🎯 當日分時走勢 \n ({selected_display} {current_price:,.2f} {sign}{price_change_pct:.2f}%)", 
-        "🧾 查看即時成交明細"
-    ])
+    # 切換分時圖與成交明細的分頁標籤
+    tab_trend, tab_ticks = st.tabs(["📊 當日分時走勢", "🧾 即時成交明細"])
     
-    last_close = float(df['Close'].iloc[-1])
-    last_high = float(df['High'].iloc[-1])
-    last_low = float(df['Low'].iloc[-1])
-    last_vol = int(df['Volume'].iloc[-1])
+    # 基準數據初始化（若因未開盤或流量限制 df 為空，提供動態保底數據）
+    last_valid_date = df.index[-1] if not df.empty else datetime.date.today()
+    last_close = float(df['Close'].iloc[-1]) if not df.empty else 100.0
+    last_high = float(df['High'].iloc[-1]) if not df.empty else 101.0
+    last_low = float(df['Low'].iloc[-1]) if not df.empty else 99.0
+    last_vol = int(df['Volume'].iloc[-1]) if not df.empty else 5000
     
     with tab_trend:
+        # 模擬盤中高動態 10 個波段點位的分時波動走勢，避免假日或收盤畫面留白
         trend_prices, trend_volumes = [], []
         steps = [0.1, 0.4, 0.2, -0.3, -0.1, 0.5, 0.3, -0.2, 0.1, 0.0]
         for idx, step in enumerate(steps):
             trend_prices.append(round(last_close + (last_high - last_low) * step * 0.3, 2))
             trend_volumes.append(max(1, int(last_vol // 20 + (idx * 50))))
         
-        time_labels = [f"09:{10+i*30}" for i in range(10)]
+        date_str = last_valid_date.strftime("%m/%d")
+        time_labels = [f"{date_str} 09:{10+i*30}" for i in range(10)]
+        
+        # 繪製分時圖表
         fig_line = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.7, 0.3])
-        fig_line.add_trace(go.Scatter(x=time_labels, y=trend_prices, mode='lines+markers', line=dict(color='#00E676', width=2.5), name="分時價"), row=1, col=1)
-        fig_line.add_trace(go.Bar(x=time_labels, y=trend_volumes, marker_color='#00B0FF', name="即時量"), row=2, col=1)
+        fig_line.add_trace(go.Scatter(x=time_labels, y=trend_prices, mode='lines+markers', line=dict(color='#00E676', width=2.5), name="<b>分時價格</b>"), row=1, col=1)
+        fig_line.add_trace(go.Bar(x=time_labels, y=trend_volumes, marker_color='#00B0FF', name="<b>即時量能</b>"), row=2, col=1)
         
         fig_line.update_layout(
             template="plotly_dark", 
-            paper_bgcolor="#1A1A24", 
-            plot_bgcolor="#1A1A24", 
+            paper_bgcolor="#1A1A1E", 
+            plot_bgcolor="#1A1A1E", 
             height=185, 
-            margin=dict(l=10, r=40, t=5, b=5)
+            margin=dict(l=10, r=40, t=5, b=5),
+            showlegend=True, 
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1.0, bgcolor="rgba(0, 0, 0, 0)", font=dict(size=11))
         )
         fig_line.update_yaxes(side="right", gridcolor="#2D2D2D")
         st.plotly_chart(fig_line, use_container_width=True, config={'displayModeBar': False})
         
     with tab_ticks:
+        # 即時成交大單明細表（模擬內外盤逐筆交易）
         ticks_data = []
+        import random
         for i in range(1, 6):
             ticks_data.append({
-                "時間": f"13:2{i}", 
+                "時間": f"{date_str} 13:2{i}", 
                 "價格": round(last_close + (i % 2 - 0.5) * (last_high - last_low) * 0.05, 2),
                 "單量(張)": random.randint(10, 150), 
                 "狀態": "外盤" if i % 2 == 0 else "內盤"
@@ -760,16 +807,16 @@ with row2_col1:
         st.dataframe(pd.DataFrame(ticks_data), use_container_width=True, hide_index=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- 【右下格】：唯一的融合去重四分頁控制台 ---
+# ----------------------------------------------------------------
+# 【右下格】：AI 策略大腦與永豐金法人籌碼診斷面板
+# ----------------------------------------------------------------
 with row2_col2:
     st.markdown('<div class="xq-grid-card">', unsafe_allow_html=True)
+    st.markdown("🤖 **【AI 與券商即時診斷大腦】**")
     
-    # 【神修正】：黑棒第一行放字大標題，第二行放四個功能分頁切換
+    # 【關鍵修正：在此補回 tab_picker，消滅未定義變數錯誤】
     tab_news, tab_ai, tab_shioaji, tab_picker = st.tabs([
-        "🤖 AI與券商即時診斷 \n 📰 即時新聞", 
-        "🧠 AI 策略分析", 
-        "📊 永豐單股指標", 
-        "🔍 永豐全市場選股"
+        "📰 即時新聞", "🧠 AI 策略分析", "📊 永豐單股指標", "🔍 永豐全市場選股"
     ])
     
     with tab_news:
@@ -787,22 +834,26 @@ with row2_col2:
         st.write(f"當前分析目標：**{selected_display}**")
         if st.button("🚀 啟動 AI 深度策略分析", key="ai_btn_final", use_container_width=True):
             with st.spinner("AI 正在解析多空力道..."):
-                analysis_text = get_ai_analysis(selected_display, current_price, price_change, price_change_pct, df['Close'].iloc[-1])
-                st.info(analysis_text)
-                
+                # 自動抓取當前快取數據，並向後端請求 Gemini AI 分析
+                st.info(get_ai_analysis(selected_display, current_price, price_change, price_change_pct, df['Close'].iloc[-1], 50, 50))
+            
     with tab_shioaji:
         if "api" in st.session_state:
             st.markdown("##### 技術面即時訊號")
             st.caption("5 日/20 日均線：**多頭排列** ｜ KD 指標：**黃金交叉向上**")
+            
+            # 券商籌碼三大法人動態欄位（高視覺流對齊）
             col_f, col_i, col_d = st.columns(3)
             col_f.metric(label="外資買賣超", value="+0 張", delta="今日無數據")
             col_i.metric(label="投信買賣超", value="+0 張", delta="今日無數據")
             col_d.metric(label="自營商買賣超", value="+0 張", delta="今日無數據")
         else:
-            st.warning("⚠️ 永豐金 API 尚未完成安全驗證登入，處於本地模擬狀態。")
+            st.warning("⚠ 永豐金 API 尚未完成安全驗證登入，處於本地模擬狀態。")
             
+    # 【完美接軌：下方這段會與您的選股下拉選單及火箭按鈕直接串聯】
     with tab_picker:
         st.markdown("<h4 style='color: #FFFFFF; font-weight: bold; margin-top: 0px;'>🔍 永豐金量化大腦 × 新聞輿情與可轉債 (CB)</h4>", unsafe_allow_html=True)
+        
         pick_strategy = st.selectbox(
             "請選擇篩選核心策略：",
             ["外資投信同步買超股 (普通股)", "技術面均線多頭排列 (普通股)", "新聞輿情爆量突破股 (普通股)", "主力低溢價可轉債 (CB 黃金池)"],
@@ -813,13 +864,15 @@ with row2_col2:
         if st.button("🚀 開始全市場 AI 智慧掃描", use_container_width=True, key="main_pick_btn_real"):
             st.session_state["trigger_report"] = True
             st.session_state["chosen_strategy"] = pick_strategy
-            st.rerun()
+            st.rerun()  # 強制刷新以觸發最外層的 Dialog 報告視窗
             
     st.markdown('</div>', unsafe_allow_html=True)
 
-# 安全渲染選股報告 Dialog 
+# --------------------------------------------------------------------
+# 程式碼最末端：在最外層安全渲染選股報告 Dialog，防止閃退
+# --------------------------------------------------------------------
 if st.session_state.get("trigger_report", False):
-    st.session_state["trigger_report"] = False  
+    st.session_state["trigger_report"] = False  # 清除觸發狀態
     strategy = st.session_state.get("chosen_strategy", "")
     
     with st.spinner("正在連線數據庫並生成報告..."):
