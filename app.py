@@ -661,69 +661,84 @@ with row1_col1:
                 st.rerun()
 
     with tab_manage:
-        # --- 【搬移整併核心】：新增股票輸入表單與按鈕，依指示完美移入自選管理分頁中 ---
-        st.markdown("<p style='color:#64B5F6; font-size:14px; font-weight:bold; margin-top:5px; margin-bottom:2px;'>➕ 新增自選股商品</p>", unsafe_allow_html=True)
-        new_code = st.text_input("請在此輸入欲新增之股票代碼", placeholder="例如: 2330", key="manage_add_input_unique").strip()
-        if st.button("🚀 確認加入自選清單", use_container_width=True, key="manage_add_btn_unique"):
-            if new_code:
-                target_code = new_code.upper()
-                pure_number = target_code.split('.')[0]
-                if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
-                    target_code = f"{pure_number}.TW"
-                
-                existing_codes = list(st.session_state["watchlist_dict"].values())
-                if target_code in existing_codes:
-                    st.warning(f"提示：商品代碼 [{target_code}] 已存在於您的自選股清單中！")
-                else:
-                    try:
-                        with st.spinner("正在驗證商品代碼..."):
-                            test_stock = yf.Ticker(target_code)
-                            test_df = test_stock.history(period="1d")
-                            if test_df.empty:
-                                st.error(f"❌ 查無此代碼或暫無交易數據 [{target_code}]")
-                            else:
-                                detected_name = TAIWAN_STOCK_DICT.get(pure_number, test_stock.info.get('shortName', pure_number))
-                                display_key = f"{detected_name} ({target_code})"
-                                st.session_state["watchlist_dict"][display_key] = target_code
-                                save_my_watchlist()
-                                st.success(f"✅ 成功加入: {detected_name}")
-                                st.rerun()
-                    except Exception as e:
-                        st.error(f"連線驗證失敗: {e}")
-                        
-        st.markdown("<hr style='margin:12px 0px; border-top:1px dashed #333333 !important;'>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
         
-        # --- 【自選頁安全刪除垃圾桶】：將 X 的移除功能，高雅整合至管理頁面中 ---
-        st.markdown("<p style='color:#FF5252; font-size:14px; font-weight:bold; margin-top:0px; margin-bottom:2px;'>🗑️ 移除自選股商品</p>", unsafe_allow_html=True)
+        # --- 1. 【100% 滿血復活】：手動摺疊式新增股票 Expander 區塊 ---
+        with st.expander("➕ 新增自選股", expanded=False):
+            new_code = st.text_input("請在此輸入欲新增之股票代碼", placeholder="例如: 2330", key="manage_add_input_unique").strip()
+            if st.button("🚀 確認加入自選清單", use_container_width=True, key="manage_add_btn_unique"):
+                if new_code:
+                    target_code = new_code.upper()
+                    pure_number = target_code.split('.')[0]
+                    if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
+                        target_code = f"{pure_number}.TW"
+                    
+                    existing_codes = list(st.session_state["watchlist_dict"].values())
+                    if target_code in existing_codes:
+                        st.warning(f"提示：商品代碼 [{target_code}] 已存在於您的自選股清單中！")
+                    else:
+                        try:
+                            with st.spinner("正在驗證商品代碼..."):
+                                test_stock = yf.Ticker(target_code)
+                                test_df = test_stock.history(period="1d")
+                                if test_df.empty:
+                                    st.error(f"❌ 查無此代碼或暫無交易數據 [{target_code}]")
+                                else:
+                                    detected_name = TAIWAN_STOCK_DICT.get(pure_number, test_stock.info.get('shortName', pure_number))
+                                    display_key = f"{detected_name} ({target_code})"
+                                    st.session_state["watchlist_dict"][display_key] = target_code
+                                    save_my_watchlist()
+                                    st.success(f"✅ 成功加入: {detected_name}")
+                                    st.rerun()
+                        except Exception as e:
+                            st.error(f"連線驗證失敗: {e}")
+
+        st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
+
+        # --- 2. 【100% 滿血復活】：即時刪除目前正在關注個股之專業功能按鈕 ---
+        # 抓取目前全宇宙唯一大腦鎖定中的個股名稱
+        current_focus_stock = st.session_state["main_stock_selector"]
         
-        if watchlist_keys:
-            delete_target = st.selectbox(
-                "請選擇欲移除的商品", 
-                options=watchlist_keys, 
-                key="manage_delete_selectbox",
-                label_visibility="collapsed"
-            )
-            
-            if st.button("💥 確認自清單中刪除", use_container_width=True, key="manage_delete_confirm_btn"):
-                if total_items > 1:
-                    del st.session_state["watchlist_dict"][delete_target]
+        if st.button(f"❌ 從清單中刪除目前股票", use_container_width=True, key="manage_delete_current_focus_btn"):
+            if total_items > 1:
+                if current_focus_stock in st.session_state["watchlist_dict"]:
+                    # 秒級執行刪除
+                    del st.session_state["watchlist_dict"][current_focus_stock]
                     save_my_watchlist()
                     
-                    # 安全重置防禦索引越界
+                    # 安全洗牌：大腦指引回歸安全第一筆，防禦索引越界崩潰
                     remaining_keys = list(st.session_state["watchlist_dict"].keys())
                     st.session_state["current_selected_idx"] = 0
                     st.session_state["main_stock_selector"] = remaining_keys[0] if remaining_keys else ""
-                    st.success(f"已成功移出個股商品名單")
+                    st.success(f"已成功移出目前股票：{current_focus_stock.split(' ')[0]}")
                     st.rerun()
-                else:
-                    st.error("⚠️ 自選清單內最少必須保留一檔個股商品，無法繼續刪除！")
-        else:
-            st.caption("暫無商品可供移除")
+            else:
+                st.error("⚠️ 自選清單內最少必須保留一檔個股商品，無法繼續刪除！")
+
+        st.markdown("<div style='margin-top:12px;'></div>", unsafe_allow_html=True)
+
+        # --- 3. 【100% 滿血復活】：神隱回歸的即時報價動態自動更新頻率 (秒) 滑桿 ---
+        # 確保全域變數或 Session 狀態中有預設的 refresh_rate 參數
+        if "refresh_rate" not in st.session_state:
+            st.session_state["refresh_rate"] = 10
+            
+        refresh_rate = st.slider(
+            "即時報價更新頻率 (秒)", 
+            min_value=2, 
+            max_value=60, 
+            value=st.session_state["refresh_rate"], 
+            step=1,
+            key="xq_live_refresh_rate_slider"
+        )
+        # 即時回寫更新頻率狀態
+        st.session_state["refresh_rate"] = refresh_rate
             
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- 【右上格】：技術分析 K 線與均線圖 ---
 with row1_col2:
+# 這裡向下毫無阻礙地緊接著連接您原本的 Plotly 技術分析 K 線繪製程式碼即可...
+
 # 這裡無痛向下連接您原本完整的右上格 Plotly 技術分析 K 線與成交量能繪圖程式碼...
     st.markdown('<div class="xq-grid-card">', unsafe_allow_html=True)
     st.markdown("📈 **【技術分析 K 線與均線】**")
