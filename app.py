@@ -510,6 +510,31 @@ with row1_col1:
     watchlist_keys = list(st.session_state["watchlist_dict"].keys())
     
     with tab_portfolio:
+        # 【終極連動救星】：在最頂端放一個不被全域 CSS 污染外框的專屬下拉式商品選單，點擊 100% 秒級刷新連動四宮格！
+        st.markdown("<p style='color:#BBBBBB; font-size:12px; margin-bottom:2px; font-weight:bold;'>🎯 商品快速切換器</p>", unsafe_allow_html=True)
+        
+        # 動態找出當前關注個股在選單中的預設位置 (index)
+        try:
+            default_select_idx = watchlist_keys.index(st.session_state["main_stock_selector"])
+        except:
+            default_select_idx = 0
+            
+        selected_by_dropdown = st.selectbox(
+            "商品切換", 
+            options=watchlist_keys, 
+            index=default_select_idx, 
+            label_visibility="collapsed",
+            key="xq_global_dropdown_selector"
+        )
+        
+        # 只要使用者更改了下拉選單，立刻同步大腦 Session 狀態並秒級 Rerun 刷新全畫面！
+        if selected_by_dropdown != st.session_state["main_stock_selector"]:
+            st.session_state["main_stock_selector"] = selected_by_dropdown
+            st.session_state["current_selected_idx"] = watchlist_keys.index(selected_by_dropdown)
+            st.rerun()
+
+        st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
+
         # 分頁邏輯控制 (每頁顯示 6 筆項目)
         ITEMS_PER_PAGE = 6
         if "current_page" not in st.session_state: 
@@ -522,68 +547,17 @@ with row1_col1:
         start_idx = st.session_state["current_page"] * ITEMS_PER_PAGE
         end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
         
-        # 【全宇宙最高權重按鈕粉碎 CSS】：利用 div 階層 + !important 硬性剝除所有外框與陰影，強制蒸發巨型按鈕骨架
-        st.markdown("""
-        <style>
-        div.xq-stock-btn button, div.xq-stock-btn div button, .xq-stock-btn button {
-            background: transparent !important;
-            background-color: transparent !important;
-            border: none !important;
-            border-width: 0px !important;
-            color: #FFFFFF !important;
-            text-align: left !important;
-            padding: 0px !important;
-            margin: 0px !important;
-            box-shadow: none !important;
-            outline: none !important;
-            font-weight: bold !important;
-            height: 24px !important;
-            min-height: 24px !important;
-            line-height: 24px !important;
-            font-size: 14px !important;
-        }
-        div.xq-stock-btn button:hover, .xq-stock-btn button:hover {
-            color: #00B0FF !important;
-            background: transparent !important;
-            background-color: transparent !important;
-        }
-        div.xq-del-btn button, div.xq-del-btn div button, .xq-del-btn button {
-            background: transparent !important;
-            background-color: transparent !important;
-            border: none !important;
-            border-width: 0px !important;
-            color: #FF3333 !important;
-            text-align: center !important;
-            padding: 0px !important;
-            margin: 0px !important;
-            box-shadow: none !important;
-            outline: none !important;
-            font-weight: bold !important;
-            height: 24px !important;
-            min-height: 24px !important;
-            line-height: 24px !important;
-            font-size: 13px !important;
-        }
-        div.xq-del-btn button:hover, .xq-del-btn button:hover {
-            color: #FF8A80 !important;
-            background: transparent !important;
-            background-color: transparent !important;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-        
-        # 1. 宣告橫向黃金死鎖表頭欄位配比 [2.5, 1.2, 1.2, 1.3, 1.2, 1.4, 0.5] （數據硬性往前挪移靠攏貼齊）
-        t_col1, t_col2, t_col3, t_col4, t_col5, t_col6, t_col7 = st.columns([2.5, 1.2, 1.2, 1.3, 1.2, 1.4, 0.5])
+        # 1. 宣告橫向死鎖表頭配比 [2.5, 1.4, 1.4, 1.5, 1.4, 1.8] （數據完全前移靠攏貼齊，移除刪除按鈕行防止干擾）
+        t_col1, t_col2, t_col3, t_col4, t_col5, t_col6 = st.columns([2.5, 1.4, 1.4, 1.5, 1.4, 1.8])
         with t_col1: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin:0; text-align:left; padding-left:4px;'>商品</p>", unsafe_allow_html=True)
         with t_col2: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>買進</p>", unsafe_allow_html=True)
         with t_col3: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>賣出</p>", unsafe_allow_html=True)
         with t_col4: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>成交</p>", unsafe_allow_html=True)
         with t_col5: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>漲跌</p>", unsafe_allow_html=True)
         with t_col6: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>漲幅%</p>", unsafe_allow_html=True)
-        with t_col7: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:center; margin:0;'>刪</p>", unsafe_allow_html=True)
         st.markdown("<hr style='margin:4px 0px; border-top:1px solid #0D47A1 !important;'>", unsafe_allow_html=True)
         
-        # 2. 循環組裝 6 檔商品資料列 (走純 100% Python 元件控制流，兼顧版面寬度與絕對點擊連動反應)
+        # 2. 循環組裝 6 檔商品資料列 (完全拋棄任何 st.button 元件，走 100% 純文字渲染流，大叉叉 100% 永久灰飛煙滅)
         for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
             global_idx = start_idx + idx_offset
             
@@ -615,42 +589,25 @@ with row1_col1:
             pure_name_str = str(name).split(' (')[0].split('(')[0].strip()
             
             # 死鎖橫向資料欄位
-            b_col1, b_col2, b_col3, b_col4, b_col5, b_col6, b_col7 = st.columns([2.5, 1.2, 1.2, 1.3, 1.2, 1.4, 0.5])
+            b_col1, b_col2, b_col3, b_col4, b_col5, b_col6 = st.columns([2.5, 1.4, 1.4, 1.5, 1.4, 1.8])
             
             with b_col1:
-                # 【物理去框】：強效強制隱形按鈕外框
-                st.markdown('<div class="xq-stock-btn">', unsafe_allow_html=True)
+                # 商品名稱走純 Markdown 黑化文字，完美高亮顯示目前正在關注的個股
                 is_active = (name == st.session_state["main_stock_selector"])
                 btn_prefix = "🎯 " if is_active else "🔹 "
-                if st.button(f"{btn_prefix}{pure_name_str}", key=f"f_sel_btn_{code}_{global_idx}", use_container_width=True):
-                    st.session_state["current_selected_idx"] = watchlist_keys.index(name)
-                    st.session_state["main_stock_selector"] = name
-                    st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
+                text_weight = "color:#00B0FF; font-weight:bold;" if is_active else "color:#FFFFFF;"
+                st.markdown(f"<p style='margin:4px 0 0 0; font-size:14px; {text_weight}'>{btn_prefix}{pure_name_str}</p>", unsafe_allow_html=True)
             
-            # 數據欄位靠右精準定位，無痛緊隨靠攏往前靠齊，完美解決右擠空隙
+            # 數據欄位靠右精準定位，無痛靠攏貼齊，徹底根除中風大叉叉與右擠空隙！
             with b_col2: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:4px 0 0 0; font-family:monospace; font-size:13px;'>{bid_str}</p>", unsafe_allow_html=True)
             with b_col3: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:4px 0 0 0; font-family:monospace; font-size:13px;'>{ask_str}</p>", unsafe_allow_html=True)
             with b_col4: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:4px 0 0 0; font-family:monospace; font-size:13px;'>{price_format}</p>", unsafe_allow_html=True)
             with b_col5: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:4px 0 0 0; font-family:monospace; font-size:13px;'>{s_arrow}{abs(chg):,.2f}</p>", unsafe_allow_html=True)
-            with b_col6: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{sign_str}{pct:.2f}%</p>", unsafe_allow_html=True)
-            
-            with b_col7:
-                # 刪除功能硬性注入最高優先權去框樣式
-                st.markdown('<div class="xq-del-btn">', unsafe_allow_html=True)
-                if st.button("❌", key=f"f_del_btn_{code}_{global_idx}", use_container_width=True):
-                    if total_items > 1:
-                        del st.session_state["watchlist_dict"][name]
-                        save_my_watchlist()
-                        remaining_keys = list(st.session_state["watchlist_dict"].keys())
-                        st.session_state["current_selected_idx"] = 0
-                        st.session_state["main_stock_selector"] = remaining_keys if remaining_keys else ""
-                        st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
+            with b_col6: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:4px 0 0 0; font-family:monospace; font-size:13px;'>{sign_str}{pct:.2f}%</p>", unsafe_allow_html=True)
             
             st.markdown("<hr style='margin:1px 0px; border-top:1px solid #222222 !important;'>", unsafe_allow_html=True)
 
-        # 分頁導航底欄
+                # 分頁導航底欄
         st.markdown("<div style='margin-top:4px;'></div>", unsafe_allow_html=True)
         p_col1, p_col2, p_col3 = st.columns([1.2, 2, 1.2])
         with p_col1:
