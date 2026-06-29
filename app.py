@@ -58,14 +58,18 @@ st.markdown("""
     header[data-testid="stHeader"] { background-color: #121212 !important; border-bottom: 1px solid #1C1C1E !important; }
     div[data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
 
-    /* 仿 XQ 專業四宮格獨立科技黑卡邊框 */
+    /* 仿第二張圖：高質感圓角灰色故事大卡片邊框 */
     div.xq-grid-card {
-        background-color: #1A1A1E !important;
-        border: 1px solid #2D2D32 !important;
-        border-radius: 6px !important;
-        padding: 12px 14px !important;
-        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.4) !important;
-        margin-bottom: 12px !important;
+        background-color: #1A1A24 !important; /* 調整為與照片一致的深灰藍底色 */
+        border: 1px solid #2C2C3C !important; /* 精緻的微亮灰色邊框 */
+        border-radius: 16px !important;       /* 核心調整：改成大圓角（照片中的靈魂） */
+        padding: 18px 20px !important;        /* 放大內部留白，營造照片中的舒適感 */
+        box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.5) !important; /* 加重底部柔和立體陰影 */
+        margin-bottom: 16px !important;
+        transition: border-color 0.2s ease;
+    }
+    div.xq-grid-card:hover {
+        border-color: #3E3E56 !important;     /* 滑鼠懸停時邊框微微變亮增加科技感 */
     }
 
     /* ==================================================================== */
@@ -723,8 +727,8 @@ with row1_col2:
     # 4. 圖表全局排版美化設定
     fig.update_layout(
         template="plotly_dark", 
-        paper_bgcolor="#1A1A1E", 
-        plot_bgcolor="#1A1A1E", 
+        paper_bgcolor="#1A1A24", # 改成與新大卡片一致的灰色
+        plot_bgcolor="#1A1A24",  # 改成與新大卡片一致的灰色
         xaxis_rangeslider_visible=False,  # 隱藏 X 軸滑塊，騰出空間給四宮格高密度排版
         height=205, 
         margin=dict(l=10, r=40, t=5, b=5),
