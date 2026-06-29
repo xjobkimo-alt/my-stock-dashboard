@@ -523,17 +523,17 @@ with row1_col1:
         end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
         
         # 1. 宣告終極一體化網頁表格，利用 table-layout:fixed 橫向百分比硬性死鎖欄位寬度！
-        # 商品欄拉大(26%)、其餘買進賣出數據緊隨前移貼齊(各 13% ~ 15%)，徹底消滅數據右移頑疾！
+        # 徹底拿掉最右側的「刪除(❌)」欄位，將排版空間釋放給數據前移靠攏！
+        # 黃金配比：商品(28%)、買進(14%)、賣出(14%)、成交(16%)、漲跌(14%)、漲幅%(14%) = 100%
         html_code = """
         <table style="width:100%; border-collapse:collapse; font-family:'Courier New', monospace; font-size:14px; table-layout:fixed; line-height:1.2;">
             <tr style="border-bottom:2px solid #0D47A1; height:26px; vertical-align:middle;">
-                <th style="width:26%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:left; padding-left:4px;">商品</th>
-                <th style="width:13%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">買進</th>
-                <th style="width:13%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">賣出</th>
-                <th style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">成交</th>
-                <th style="width:13%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲跌</th>
-                <th style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲幅%</th>
-                <th style="width:5%; color:#64B5F6; font-size:11px; font-weight:bold; text-align:center;">刪</th>
+                <th style="width:28%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:left; padding-left:6px;">商品</th>
+                <th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">買進</th>
+                <th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">賣出</th>
+                <th style="width:16%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">成交</th>
+                <th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲跌</th>
+                <th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; padding-right:4px;">漲幅%</th>
             </tr>
         """
         
@@ -566,65 +566,82 @@ with row1_col1:
             else:
                 v_color, s_arrow, sign_str = "#FFFFFF", " ", ""
             
-            # 100% 不崩潰中文名稱精準抽取
+            # 100% 安全不崩潰中文名稱精準抽取
             pure_name_str = str(name).split(' (')[0].split('(')[0]
             
             # 判斷是否為當前關注商品
             is_active = (name == st.session_state["main_stock_selector"])
             active_bullet = "🎯" if is_active else "🔹"
+            text_style = "color:#00B0FF; font-weight:bold;" if is_active else "color:#FFFFFF;"
             
-            # 【終極一體化純 HTML 表格】：將點選商品與刪除功能完美改用 target="_top" 超連結直擊！
-            # 不生成任何 Streamlit 灰色大按鈕骨架，大叉叉 100% 絕跡，數據欄位瞬間全部往前瘋狂移位對齊！
+            # 【點擊大復活核心】：綁定 JavaScript postMessage 事件，點擊瞬間直接安全通訊，破防沙盒禁令！
             html_code += f"""
             <tr style="background-color:{bg_color}; border-bottom:1px solid #222222; height:28px; vertical-align:middle;">
-                <td style="text-align:left; padding-left:4px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                    <a href="?fast_sel={global_idx}" target="_top" style="color:#FFFFFF; text-decoration:none; display:block; width:100%; cursor:pointer;" onmouseover="this.style.color='#00B0FF'" onmouseout="this.style.color='#FFFFFF'">{active_bullet}{pure_name_str}</a>
+                <td style="text-align:left; padding-left:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; {text_style}">
+                    <span style="cursor:pointer; display:block; width:100%;" onmouseover="this.style.color='#00B0FF'" onmouseout="this.style.color=''" onclick="window.parent.postMessage({{type:'stock_click', val:{global_idx}}}, '*')">{active_bullet}{pure_name_str}</span>
                 </td>
                 <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap; font-family:monospace;">{bid_str}</td>
                 <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap; font-family:monospace;">{ask_str}</td>
                 <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap; font-family:monospace;">{price_format}</td>
                 <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap; font-family:monospace;">{s_arrow}{abs(chg):,.2f}</td>
-                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap; font-family:monospace;">{sign_str}{pct:.2f}%</td>
-                <td style="text-align:center;">
-                    <a href="?fast_del={global_idx}" target="_top" style="color:#FF3333; text-decoration:none; font-size:12px; font-weight:bold; cursor:pointer;" onmouseover="this.style.color='#FF8A80'" onmouseout="this.style.color='#FF3333'">❌</a>
-                </td>
+                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap; font-family:monospace; padding-right:4px;">{sign_str}{pct:.2f}%</td>
             </tr>
             """
         
-        html_code += "</table>"
+                html_code += "</table>"
         clean_html_code = html_code.replace("\n", "").replace("\r", "")
         
-        # 使用 Streamlit 原生微型組件將一體化網頁直接渲染輸出（高對齊度，高度設定為 196px）
+        # 渲染 HTML 一體化表格
         st.components.v1.html(f"""<body style="margin:0; padding:0; background:transparent;">{clean_html_code}</body>""", height=196)
-
-                # 【全域同步大腦攔截鎖】：精準解碼超連結直擊網址列帶來的參數
+        
+        # 3. 注入全高感度監聽器，精準捕捉子網頁傳回的個股編號，並強制注入最外層網址參數
+        import streamlit.components.v1 as components
+        js_listener = """
+        <script>
+        window.addEventListener('message', function(e) {
+            if(e.data.type === 'stock_click') {
+                const topUrl = new URL(window.top.location.href);
+                topUrl.searchParams.set('fast_sel', e.data.val);
+                window.top.location.href = topUrl.href;
+            }
+            if(e.data.type === 'del_click') {
+                const topUrl = new URL(window.top.location.href);
+                topUrl.searchParams.set('fast_del', e.data.val);
+                window.top.location.href = topUrl.href;
+            }
+        });
+        </script>
+        """
+        components.html(js_listener, height=0, width=0) # 隱形接收大腦
+        
+        # 4. 【同步大腦鎖】：安全接收解碼通道回傳的參數，強制改寫關注指標，觸發全網連動刷新
         if hasattr(st.query_params, 'to_dict'):
             curr_params = st.query_params.to_dict()
         else:
             curr_params = st.query_params
-            
+        
         if "fast_sel" in curr_params:
             sel_idx = int(curr_params["fast_sel"])
             if sel_idx < len(watchlist_items):
                 st.session_state["current_selected_idx"] = sel_idx
-                st.session_state["main_stock_selector"] = watchlist_items[sel_idx][0] # 拿取純字串
+                # 【關鍵修復點】：watchlist_items[sel_idx] 是元組，精準抽離並寫入純字串名稱 Key
+                st.session_state["main_stock_selector"] = watchlist_items[sel_idx][0]
                 st.query_params.clear()
                 st.rerun()
-                
+        
         if "fast_del" in curr_params:
             del_idx = int(curr_params["fast_del"])
             if total_items > 1 and del_idx < len(watchlist_items):
                 target_del_name = watchlist_items[del_idx][0]
                 del st.session_state["watchlist_dict"][target_del_name]
                 save_my_watchlist()
-                
                 remaining_keys = list(st.session_state["watchlist_dict"].keys())
                 st.session_state["current_selected_idx"] = 0
                 st.session_state["main_stock_selector"] = remaining_keys[0] if remaining_keys else ""
                 st.query_params.clear()
                 st.rerun()
         
-        # 分頁導航底欄
+        # 報價分頁專用底欄
         st.markdown("<div style='margin-top:4px;'></div>", unsafe_allow_html=True)
         p_col1, p_col2, p_col3 = st.columns([1.2, 2, 1.2])
         with p_col1:
@@ -637,6 +654,7 @@ with row1_col1:
             if st.button("下一頁 ➡", disabled=(st.session_state["current_page"] >= max_page), use_container_width=True, key="next_page_btn"):
                 st.session_state["current_page"] += 1
                 st.rerun()
+
 
 
                 
