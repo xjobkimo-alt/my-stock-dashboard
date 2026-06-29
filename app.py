@@ -574,7 +574,7 @@ with row1_col1:
             active_bullet = "🎯" if is_active else "🔹"
             text_style = "color:#00B0FF; font-weight:bold;" if is_active else "color:#FFFFFF;"
             
-            # 【點擊大復活核心】：綁定 JavaScript postMessage 事件，點擊瞬間直接安全通訊，破防沙盒禁令！
+            # 【點擊大復活核心】：跨沙盒發送點擊索引，破防安全禁令！
             html_code += f"""
             <tr style="background-color:{bg_color}; border-bottom:1px solid #222222; height:28px; vertical-align:middle;">
                 <td style="text-align:left; padding-left:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; {text_style}">
@@ -588,13 +588,14 @@ with row1_col1:
             </tr>
             """
         
-                html_code += "</table>"
+        # 精準黏合封閉標籤，完美消滅縮排錯誤 (IndentationError)
+        html_code += "</table>"
         clean_html_code = html_code.replace("\n", "").replace("\r", "")
         
         # 渲染 HTML 一體化表格
         st.components.v1.html(f"""<body style="margin:0; padding:0; background:transparent;">{clean_html_code}</body>""", height=196)
         
-        # 3. 注入全高感度監聽器，精準捕捉子網頁傳回的個股編號，並強制注入最外層網址參數
+        # 3. 全高感度信號接收器，精準繞過沙盒攔截，並將參數寫入 URL
         import streamlit.components.v1 as components
         js_listener = """
         <script>
@@ -612,9 +613,9 @@ with row1_col1:
         });
         </script>
         """
-        components.html(js_listener, height=0, width=0) # 隱形接收大腦
+        components.html(js_listener, height=0, width=0)
         
-        # 4. 【同步大腦鎖】：安全接收解碼通道回傳的參數，強制改寫關注指標，觸發全網連動刷新
+        # 4. 【同步大腦鎖】：安全接收解碼通道回傳參數，改寫關注指標，觸發全網連動刷新
         if hasattr(st.query_params, 'to_dict'):
             curr_params = st.query_params.to_dict()
         else:
@@ -624,7 +625,6 @@ with row1_col1:
             sel_idx = int(curr_params["fast_sel"])
             if sel_idx < len(watchlist_items):
                 st.session_state["current_selected_idx"] = sel_idx
-                # 【關鍵修復點】：watchlist_items[sel_idx] 是元組，精準抽離並寫入純字串名稱 Key
                 st.session_state["main_stock_selector"] = watchlist_items[sel_idx][0]
                 st.query_params.clear()
                 st.rerun()
@@ -654,9 +654,6 @@ with row1_col1:
             if st.button("下一頁 ➡", disabled=(st.session_state["current_page"] >= max_page), use_container_width=True, key="next_page_btn"):
                 st.session_state["current_page"] += 1
                 st.rerun()
-
-
-
                 
             with tab_manage:
                 st.markdown("<p style='color:#BBBBBB; font-size:14px; font-weight:bold; margin-top:5px;'>➕ 新增自選股商品</p>", unsafe_allow_html=True)
