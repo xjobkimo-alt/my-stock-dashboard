@@ -199,6 +199,27 @@ st.markdown("""
     .val-up { color: #FF3333 !important; }
     .val-down { color: #00AA00 !important; }
     .val-even { color: #FFFFFF !important; }
+    
+    /* 終極修正：強制將 Streamlit 原生分頁（Tabs）的外殼底色全部變透明，徹底消滅那兩條橫條 */
+    div[data-baseweb="tabs"], 
+    [data-baseweb="tab-highlight-bar"],
+    div[class*="stTabs"] > div:first-child,
+    div[data-testid="stHorizontalBlock"] div[class*="stTabs"] {
+        background-color: transparent !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    /* 確保分頁按鈕下方的橫線保留，但周圍的肥大黑框消失 */
+    [data-baseweb="tab-list"] {
+        background-color: transparent !important;
+        background: transparent !important;
+        border-bottom: 1px solid #2C2C3C !important;
+        padding: 0px !important;
+        gap: 12px !important;
+    }
+
 </style>
 """, unsafe_allow_html=True)
 
