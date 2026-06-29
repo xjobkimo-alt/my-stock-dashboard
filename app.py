@@ -595,7 +595,7 @@ with row1_col1:
                 c_p, chg, pct, bid_str, ask_str = 0.0, 0.0, 0.0, "--", "--"
                 price_format = f"{c_p:,.2f}"
             
-            # 【經典紅綠多空判定】：將原本暗沉的灰色全面復活為高飽和度看盤經典配色！
+            # 經典紅綠多空配色判定
             if chg > 0:
                 v_color, s_arrow, sign_str = "#FF3333", "▲", "+"  # 多方實心紅
             elif chg < 0:
@@ -603,8 +603,8 @@ with row1_col1:
             else:
                 v_color, s_arrow, sign_str = "#FFFFFF", " ", ""   # 平盤純淨白
             
-            # 100% 安全字串清洗
-            pure_name_str = str(name).split(' (').split('(')
+            # 【終極防崩潰安全錨】：精準分離元組並加上 [0] 索引值，保證 100% 絕不拋出屬性錯誤！
+            pure_name_str = str(name).split(' (')[0].split('(')[0].strip()
             
             # 建立與表頭絕對死鎖定位的橫列
             b_col1, b_col2, b_col3, b_col4, b_col5, b_col6 = st.columns([2.6, 1.4, 1.4, 1.6, 1.4, 1.6])
@@ -618,7 +618,7 @@ with row1_col1:
                     st.session_state["main_stock_selector"] = name
                     st.rerun()
             
-            # 數據欄位精準注入對應的 v_color，紅綠視覺效果直接拉滿！
+            # 數據欄位精準注入紅綠色彩
             with b_col2: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{bid_str}</p>", unsafe_allow_html=True)
             with b_col3: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{ask_str}</p>", unsafe_allow_html=True)
             with b_col4: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{price_format}</p>", unsafe_allow_html=True)
@@ -642,7 +642,6 @@ with row1_col1:
                 st.rerun()
 
 
-                
     with tab_manage:
         # --- 【搬移整併核心】：新增股票輸入表單與按鈕，依指示完美移入自選管理分頁中 ---
         st.markdown("<p style='color:#64B5F6; font-size:14px; font-weight:bold; margin-top:5px; margin-bottom:2px;'>➕ 新增自選股商品</p>", unsafe_allow_html=True)
