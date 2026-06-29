@@ -669,44 +669,69 @@ with row1_col1:
                         st.error(f"連線驗證失敗: {e}")
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- 【右上格】：技術分析 K 線與均線圖 ---
+# --- 【右上格】：技術分析 K 線與均線圖 (五大週期專業重構版) ---
 with row1_col2:
     st.markdown('<div class="xq-grid-card">', unsafe_allow_html=True)
     st.markdown("📈 **【技術分析 K 線與均線】**")
-    time_frame = st.radio("選擇時間區間", ["當日", "近月", "一年", "五年"], index=1, horizontal=True, key="tech_radio")
     
-    # 【Bug 修復 1】：精準分流切換時間區間，防禦全部卡在 5 年線
-    if time_frame == "當日":
-        # 當日線圖改用今日即時下載的分時數據(或取歷史最後50筆)，此處切為最後15筆維持實心外觀
-        plot_df = df.tail(15)
-    elif time_frame == "近月":
-        plot_df = df.tail(30)
-    elif time_frame == "一年":
-        plot_df = df.tail(250)
+    # 1. 重新設計為 XQ 專業看盤規格的 5 個週期
+    time_frame = st.radio("選擇 K 線週期", ["日線", "週線", "月線", "年線", "五年"], index=0, horizontal=True, key="tech_radio")
+    
+    # 確保操作的是獨立副本，避免污染全域 df 數據
+    raw_df = df.copy()
+    
+    # 2. 智慧高動態週期聚合與分流大腦
+    if time_frame == "日線":
+        # 日線顯示最近 60 檔交易日的 K 線資料
+        plot_df = raw_df.tail(60)
+    
+    elif time_frame == "週線":
+        # 將日線數據按週(W)重採樣聚合：開盤價取週首、最高價取週高、最低價取週低、收盤價取週尾、成交量加總
+        raw_df.index = pd.to_datetime(raw_df.index)
+        weekly_df = raw_df.resample('W').agg({
+            'Open': 'first', 'High': 'max', 'Low': 'min', 'Close': 'last', 'Volume': 'sum'
+        }).dropna()
+        # 週線圖顯示最近 52 週（約一年份）的 K 線
+        plot_df = weekly_df.tail(52)
+        
+    elif time_frame == "月線":
+        # 將日線數據按月(M)重採樣聚合
+        raw_df.index = pd.to_datetime(raw_df.index)
+        monthly_df = raw_df.resample('M').agg({
+            'Open': 'first', 'High': 'max', 'Low': 'min', 'Close': 'last', 'Volume': 'sum'
+        }).dropna()
+        # 月線圖顯示最近 36 個月（三分年份）的 K 線
+        plot_df = monthly_df.tail(36)
+        
+    elif time_frame == "年線":
+        # 年線模式維持高密度日線結構，但範圍精準鎖定在最近 250 筆交易日（一年交易天數）
+        plot_df = raw_df.tail(250)
+        
     else:
-        plot_df = df # 五年則全量加載
-    
-    # 動態計算移動平均線
+        # 五年線加載全量歷史數據 (依資料流大小可調整，此處預設取最後 1200 筆，維持實心色彩)
+        plot_df = raw_df.tail(1200)
+
+    # 3. 動態計算對應週期的均線系統（MA5 與 MA20 隨週期自動校正）
     plot_df = plot_df.copy()
-    plot_df['MA5'] = plot_df['Close'].rolling(window=5).mean()
-    plot_df['MA20'] = plot_df['Close'].rolling(window=20).mean()
+    plot_df['MA5'] = plot_df['Close'].rolling(window=5, min_periods=1).mean()
+    plot_df['MA20'] = plot_df['Close'].rolling(window=20, min_periods=1).mean()
     
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.08, row_heights=[0.7, 0.3])
     
-    # 【Bug 修復 2】：強制鎖定高密度實心 K 線配色，不論資料多寡絕不縮水變粉紫細線
+    # 4. 強制實心高階外觀配色鎖定，切換任何週期絕不退化成粉紫細線
     fig.add_trace(go.Candlestick(
         x=plot_df.index, open=plot_df['Open'], high=plot_df['High'], low=plot_df['Low'], close=plot_df['Close'],
-        name="K線圖", 
+        name="K線", 
         increasing=dict(line=dict(color='#FF3333', width=1.5), fillcolor='#FF3333'),
         decreasing=dict(line=dict(color='#00AA00', width=1.5), fillcolor='#00AA00'), 
         showlegend=False
     ), row=1, col=1)
     
-    # 疊加均線
+    # 疊加自適應均線
     fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA5'], mode='lines', line=dict(color='#00B0FF', width=1.5), name="5MA"), row=1, col=1)
     fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA20'], mode='lines', line=dict(color='#E040FB', width=1.5), name="20MA"), row=1, col=1)
     
-    # 建立量能柱狀圖色彩配置陣列
+    # 5. 精準動態量能柱顏色引擎 (與收盤漲跌完全同步)
     color_list = []
     for i in range(len(plot_df)):
         if i == 0:
@@ -719,21 +744,21 @@ with row1_col2:
         marker=dict(color=color_list), showlegend=False
     ), row=2, col=1)
     
-    # 【Bug 修復 3】：將 plot_bgcolor 與 paper_bgcolor 完美調為純黑色 (#000000)
+    # 6. 極致黑排版優化：背景徹底調為純黑色 (#000000)，與網頁全域無縫融為一體
     fig.update_layout(
         margin=dict(l=10, r=10, t=10, b=10), template="plotly_dark",
         xaxis_rangeslider_visible=False, height=340, showlegend=False,
         paper_bgcolor="#000000", plot_bgcolor="#000000"
     )
     
-    # 移除 X 軸格線，維持純黑極簡高質感
+    # 清洗格線，保持極簡高質感
     fig.update_xaxes(showgrid=False, zeroline=False)
     fig.update_yaxes(showgrid=True, gridcolor="#1A1A1A", zeroline=False)
     
-    # 渲染至網頁畫面上
+    # 7. 渲染圖表輸出
     st.plotly_chart(fig, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
-
+    
 # 建立四宮格的下半部分主要橫列布局
 row2_col1, row2_col2 = st.columns(2)
 
