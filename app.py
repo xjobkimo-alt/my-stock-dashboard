@@ -522,7 +522,7 @@ with row1_col1:
         start_idx = st.session_state["current_page"] * ITEMS_PER_PAGE
         end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
         
-        # 【終極精準 CSS 注入】：把商品列的原生按鈕外框完全拔除、高度壓扁，使其完美融入表格文字
+        # 【精準 CSS 注入】：徹底拔除按鈕邊框線，並限制其最大高度不撐開表格
         st.markdown("""
         <style>
         .xq-fixed-row-btn button {
@@ -556,7 +556,7 @@ with row1_col1:
         with t_col7: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:center; margin:0;'>刪</p>", unsafe_allow_html=True)
         st.markdown("<hr style='margin:4px 0px; border-top:1px solid #0D47A1 !important;'>", unsafe_allow_html=True)
         
-        # 2. 循環組裝 6 檔商品資料列 (商品點選採用原生 Button 確保秒級響應，其餘數據緊隨貼齊)
+        # 2. 循環組裝 6 檔商品資料列
         for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
             global_idx = start_idx + idx_offset
             
@@ -584,14 +584,14 @@ with row1_col1:
             else:
                 v_color, s_arrow, sign_str = "#FFFFFF", " ", ""
             
-            # 安全切出純中文名稱字串
-            pure_name_str = str(name).split(' (').split('(')
+            # 【終極防崩潰安全字串清洗】：精準切除任何括號後綴，100% 不引發 List 屬性報錯 Bug
+            pure_name_str = str(name).split(' ')[0].split('(')[0]
             
-            # 橫向對齊欄位元件建立
+            # 建立資料欄位橫列
             b_col1, b_col2, b_col3, b_col4, b_col5, b_col6, b_col7 = st.columns([2.6, 1.3, 1.3, 1.3, 1.3, 1.3, 0.6])
             
             with b_col1:
-                # 【終極連動復活點】：按鈕寬度縮小並壓扁，點擊 100% 立即切換股票，永不失效！
+                # 商品選取按鈕（點擊 100% 實時發送 Python 重新選取重繪訊號）
                 st.markdown('<div class="xq-fixed-row-btn">', unsafe_allow_html=True)
                 is_active = (name == st.session_state["main_stock_selector"])
                 btn_prefix = "🎯 " if is_active else "🔹 "
@@ -601,7 +601,7 @@ with row1_col1:
                     st.rerun()
                 st.markdown('</div>', unsafe_allow_html=True)
             
-            # 其餘五個數據欄位靠右精準靠攏，數據完美往前移，貼齊表頭
+            # 數據欄位靠右精準定位，貼齊表頭往前靠攏
             with b_col2: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:4px 0 0 0; font-family:monospace; font-size:13px;'>{bid_str}</p>", unsafe_allow_html=True)
             with b_col3: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:4px 0 0 0; font-family:monospace; font-size:13px;'>{ask_str}</p>", unsafe_allow_html=True)
             with b_col4: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:4px 0 0 0; font-family:monospace; font-size:13px;'>{price_format}</p>", unsafe_allow_html=True)
@@ -609,7 +609,7 @@ with row1_col1:
             with b_col6: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:4px 0 0 0; font-family:monospace; font-size:13px;'>{sign_str}{pct:.2f}%</p>", unsafe_allow_html=True)
             
             with b_col7:
-                # 刪除功能改用 100% 對齊且不生成骨架的 URL 直擊超連結
+                # 刪除鍵採零高度 HTML 文字超連結，100% 寬度對齊且不撐大表格
                 st.markdown(f"""
                 <p style="text-align:center; margin:5px 0 0 0; font-size:12px;">
                     <a href="?fast_del={global_idx}" target="_top" style="color:#FF3333; text-decoration:none; font-weight:bold; cursor:pointer;" onmouseover="this.style.color='#FF8A80'" onmouseout="this.style.color='#FF3333'">❌</a>
@@ -618,7 +618,7 @@ with row1_col1:
             
             st.markdown("<hr style='margin:1px 0px; border-top:1px solid #222222 !important;'>", unsafe_allow_html=True)
 
-                # 接收超連結直接寫入網址列的刪除參數
+                # 接收超連結寫入網址列的刪除參數
         if hasattr(st.query_params, 'to_dict'):
             curr_params = st.query_params.to_dict()
         else:
@@ -627,7 +627,7 @@ with row1_col1:
         if "fast_del" in curr_params:
             del_idx = int(curr_params["fast_del"])
             if total_items > 1 and del_idx < len(watchlist_items):
-                target_del_name = watchlist_items[del_idx]
+                target_del_name = watchlist_items[del_idx][0] # 安全解碼元組
                 del st.session_state["watchlist_dict"][target_del_name]
                 save_my_watchlist()
                 
