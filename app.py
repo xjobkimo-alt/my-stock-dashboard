@@ -663,7 +663,7 @@ with row1_col1:
     with tab_manage:
         st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
         
-        # 【強效 Expander 黑化 CSS 注入】：維持新增自選股展開時的流暢純黑底色
+        # 【全能黑化與字級校正 CSS 注入】：鎖死全黑底色，並強制微調原生大標題字級，維持 XQ 仿真精緻感
         st.markdown("""
         <style>
         div[data-testid="stExpander"], 
@@ -681,14 +681,14 @@ with row1_col1:
             color: #FFFFFF !important;
         }
         
-        # 【物理隔離千斤頂】：強制建立一個 20px 高度的鋼鐵實體透明斷層，粉碎下拉選單的浮空遮擋 Bug！
-        .xq-absolute-block-spacer {
-            height: 20px !important;
-            min-height: 20px !important;
-            line-height: 20px !important;
-            display: block !important;
-            margin: 0 !important;
-            padding: 0 !important;
+        /* 【關鍵修復】：強制讓移除區域的三級大標題字體縮微至 14px，維持精緻排版，但保留它無敵的向下推力！ */
+        .xq-delete-section-title h3 {
+            color: #FF5252 !important;
+            font-size: 14px !important;
+            font-weight: bold !important;
+            margin-top: 14px !important;
+            margin-bottom: 6px !important;
+            padding: 0px !important;
         }
         </style>
         """, unsafe_allow_html=True)
@@ -699,7 +699,7 @@ with row1_col1:
             if st.button("🚀 確認加入自選清單", use_container_width=True, key="manage_add_btn_unique"):
                 if new_code:
                     target_code = new_code.upper()
-                    pure_number = target_code.split('.')
+                    pure_number = target_code.split('.') if '.' in target_code else target_code
                     if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
                         target_code = f"{pure_number}.TW"
                     
@@ -723,18 +723,15 @@ with row1_col1:
                         except Exception as e:
                             st.error(f"連線驗證失敗: {e}")
 
-        st.markdown("<div style='margin-top:12px;'></div>", unsafe_allow_html=True)
-
-        # --- 2. 【移除自選股區塊】：採用實體容器隔離機制 ---
-        # 渲染清晰可見的標題文字
-        st.markdown("<p style='color:#BBBBBB; font-size:13px; font-weight:bold; margin:0;'>請選擇欲移除的商品</p>", unsafe_allow_html=True)
-        
-        # 【修復重疊核心】：利用實體骨架 Class，在文字與選單正中央「強硬砸開 20px 空間」，選單 100% 絕對碰不到文字！
-        st.markdown("<span class='xq-absolute-block-spacer'></span>", unsafe_allow_html=True)
+        # --- 2. 【移除自選股區塊】：比照右下格大腦，導入獨立的大標題結構外殼，100% 絕不跑位 ---
+        st.markdown('<div class="xq-delete-section-title">', unsafe_allow_html=True)
+        # 模仿右下格，直接呼交 Streamlit 權重極高、帶有獨立物理骨架的 st.markdown(###) 標題
+        st.markdown("### 🗑️ 請選擇欲移除的商品")
+        st.markdown('</div>', unsafe_allow_html=True)
         
         # 防禦選單空置導致崩潰
         if watchlist_keys:
-            # 成功接回下拉選單
+            # 成功接回下拉選單 (label_visibility 完全設定為 collapsed，因為標題已經在上方完美露出)
             delete_target = st.selectbox(
                 "選擇移除商品", 
                 options=watchlist_keys, 
@@ -742,9 +739,9 @@ with row1_col1:
                 label_visibility="collapsed"
             )
             
-            st.markdown("<div style='margin-top:8px;'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
             
-            # 刪除鍵邏輯核心
+            # 刪除鍵邏輯
             if st.button(f"❌ 從清單中刪除目前股票", use_container_width=True, key="manage_delete_current_focus_btn"):
                 if total_items > 1:
                     if delete_target in st.session_state["watchlist_dict"]:
@@ -781,8 +778,8 @@ with row1_col1:
 
 # --- 【右上格】：技術分析 K 線與均線圖 ---
 with row1_col2:
+# 這裡無痛向下連接您原本完整的右上格 Plotly 繪圖代碼
 
-# 這裡無痛向下連接您原本完整的右上格 Plotly 技術分析 K 線與成交量能繪圖程式碼...
     st.markdown('<div class="xq-grid-card">', unsafe_allow_html=True)
     st.markdown("📈 **【技術分析 K 線與均線】**")
     
