@@ -522,7 +522,7 @@ with row1_col1:
         start_idx = st.session_state["current_page"] * ITEMS_PER_PAGE
         end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
         
-        # 局部消光黑按鈕優化 CSS 注入：徹底拔除 Streamlit 按鈕的死灰外框，使其與表格融為一體
+        # 科技消光黑按鈕優化 CSS 注入：徹底拔除按鈕邊框，偽裝成純文字超連結點擊質感
         st.markdown("""
         <style>
         div[data-testid="stHorizontalBlock"] button {
@@ -538,7 +538,7 @@ with row1_col1:
             color: #00B0FF !important;
             background-color: #1A1A1A !important;
         }
-        /* 專屬最右側刪除按鈕微縮排版 */
+        /* 最右側刪除按鈕專屬配色 */
         div.del-btn-container button {
             color: #FF3333 !important;
             text-align: center !important;
@@ -550,7 +550,7 @@ with row1_col1:
         </style>
         """, unsafe_allow_html=True)
         
-        # 1. 重新精準調校的黃金配比表頭欄位 [2.2, 1.4, 1.4, 1.4, 1.4, 1.4, 0.8]
+        # 1. 完美對齊的黃金比例表頭欄位配比 [2.2, 1.4, 1.4, 1.4, 1.4, 1.4, 0.8]
         t_col1, t_col2, t_col3, t_col4, t_col5, t_col6, t_col7 = st.columns([2.2, 1.4, 1.4, 1.4, 1.4, 1.4, 0.8])
         with t_col1: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin:0; text-align:left; padding-left:8px;'>商品</p>", unsafe_allow_html=True)
         with t_col2: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>買進</p>", unsafe_allow_html=True)
@@ -561,7 +561,7 @@ with row1_col1:
         with t_col7: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:center; margin:0;'>移除</p>", unsafe_allow_html=True)
         st.markdown("<hr style='margin:4px 0px; border-top:1px solid #0D47A1 !important;'>", unsafe_allow_html=True)
         
-        # 2. 循環組裝商品資料列 (完美對齊版)
+        # 2. 循環組裝商品資料列
         for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
             global_idx = start_idx + idx_offset
             
@@ -589,22 +589,22 @@ with row1_col1:
             else:
                 v_color, s_arrow, sign_str = "#FFFFFF", " ", ""
             
-            # 清洗並純化商品名稱，去掉括號後綴
+            # 【安全修正】：精準切出括號前綴的中文名稱，避免多重 split 引發崩潰
             pure_name_str = str(name).split(' (')[0].split('(')[0]
             
-            # 建立精準對齊的資料欄位橫列
+            # 建立橫向對齊欄位
             b_col1, b_col2, b_col3, b_col4, b_col5, b_col6, b_col7 = st.columns([2.2, 1.4, 1.4, 1.4, 1.4, 1.4, 0.8])
             
             with b_col1:
-                # 商品選取按鈕（擺放在最左側第一欄）
+                # 商品選取按鈕（【修復核心】：移除非法 label_visibility 參數）
                 is_active = (name == st.session_state["main_stock_selector"])
                 btn_prefix = "🎯 " if is_active else "🔹 "
-                if st.button(f"{btn_prefix}{pure_name_str}", key=f"fast_sel_btn_{code}_{global_idx}", use_container_width=True, label_visibility="collapsed"):
+                if st.button(f"{btn_prefix}{pure_name_str}", key=f"fast_sel_btn_{code}_{global_idx}", use_container_width=True):
                     st.session_state["current_selected_idx"] = watchlist_keys.index(name)
                     st.session_state["main_stock_selector"] = name
                     st.rerun()
             
-            # 數據欄位靠右對齊，完美契合專業看盤軟體排版
+            # 數據欄位排版
             with b_col2: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:4px 0 0 0; font-family:monospace; font-size:13px;'>{bid_str}</p>", unsafe_allow_html=True)
             with b_col3: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:4px 0 0 0; font-family:monospace; font-size:13px;'>{ask_str}</p>", unsafe_allow_html=True)
             with b_col4: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:4px 0 0 0; font-family:monospace; font-size:13px;'>{price_format}</p>", unsafe_allow_html=True)
@@ -612,15 +612,15 @@ with row1_col1:
             with b_col6: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:4px 0 0 0; font-family:monospace; font-size:13px;'>{sign_str}{pct:.2f}%</p>", unsafe_allow_html=True)
             
             with b_col7:
-                # 移除按鈕（回歸最右側最後一欄，並套用自訂消光黑樣式）
+                # 移除按鈕（移除非法 label_visibility 參數，維持最右側定位）
                 st.markdown('<div class="del-btn-container">', unsafe_allow_html=True)
-                if st.button("❌", key=f"fast_del_btn_{code}_{global_idx}", use_container_width=True, label_visibility="collapsed"):
+                if st.button("❌", key=f"fast_del_btn_{code}_{global_idx}", use_container_width=True):
                     if total_items > 1:
                         del st.session_state["watchlist_dict"][name]
                         save_my_watchlist()
                         remaining_keys = list(st.session_state["watchlist_dict"].keys())
                         st.session_state["current_selected_idx"] = 0
-                        st.session_state["main_stock_selector"] = remaining_keys[0] if remaining_keys else ""
+                        st.session_state["main_stock_selector"] = remaining_keys if remaining_keys else ""
                         st.rerun()
                 st.markdown('</div>', unsafe_allow_html=True)
             
