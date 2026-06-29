@@ -573,7 +573,7 @@ with row1_col1:
             </tr>
             """
             
-            html_code += "</table>"
+        html_code += "</table>"
         clean_html_code = html_code.replace("\n", "").replace("\r", "")
         st.markdown(clean_html_code, unsafe_allow_html=True)
         
@@ -607,7 +607,7 @@ with row1_col1:
             sel_idx = int(curr_params["fast_sel"])
             if sel_idx < len(watchlist_items):
                 st.session_state["current_selected_idx"] = sel_idx
-                # 注意：綁定對應的顯示字串名稱作為 Key
+                # 修正綁定機制：拿對應的 Tuple 顯示字串作為 Key
                 st.session_state["main_stock_selector"] = watchlist_items[sel_idx][0]
                 st.query_params.clear()
                 st.rerun()
@@ -638,8 +638,8 @@ with row1_col1:
                 st.session_state["current_page"] += 1
                 st.rerun()
                 
-            with tab_manage:
-                st.markdown("<p style='color:#BBBBBB; font-size:14px; font-weight:bold; margin-top:5px;'>➕ 新增自選股商品</p>", unsafe_allow_html=True)
+    with tab_manage:
+        st.markdown("<p style='color:#BBBBBB; font-size:14px; font-weight:bold; margin-top:5px;'>➕ 新增自選股商品</p>", unsafe_allow_html=True)
         new_code = st.text_input("請在此輸入欲新增之股票代碼", placeholder="例如: 2330", key="manage_add_input_unique").strip()
         if st.button("🚀 確認加入自選清單", use_container_width=True, key="manage_add_btn_unique"):
             if new_code:
@@ -667,7 +667,7 @@ with row1_col1:
                                 st.rerun()
                     except Exception as e:
                         st.error(f"連線驗證失敗: {e}")
-        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # --- 【右上格】：技術分析 K 線與均線圖 ---
 with row1_col2:
