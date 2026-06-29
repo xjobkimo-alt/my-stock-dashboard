@@ -663,7 +663,7 @@ with row1_col1:
     with tab_manage:
         st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
         
-        # 【全能黑化與字級校正 CSS 注入】：鎖死全黑底色，並強制微調原生大標題字級，維持 XQ 仿真精緻感
+        # 【全能黑化與雙向對稱字級 CSS 注入】：鎖死全黑底色，並強制微調新增與移除大標題字級，維持 100% 視覺對稱工整
         st.markdown("""
         <style>
         div[data-testid="stExpander"], 
@@ -681,10 +681,20 @@ with row1_col1:
             color: #FFFFFF !important;
         }
         
-        /* 【關鍵修復】：強制讓移除區域的三級大標題字體縮微至 14px，維持精緻排版，但保留它無敵的向下推力！ */
+        /* 【重要優化：新增標題放大鎖】：強制將新增提示文字放大至 15px，保持與下方移除標題完全對稱、不再顯得太空洞 */
+        .xq-add-section-title h3 {
+            color: #BBBBBB !important;
+            font-size: 15px !important;
+            font-weight: bold !important;
+            margin-top: 6px !important;
+            margin-bottom: 8px !important;
+            padding: 0px !important;
+        }
+        
+        /* 【重要優化：移除標題對稱鎖】：同步校正為 15px，維持全版縱向黃金比例 */
         .xq-delete-section-title h3 {
             color: #FF5252 !important;
-            font-size: 14px !important;
+            font-size: 15px !important;
             font-weight: bold !important;
             margin-top: 14px !important;
             margin-bottom: 6px !important;
@@ -695,7 +705,12 @@ with row1_col1:
         
         # --- 1. 【新增自選股區塊】：100% 科技黑化摺疊式 Expander 區塊 ---
         with st.expander("➕ 新增自選股", expanded=False):
-            new_code = st.text_input("請在此輸入欲新增之股票代碼", placeholder="例如: 2330", key="manage_add_input_unique").strip()
+            # 【完美放大】：導入獨立大標題架構外殼，強制將提示字體放大至 15px，完美對稱！
+            st.markdown('<div class="xq-add-section-title">', unsafe_allow_html=True)
+            st.markdown("### 🔍 請在此輸入欲新增之股票代碼")
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            new_code = st.text_input("請在此輸入欲新增之股票代碼", placeholder="例如: 2330", key="manage_add_input_unique", label_visibility="collapsed").strip()
             if st.button("🚀 確認加入自選清單", use_container_width=True, key="manage_add_btn_unique"):
                 if new_code:
                     target_code = new_code.upper()
@@ -723,15 +738,13 @@ with row1_col1:
                         except Exception as e:
                             st.error(f"連線驗證失敗: {e}")
 
-        # --- 2. 【移除自選股區塊】：比照右下格大腦，導入獨立的大標題結構外殼，100% 絕不跑位 ---
+        # --- 2. 【移除自選股區塊】：獨立的大標題結構外殼，100% 絕不跑位 ---
         st.markdown('<div class="xq-delete-section-title">', unsafe_allow_html=True)
-        # 模仿右下格，直接呼交 Streamlit 權重極高、帶有獨立物理骨架的 st.markdown(###) 標題
         st.markdown("### 🗑️ 請選擇欲移除的商品")
         st.markdown('</div>', unsafe_allow_html=True)
         
         # 防禦選單空置導致崩潰
         if watchlist_keys:
-            # 成功接回下拉選單 (label_visibility 完全設定為 collapsed，因為標題已經在上方完美露出)
             delete_target = st.selectbox(
                 "選擇移除商品", 
                 options=watchlist_keys, 
