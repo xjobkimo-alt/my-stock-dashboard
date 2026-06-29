@@ -663,13 +663,34 @@ with row1_col1:
     with tab_manage:
         st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
         
-        # --- 1. 【100% 滿血復活】：手動摺疊式新增股票 Expander 區塊 ---
+        # 【強效 Expander 黑化 CSS 注入】：利用最高階權重鎖，強行把新增自選股展開時的底色壓成純黑，徹底消滅白底 Bug！
+        st.markdown("""
+        <style>
+        div[data-testid="stExpander"], 
+        div[data-testid="stExpander"] div,
+        div[data-testid="stExpander"] summary {
+            background-color: #000000 !important;
+            background: #000000 !important;
+            border-color: #333333 !important;
+            color: #FFFFFF !important;
+        }
+        div[data-testid="stExpander"] p {
+            color: #FFFFFF !important;
+        }
+        /* 修正文字輸入框聚焦時的底色防禦 */
+        div[data-testid="stTextField"] input {
+            color: #FFFFFF !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # --- 1. 【新增自選股區塊】：100% 科技黑化摺疊式 Expander 區塊 ---
         with st.expander("➕ 新增自選股", expanded=False):
             new_code = st.text_input("請在此輸入欲新增之股票代碼", placeholder="例如: 2330", key="manage_add_input_unique").strip()
             if st.button("🚀 確認加入自選清單", use_container_width=True, key="manage_add_btn_unique"):
                 if new_code:
                     target_code = new_code.upper()
-                    pure_number = target_code.split('.')[0]
+                    pure_number = target_code.split('.')
                     if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
                         target_code = f"{pure_number}.TW"
                     
@@ -693,32 +714,45 @@ with row1_col1:
                         except Exception as e:
                             st.error(f"連線驗證失敗: {e}")
 
-        st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
-
-        # --- 2. 【100% 滿血復活】：即時刪除目前正在關注個股之專業功能按鈕 ---
-        # 抓取目前全宇宙唯一大腦鎖定中的個股名稱
-        current_focus_stock = st.session_state["main_stock_selector"]
-        
-        if st.button(f"❌ 從清單中刪除目前股票", use_container_width=True, key="manage_delete_current_focus_btn"):
-            if total_items > 1:
-                if current_focus_stock in st.session_state["watchlist_dict"]:
-                    # 秒級執行刪除
-                    del st.session_state["watchlist_dict"][current_focus_stock]
-                    save_my_watchlist()
-                    
-                    # 安全洗牌：大腦指引回歸安全第一筆，防禦索引越界崩潰
-                    remaining_keys = list(st.session_state["watchlist_dict"].keys())
-                    st.session_state["current_selected_idx"] = 0
-                    st.session_state["main_stock_selector"] = remaining_keys[0] if remaining_keys else ""
-                    st.success(f"已成功移出目前股票：{current_focus_stock.split(' ')[0]}")
-                    st.rerun()
-            else:
-                st.error("⚠️ 自選清單內最少必須保留一檔個股商品，無法繼續刪除！")
-
         st.markdown("<div style='margin-top:12px;'></div>", unsafe_allow_html=True)
 
-        # --- 3. 【100% 滿血復活】：神隱回歸的即時報價動態自動更新頻率 (秒) 滑桿 ---
-        # 確保全域變數或 Session 狀態中有預設的 refresh_rate 參數
+        # --- 2. 【大團圓大復活】：精準找回下拉選單，並與下方的刪除按鈕形成強大邏輯鎖連動！ ---
+        st.markdown("<p style='color:#BBBBBB; font-size:13px; font-weight:bold; margin:0;'>請選擇欲移除的商品</p>", unsafe_allow_html=True)
+        
+        # 防禦選單空置導致崩潰
+        if watchlist_keys:
+            # 成功接回下拉選單，讓使用者能自由挑選想刪除的個股商品
+            delete_target = st.selectbox(
+                "選擇移除商品", 
+                options=watchlist_keys, 
+                key="manage_delete_selectbox",
+                label_visibility="collapsed"
+            )
+            
+            st.markdown("<div style='margin-top:4px;'></div>", unsafe_allow_html=True)
+            
+            # 刪除鍵邏輯核心：當點擊時，精準抓取上方下拉選單選中的個股 `delete_target` 進行即時切除！
+            if st.button(f"❌ 從清單中刪除目前股票", use_container_width=True, key="manage_delete_current_focus_btn"):
+                if total_items > 1:
+                    if delete_target in st.session_state["watchlist_dict"]:
+                        # 執行硬碟與 Session 同步刪除
+                        del st.session_state["watchlist_dict"][delete_target]
+                        save_my_watchlist()
+                        
+                        # 安全洗牌：大腦指引回歸安全第一筆，防禦索引越界崩潰
+                        remaining_keys = list(st.session_state["watchlist_dict"].keys())
+                        st.session_state["current_selected_idx"] = 0
+                        st.session_state["main_stock_selector"] = remaining_keys if remaining_keys else ""
+                        st.success(f"已成功移出股票：{delete_target.split(' ')}")
+                        st.rerun()
+                else:
+                    st.error("⚠️ 自選清單內最少必須保留一檔個股商品，無法繼續刪除！")
+        else:
+            st.caption("暫無商品可供移除")
+
+        st.markdown("<div style='margin-top:14px;'></div>", unsafe_allow_html=True)
+
+        # --- 3. 【動態更新頻率】：即時報價自動更新頻率 (秒) 滑桿 ---
         if "refresh_rate" not in st.session_state:
             st.session_state["refresh_rate"] = 10
             
@@ -737,6 +771,8 @@ with row1_col1:
 
 # --- 【右上格】：技術分析 K 線與均線圖 ---
 with row1_col2:
+# 這裡無痛連接您原本第 9 點右上格的 Plotly 技術分析 K 線與成交量能繪圖程式碼...
+
 # 這裡向下毫無阻礙地緊接著連接您原本的 Plotly 技術分析 K 線繪製程式碼即可...
 
 # 這裡無痛向下連接您原本完整的右上格 Plotly 技術分析 K 線與成交量能繪圖程式碼...
