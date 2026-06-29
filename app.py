@@ -669,7 +669,7 @@ with row1_col1:
                         st.error(f"連線驗證失敗: {e}")
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- 【右上格】：技術分析 K 線與均線圖 (徹底根除月線時區 Bug 版) ---
+# --- 【右上格】：技術分析 K 線與均線圖 (新版 Pandas 頻率相容版) ---
 with row1_col2:
     st.markdown('<div class="xq-grid-card">', unsafe_allow_html=True)
     st.markdown("📈 **【技術分析 K 線與均線】**")
@@ -680,7 +680,7 @@ with row1_col2:
     # 確保操作的是獨立副本，避免污染全域 df 數據
     raw_df = df.copy()
     
-    # 【關鍵修復核心】：強制轉換 Index 為不帶時區的 Datetime，防止 pandas 2.0+ 重採樣拋出 ValueError
+    # 強制轉換 Index 為標準 Datetime 格式並完全清除時區
     raw_df.index = pd.to_datetime(raw_df.index).tz_localize(None)
     
     # 智慧高動態週期聚合與分流大腦
@@ -689,19 +689,26 @@ with row1_col2:
         plot_df = raw_df.tail(60)
     
     elif time_frame == "週線":
-        # 按週(W)重採樣聚合：開盤取首、最高取最、最低取最、收盤取尾、量加總
+        # 使用新版安全的 'W' 週聚合邏輯
         weekly_df = raw_df.resample('W').agg({
             'Open': 'first', 'High': 'max', 'Low': 'min', 'Close': 'last', 'Volume': 'sum'
         }).dropna()
-        # 週線圖顯示最近 52 週（約一年份）的 K 線
+        # 週線圖顯示最近 52 週的 K 線
         plot_df = weekly_df.tail(52)
         
     elif time_frame == "月線":
-        # 按月(M)重採樣聚合
-        monthly_df = raw_df.resample('M').agg({
-            'Open': 'first', 'High': 'max', 'Low': 'min', 'Close': 'last', 'Volume': 'sum'
-        }).dropna()
-        # 月線圖顯示最近 36 個月（三分年份）的 K 線
+        # 【Bug 終極修復核心】：全新 Pandas 版本中，'M' 已被棄用，必須改用 'ME' (Month End)
+        try:
+            monthly_df = raw_df.resample('ME').agg({
+                'Open': 'first', 'High': 'max', 'Low': 'min', 'Close': 'last', 'Volume': 'sum'
+            }).dropna()
+        except:
+            # 安全降級備用方案：若環境為極舊版 pandas 則切回 'M'
+            monthly_df = raw_df.resample('M').agg({
+                'Open': 'first', 'High': 'max', 'Low': 'min', 'Close': 'last', 'Volume': 'sum'
+            }).dropna()
+            
+        # 月線圖顯示最近 36 個月的 K 線
         plot_df = monthly_df.tail(36)
         
     elif time_frame == "年線":
@@ -759,6 +766,7 @@ with row1_col2:
     # 渲染圖表輸出
     st.plotly_chart(fig, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
+
 
 # 建立四宮格的下半部分主要橫列布局
 row2_col1, row2_col2 = st.columns(2)
