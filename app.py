@@ -607,7 +607,7 @@ with row1_col1:
             sel_idx = int(curr_params["fast_sel"])
             if sel_idx < len(watchlist_items):
                 st.session_state["current_selected_idx"] = sel_idx
-                # 【終極修復連動 Bug】: watchlist_items[sel_idx] 是 (Key, Value) 元組，必須取 [0] 拿顯示名稱字串！
+                # 【終極連動 Bug 修復】：.items() 陣列中每一筆是 (顯示名稱, 代碼)，必須指定 [0] 拿取純字串名稱
                 st.session_state["main_stock_selector"] = watchlist_items[sel_idx][0]
                 st.query_params.clear()
                 st.rerun()
@@ -615,12 +615,12 @@ with row1_col1:
         if "fast_del" in curr_params:
             del_idx = int(curr_params["fast_del"])
             if total_items > 1 and del_idx < len(watchlist_items):
-                target_del_name = watchlist_items[del_idx][0] # 同步修改元組取值
+                target_del_name = watchlist_items[del_idx][0] # 同步指定 [0] 取其字串名稱
                 del st.session_state["watchlist_dict"][target_del_name]
                 save_my_watchlist()
                 remaining_keys = list(st.session_state["watchlist_dict"].keys())
                 st.session_state["current_selected_idx"] = 0
-                st.session_state["main_stock_selector"] = remaining_keys[0] if remaining_keys else ""
+                st.session_state["main_stock_selector"] = remaining_keys if remaining_keys else ""
                 st.query_params.clear()
                 st.rerun()
         
@@ -638,8 +638,8 @@ with row1_col1:
                 st.session_state["current_page"] += 1
                 st.rerun()
                 
-    with tab_manage:
-        st.markdown("<p style='color:#BBBBBB; font-size:14px; font-weight:bold; margin-top:5px;'>➕ 新增自選股商品</p>", unsafe_allow_html=True)
+        with tab_manage:
+            st.markdown("<p style='color:#BBBBBB; font-size:14px; font-weight:bold; margin-top:5px;'>➕ 新增自選股商品</p>", unsafe_allow_html=True)
         new_code = st.text_input("請在此輸入欲新增之股票代碼", placeholder="例如: 2330", key="manage_add_input_unique").strip()
         if st.button("🚀 確認加入自選清單", use_container_width=True, key="manage_add_btn_unique"):
             if new_code:
@@ -675,32 +675,62 @@ with row1_col2:
     st.markdown("📈 **【技術分析 K 線與均線】**")
     time_frame = st.radio("選擇時間區間", ["當日", "近月", "一年", "五年"], index=1, horizontal=True, key="tech_radio")
     
-    df['MA5'] = df['Close'].rolling(window=5).mean()
-    df['MA20'] = df['Close'].rolling(window=20).mean()
-    plot_df = df.tail(30) if time_frame == "近月" else (df.tail(250) if time_frame == "一年" else df)
+    # 【Bug 修復 1】：精準分流切換時間區間，防禦全部卡在 5 年線
+    if time_frame == "當日":
+        # 當日線圖改用今日即時下載的分時數據(或取歷史最後50筆)，此處切為最後15筆維持實心外觀
+        plot_df = df.tail(15)
+    elif time_frame == "近月":
+        plot_df = df.tail(30)
+    elif time_frame == "一年":
+        plot_df = df.tail(250)
+    else:
+        plot_df = df # 五年則全量加載
+    
+    # 動態計算移動平均線
+    plot_df = plot_df.copy()
+    plot_df['MA5'] = plot_df['Close'].rolling(window=5).mean()
+    plot_df['MA20'] = plot_df['Close'].rolling(window=20).mean()
     
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.08, row_heights=[0.7, 0.3])
     
+    # 【Bug 修復 2】：強制鎖定高密度實心 K 線配色，不論資料多寡絕不縮水變粉紫細線
     fig.add_trace(go.Candlestick(
         x=plot_df.index, open=plot_df['Open'], high=plot_df['High'], low=plot_df['Low'], close=plot_df['Close'],
-        name="<b>K線圖</b>", increasing=dict(line=dict(color='#FF3333'), fillcolor='#FF3333'),
-        decreasing=dict(line=dict(color='#00AA00'), fillcolor='#00AA00'), showlegend=True
+        name="K線圖", 
+        increasing=dict(line=dict(color='#FF3333', width=1.5), fillcolor='#FF3333'),
+        decreasing=dict(line=dict(color='#00AA00', width=1.5), fillcolor='#00AA00'), 
+        showlegend=False
     ), row=1, col=1)
     
-    fig.add_trace(go.Scatter(x=plot_df.index, y=df['MA5'].loc[plot_df.index], mode='lines', line=dict(color='#00B0FF', width=2.0), name="<b>5MA</b>"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=plot_df.index, y=df['MA20'].loc[plot_df.index], mode='lines', line=dict(color='#E040FB', width=2.0), name="<b>20MA</b>"), row=1, col=1)
+    # 疊加均線
+    fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA5'], mode='lines', line=dict(color='#00B0FF', width=1.5), name="5MA"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['MA20'], mode='lines', line=dict(color='#E040FB', width=1.5), name="20MA"), row=1, col=1)
     
-    # 【修復 Bug】: 補回圖表成交量柱狀圖、版面佈局客製化與最重要的渲染指令
+    # 建立量能柱狀圖色彩配置陣列
+    color_list = []
+    for i in range(len(plot_df)):
+        if i == 0:
+            color_list.append('#FF3333')
+        else:
+            color_list.append('#FF3333' if plot_df['Close'].iloc[i] >= plot_df['Close'].iloc[i-1] else '#00AA00')
+            
     fig.add_trace(go.Bar(
-        x=plot_df.index, y=plot_df['Volume'], name="<b>成交量</b>",
-        marker=dict(color=list(map(lambda x: '#FF3333' if x >= 0 else '#00AA00', plot_df['Close'].diff().fillna(0))))
+        x=plot_df.index, y=plot_df['Volume'], name="成交量",
+        marker=dict(color=color_list), showlegend=False
     ), row=2, col=1)
     
+    # 【Bug 修復 3】：將 plot_bgcolor 與 paper_bgcolor 完美調為純黑色 (#000000)
     fig.update_layout(
         margin=dict(l=10, r=10, t=10, b=10), template="plotly_dark",
-        xaxis_rangeslider_visible=False, height=340, showlegend=False
+        xaxis_rangeslider_visible=False, height=340, showlegend=False,
+        paper_bgcolor="#000000", plot_bgcolor="#000000"
     )
-    # 呼叫 Streamlit 渲染圖表到網頁畫面上
+    
+    # 移除 X 軸格線，維持純黑極簡高質感
+    fig.update_xaxes(showgrid=False, zeroline=False)
+    fig.update_yaxes(showgrid=True, gridcolor="#1A1A1A", zeroline=False)
+    
+    # 渲染至網頁畫面上
     st.plotly_chart(fig, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
