@@ -220,6 +220,66 @@ st.markdown("""
         gap: 12px !important;
     }
 
+    /* ==================================================================== */
+    /* 【終極視覺強化】強制解放黑棒空間：第一行主標題、第二行分頁控制流 */
+    /* ==================================================================== */
+    /* 1. 解鎖黑棒（Tab Bar）的剛性限制，強制讓它有舒適的雙行高度與背景 */
+    [data-baseweb="tab-list"] {
+        background-color: #12121A !important; /* 讓黑棒呈現高質感深黑藍底色 */
+        border-radius: 10px !important;
+        padding: 8px 12px !important;
+        height: auto !important;             /* 解鎖高度限制，允許內容自然換行 */
+        display: flex !important;
+        flex-wrap: wrap !important;          /* 核心：允許按鈕在寬度不夠時自動換行成第二行 */
+        gap: 10px 16px !important;           /* 橫向與縱向的舒適間距 */
+        border-bottom: 2px solid #2C2C3C !important;
+    }
+
+    /* 2. 精準控制第一個分頁按鈕（主標題），強制它單獨佔據第一行，變成顯眼的大字體 */
+    [data-baseweb="tab-list"] button[data-baseweb="tab"]:first-child {
+        width: 100% !important;              /* 強制第一個分頁霸佔整整第一行 */
+        text-align: left !important;         /* 靠左對齊故事大標題 */
+        justify-content: flex-start !important;
+        padding-bottom: 6px !important;
+        border-bottom: 1px solid #252532 !important; /* 在標題下方刻出一條細緻的科技分割線 */
+        pointer-events: none !important;     /* 讓它變成純標題展示，滑鼠點擊無效（防止誤觸） */
+    }
+
+    /* 3. 精準拉大第一個分頁（主標題）的字級與顏色（耀眼科技藍與高亮紅綠） */
+    [data-baseweb="tab-list"] button[data-baseweb="tab"]:first-child p {
+        font-size: 16px !important;          /* 第一行：霸氣粗體大字 */
+        font-weight: 800 !important;
+        color: #00B0FF !important;           /* 主視覺科技藍 */
+        letter-spacing: 0.5px !important;
+    }
+
+    /* 4. 設定第二行其他分頁按鈕（次要功能鍵）的精緻膠囊外觀，與第一行產生強烈對比 */
+    [data-baseweb="tab-list"] button[data-baseweb="tab"]:not(:first-child) {
+        background-color: #1C1C28 !important; /* 膠囊按鈕微亮底色 */
+        border: 1px solid #323246 !important;
+        border-radius: 6px !important;
+        padding: 4px 12px !important;
+        height: 28px !important;
+        margin-top: 4px !important;          /* 完美推移到第二行 */
+    }
+
+    /* 5. 優化第二行分頁按鈕的文字與選中多空狀態 */
+    [data-baseweb="tab-list"] button[data-baseweb="tab"]:not(:first-child) p {
+        font-size: 12px !important;          /* 第二行：精緻小字功能鍵 */
+        font-weight: 600 !important;
+        color: #A1A1AA !important;           /* 未選中時柔和灰字 */
+    }
+
+    [data-baseweb="tab-list"] button[data-baseweb="tab"]:not(:first-child)[aria-selected="true"] {
+        border-color: #FF3333 !important;    /* 當前選中時的外框轉為熱血多頭紅（或依多空設定） */
+        background-color: rgba(255, 51, 51, 0.08) !important;
+    }
+
+    [data-baseweb="tab-list"] button[data-baseweb="tab"]:not(:first-child)[aria-selected="true"] p {
+        color: #FF3333 !important;           /* 當前選中時的文字變紅高亮 */
+    }
+    /* ==================================================================== */
+
 </style>
 """, unsafe_allow_html=True)
 
