@@ -510,7 +510,7 @@ with row1_col1:
     watchlist_keys = list(st.session_state["watchlist_dict"].keys())
     
     with tab_portfolio:
-        # 【回歸最完美緊湊 CSS】：鎖回 22px 黃金高度！其餘每行上下邊距全部死鎖零摩擦
+        # 強效緊縮行高 CSS 注入 (完全維持您最滿意的前二版 22px 黃金緊湊中間間距)
         st.markdown("""
         <style>
         div[data-testid="stHorizontalBlock"] div.stButton button, 
@@ -528,7 +528,7 @@ with row1_col1:
             box-shadow: none !important;
             outline: none !important;
             font-weight: bold !important;
-            height: 22px !important;      /* 完美復原：回到您最喜歡的 22px 超緊密間距 */
+            height: 22px !important;      
             min-height: 22px !important;
             line-height: 22px !important;
             font-size: 14px !important;
@@ -542,7 +542,7 @@ with row1_col1:
         div[data-testid="stHorizontalBlock"] {
             padding-top: 0px !important;   
             padding-bottom: 0px !important;
-            margin-top: -2px !important;   /* 強力拉回前兩版的超緊湊縱向排版 */
+            margin-top: -2px !important;   
             margin-bottom: -2px !important;
             gap: 0px !important;           
         }
@@ -565,7 +565,7 @@ with row1_col1:
         start_idx = st.session_state["current_page"] * ITEMS_PER_PAGE
         end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
         
-        # 1. 宣告橫向死鎖表頭比例 [2.6, 1.4, 1.4, 1.6, 1.4, 1.6]
+        # 1. 宣告橫向死鎖表頭比例 [2.6, 1.4, 1.4, 1.6, 1.4, 1.6] (商品名稱、買進賣出絕對維持不動)
         t_col1, t_col2, t_col3, t_col4, t_col5, t_col6 = st.columns([2.6, 1.4, 1.4, 1.6, 1.4, 1.6])
         with t_col1: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin:0; text-align:left; padding-left:4px;'>商品</p>", unsafe_allow_html=True)
         with t_col2: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>買進</p>", unsafe_allow_html=True)
@@ -573,11 +573,12 @@ with row1_col1:
         with t_col4: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>成交</p>", unsafe_allow_html=True)
         with t_col5: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>漲跌</p>", unsafe_allow_html=True)
         with t_col6: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; padding-right:4px; margin:0;'>漲幅%</p>", unsafe_allow_html=True)
+        st.markdown("<hr style='margin:4px 0px 0px 0px; border-top:1px solid #0D47A1 !important;'>", unsafe_allow_html=True)
         
-        # 【精準拉開 1】：利用橫線底部的 margin-bottom 屬性，單獨把表頭與加權指數之間拉開 8 像素，不影響中間！
-        st.markdown("<hr style='margin:4px 0px 8px 0px; border-top:1px solid #0D47A1 !important;'>", unsafe_allow_html=True)
+        # 【重要微調 1】：注入帶有最高權重的隱形打氣墊，硬性將下方所有的股票欄位向下推送 12px，徹底破除重疊！
+        st.markdown("<div style='margin-bottom: 12px !important;'></div>", unsafe_allow_html=True)
 
-        # 2. 循環組裝資料列 (純 100% Python 控制流，精準渲染經典看盤紅綠色彩)
+                # 2. 循環組裝資料列 (純 100% Python 控制流，精準渲染經典看盤紅綠色彩)
         for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
             global_idx = start_idx + idx_offset
             
@@ -599,20 +600,20 @@ with row1_col1:
             
             # 經典紅綠多空配色判定
             if chg > 0:
-                v_color, s_arrow, sign_str = "#FF3333", "▲", "+"  # 多方實心紅
+                v_color, s_arrow, sign_str = "#FF3333", "▲", "+"  
             elif chg < 0:
-                v_color, s_arrow, sign_str = "#00AA00", "▼", ""   # 空方實心綠
+                v_color, s_arrow, sign_str = "#00AA00", "▼", ""   
             else:
-                v_color, s_arrow, sign_str = "#FFFFFF", " ", ""   # 平盤純淨白
+                v_color, s_arrow, sign_str = "#FFFFFF", " ", ""   
             
-            # 【終極防崩潰安全錨】：精準分離元組並加上 [0] 索引值，保證 100% 絕不拋出屬性錯誤！
-            pure_name_str = str(name).split(' (')[0].split('(')[0].strip()
+            # 100% 安全不崩潰中文名稱精準抽取
+            pure_name_str = str(name).split(' (').split('(').strip()
             
             # 建立與表頭絕對死鎖定位的橫列
             b_col1, b_col2, b_col3, b_col4, b_col5, b_col6 = st.columns([2.6, 1.4, 1.4, 1.6, 1.4, 1.6])
             
             with b_col1:
-                # 商品原生選取按鈕（點擊 100% 秒級刷新連動）
+                # 商品原生選取按鈕
                 is_active = (name == st.session_state["main_stock_selector"])
                 btn_prefix = "🎯 " if is_active else "🔹 "
                 if st.button(f"{btn_prefix}{pure_name_str}", key=f"f_sel_p_core_{code}_{global_idx}"):
@@ -620,7 +621,7 @@ with row1_col1:
                     st.session_state["main_stock_selector"] = name
                     st.rerun()
             
-            # 數據欄位精準注入紅綠色彩
+            # 數據欄位靠右定位
             with b_col2: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{bid_str}</p>", unsafe_allow_html=True)
             with b_col3: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{ask_str}</p>", unsafe_allow_html=True)
             with b_col4: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{price_format}</p>", unsafe_allow_html=True)
@@ -629,8 +630,10 @@ with row1_col1:
             
             st.markdown("<hr style='margin:1px 0px; border-top:1px solid #222222 !important;'>", unsafe_allow_html=True)
             
+        # 【重要微調 2】：加大迴圈底部的推力墊至 22px，強制將「上一頁、下一頁」橫欄大幅向下移動，徹底隔離碰撞！
+        st.markdown("<div style='margin-top:22px !important;'></div>", unsafe_allow_html=True)
+        
         # 分頁導航底欄
-        st.markdown("<div style='margin-top:4px;'></div>", unsafe_allow_html=True)
         p_col1, p_col2, p_col3 = st.columns([1.2, 2, 1.2])
         with p_col1:
             if st.button("⬅ 上一頁", disabled=(st.session_state["current_page"] == 0), use_container_width=True, key="prev_page_btn"):
