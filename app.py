@@ -598,8 +598,8 @@ with row1_col1:
             else:
                 v_color, s_arrow, sign_str = "#FFFFFF", " ", ""
             
-            # 安全切出純中文名稱字串
-            pure_name_str = str(name).split(' (').split('(')
+            # 【終極修正】：補上陣列索引值 [0]，徹底解鎖字串切割語法錯誤
+            pure_name_str = str(name).split(' (')[0].split('(')[0]
             
             # 建立資料欄位橫列
             b_col1, b_col2, b_col3, b_col4, b_col5, b_col6, b_col7 = st.columns([2.6, 1.3, 1.3, 1.3, 1.3, 1.3, 0.6])
@@ -622,7 +622,7 @@ with row1_col1:
             with b_col6: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{sign_str}{pct:.2f}%</p>", unsafe_allow_html=True)
             
             with b_col7:
-                # 【終極降維打擊】：套用壓扁後的專屬類別名，徹底防止灰色框炸開排版
+                # 專屬壓扁外殼，將原生大灰色外框完全蒸發
                 st.markdown('<div class="xq-pure-del-wrapper">', unsafe_allow_html=True)
                 if st.button("✖", key=f"f_del_{code}_{global_idx}", use_container_width=True):
                     if total_items > 1:
