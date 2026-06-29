@@ -522,25 +522,43 @@ with row1_col1:
         start_idx = st.session_state["current_page"] * ITEMS_PER_PAGE
         end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
         
-        # 1. 宣告一體化表頭，使用 table-layout:fixed 橫向配比百分比牢牢鎖死欄位！
-        # 商品(25%)、買進(13%)、賣出(13%)、成交(15%)、漲跌(14%)、漲幅%(14%)、刪除(6%) = 100%
-        html_code = """
-        <table style="width:100%; border-collapse:collapse; font-family:'Courier New', monospace; font-size:14px; table-layout:fixed; line-height:1.2;">
-            <tr style="border-bottom:2px solid #0D47A1; height:26px; vertical-align:middle;">
-                <th style="width:25%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:left; padding-left:4px;">商品</th>
-                <th style="width:13%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">買進</th>
-                <th style="width:13%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">賣出</th>
-                <th style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">成交</th>
-                <th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲跌</th>
-                <th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲幅%</th>
-                <th style="width:6%; color:#64B5F6; font-size:11px; font-weight:bold; text-align:center;">刪</th>
-            </tr>
-        """
+        # 【終極精準 CSS 注入】：把商品列的原生按鈕外框完全拔除、高度壓扁，使其完美融入表格文字
+        st.markdown("""
+        <style>
+        .xq-fixed-row-btn button {
+            background-color: transparent !important;
+            border: none !important;
+            color: #FFFFFF !important;
+            text-align: left !important;
+            padding: 2px 0px !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            font-weight: bold !important;
+            height: 24px !important;
+            min-height: 24px !important;
+            line-height: 24px !important;
+        }
+        .xq-fixed-row-btn button:hover {
+            color: #00B0FF !important;
+            background-color: #1A1A1A !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
         
-        # 2. 循環組裝 6 檔商品的 HTML <tr> 資料行
+        # 1. 宣告橫向黃金配比表頭欄位配比 [2.6, 1.3, 1.3, 1.3, 1.3, 1.3, 0.6] （數據完全往前移貼齊）
+        t_col1, t_col2, t_col3, t_col4, t_col5, t_col6, t_col7 = st.columns([2.6, 1.3, 1.3, 1.3, 1.3, 1.3, 0.6])
+        with t_col1: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin:0; text-align:left; padding-left:4px;'>商品</p>", unsafe_allow_html=True)
+        with t_col2: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>買進</p>", unsafe_allow_html=True)
+        with t_col3: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>賣出</p>", unsafe_allow_html=True)
+        with t_col4: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>成交</p>", unsafe_allow_html=True)
+        with t_col5: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>漲跌</p>", unsafe_allow_html=True)
+        with t_col6: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>漲幅%</p>", unsafe_allow_html=True)
+        with t_col7: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:center; margin:0;'>刪</p>", unsafe_allow_html=True)
+        st.markdown("<hr style='margin:4px 0px; border-top:1px solid #0D47A1 !important;'>", unsafe_allow_html=True)
+        
+        # 2. 循環組裝 6 檔商品資料列 (商品點選採用原生 Button 確保秒級響應，其餘數據緊隨貼齊)
         for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
             global_idx = start_idx + idx_offset
-            bg_color = "#131313" if idx_offset % 2 == 0 else "#1A1A1A"
             
             # 即時數據抓取
             try:
@@ -567,53 +585,49 @@ with row1_col1:
                 v_color, s_arrow, sign_str = "#FFFFFF", " ", ""
             
             # 安全切出純中文名稱字串
-            pure_name_str = str(name).split(' (')[0].split('(')[0]
+            pure_name_str = str(name).split(' (').split('(')
             
-            # 判斷是否為當前點選關注的個股，高亮特殊標註
-            is_active = (name == st.session_state["main_stock_selector"])
-            active_bullet = "🎯" if is_active else "🔹"
+            # 橫向對齊欄位元件建立
+            b_col1, b_col2, b_col3, b_col4, b_col5, b_col6, b_col7 = st.columns([2.6, 1.3, 1.3, 1.3, 1.3, 1.3, 0.6])
             
-            # 【一體化純 HTML 表格架構】：商品點選與刪除通通改用 target="_top" 超連結直擊，寬度固定，數據完美前移
-            html_code += f"""
-            <tr style="background-color:{bg_color}; border-bottom:1px solid #222222; height:28px; vertical-align:middle;">
-                <td style="text-align:left; padding-left:4px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                    <a href="?fast_sel={global_idx}" target="_top" style="color:#FFFFFF; text-decoration:none; display:block; width:100%; cursor:pointer;" onmouseover="this.style.color='#00B0FF'" onmouseout="this.style.color='#FFFFFF'">{active_bullet}{pure_name_str}</a>
-                </td>
-                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap; font-family:monospace;">{bid_str}</td>
-                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap; font-family:monospace;">{ask_str}</td>
-                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap; font-family:monospace;">{price_format}</td>
-                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap; font-family:monospace;">{s_arrow}{abs(chg):,.2f}</td>
-                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap; font-family:monospace;">{sign_str}{pct:.2f}%</td>
-                <td style="text-align:center;">
-                    <a href="?fast_del={global_idx}" target="_top" style="color:#FF3333; text-decoration:none; font-size:12px; font-weight:bold; cursor:pointer;" onmouseover="this.style.color='#FF8A80'" onmouseout="this.style.color='#FF3333'">❌</a>
-                </td>
-            </tr>
-            """
-        
-        html_code += "</table>"
-        clean_html_code = html_code.replace("\n", "").replace("\r", "")
-        
-        # 使用 Streamlit 原生 HTML 容器以完美高渲染度輸出（高度設定為符合 6 行的 196px）
-        st.components.v1.html(f"""<body style="margin:0; padding:0; background:transparent;">{clean_html_code}</body>""", height=196)
-                # 【全域雙向大腦攔截鎖】：接收一體化 HTML 表格直擊回傳的選取與刪除事件
+            with b_col1:
+                # 【終極連動復活點】：按鈕寬度縮小並壓扁，點擊 100% 立即切換股票，永不失效！
+                st.markdown('<div class="xq-fixed-row-btn">', unsafe_allow_html=True)
+                is_active = (name == st.session_state["main_stock_selector"])
+                btn_prefix = "🎯 " if is_active else "🔹 "
+                if st.button(f"{btn_prefix}{pure_name_str}", key=f"f_sel_btn_{code}_{global_idx}", use_container_width=True):
+                    st.session_state["current_selected_idx"] = watchlist_keys.index(name)
+                    st.session_state["main_stock_selector"] = name
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+            
+            # 其餘五個數據欄位靠右精準靠攏，數據完美往前移，貼齊表頭
+            with b_col2: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:4px 0 0 0; font-family:monospace; font-size:13px;'>{bid_str}</p>", unsafe_allow_html=True)
+            with b_col3: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:4px 0 0 0; font-family:monospace; font-size:13px;'>{ask_str}</p>", unsafe_allow_html=True)
+            with b_col4: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:4px 0 0 0; font-family:monospace; font-size:13px;'>{price_format}</p>", unsafe_allow_html=True)
+            with b_col5: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:4px 0 0 0; font-family:monospace; font-size:13px;'>{s_arrow}{abs(chg):,.2f}</p>", unsafe_allow_html=True)
+            with b_col6: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:4px 0 0 0; font-family:monospace; font-size:13px;'>{sign_str}{pct:.2f}%</p>", unsafe_allow_html=True)
+            
+            with b_col7:
+                # 刪除功能改用 100% 對齊且不生成骨架的 URL 直擊超連結
+                st.markdown(f"""
+                <p style="text-align:center; margin:5px 0 0 0; font-size:12px;">
+                    <a href="?fast_del={global_idx}" target="_top" style="color:#FF3333; text-decoration:none; font-weight:bold; cursor:pointer;" onmouseover="this.style.color='#FF8A80'" onmouseout="this.style.color='#FF3333'">❌</a>
+                </p>
+                """, unsafe_allow_html=True)
+            
+            st.markdown("<hr style='margin:1px 0px; border-top:1px solid #222222 !important;'>", unsafe_allow_html=True)
+
+                # 接收超連結直接寫入網址列的刪除參數
         if hasattr(st.query_params, 'to_dict'):
             curr_params = st.query_params.to_dict()
         else:
             curr_params = st.query_params
             
-        if "fast_sel" in curr_params:
-            sel_idx = int(curr_params["fast_sel"])
-            if sel_idx < len(watchlist_items):
-                st.session_state["current_selected_idx"] = sel_idx
-                # 精準分離元組，只拿取純字串顯示名稱
-                st.session_state["main_stock_selector"] = watchlist_items[sel_idx][0]
-                st.query_params.clear()
-                st.rerun()
-                
         if "fast_del" in curr_params:
             del_idx = int(curr_params["fast_del"])
             if total_items > 1 and del_idx < len(watchlist_items):
-                target_del_name = watchlist_items[del_idx][0] # 同步加上元組拆解修正
+                target_del_name = watchlist_items[del_idx]
                 del st.session_state["watchlist_dict"][target_del_name]
                 save_my_watchlist()
                 
