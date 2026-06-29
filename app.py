@@ -600,20 +600,20 @@ with row1_col1:
             
             # 經典紅綠多空配色判定
             if chg > 0:
-                v_color, s_arrow, sign_str = "#FF3333", "▲", "+"  
+                v_color, s_arrow, sign_str = "#FF3333", "▲", "+"  # 多方實心紅
             elif chg < 0:
-                v_color, s_arrow, sign_str = "#00AA00", "▼", ""   
+                v_color, s_arrow, sign_str = "#00AA00", "▼", ""   # 空方實心綠
             else:
-                v_color, s_arrow, sign_str = "#FFFFFF", " ", ""   
+                v_color, s_arrow, sign_str = "#FFFFFF", " ", ""   # 平盤純淨白
             
-            # 100% 安全不崩潰中文名稱精準抽取
-            pure_name_str = str(name).split(' (').split('(').strip()
+            # 【終極防崩潰安全錨】：補上 [0] 索引值，徹底解鎖多重字串切割語法錯誤！
+            pure_name_str = str(name).split(' (')[0].split('(')[0].strip()
             
             # 建立與表頭絕對死鎖定位的橫列
             b_col1, b_col2, b_col3, b_col4, b_col5, b_col6 = st.columns([2.6, 1.4, 1.4, 1.6, 1.4, 1.6])
             
             with b_col1:
-                # 商品原生選取按鈕
+                # 商品原生選取按鈕（去框壓扁，點擊 100% 連動刷新）
                 is_active = (name == st.session_state["main_stock_selector"])
                 btn_prefix = "🎯 " if is_active else "🔹 "
                 if st.button(f"{btn_prefix}{pure_name_str}", key=f"f_sel_p_core_{code}_{global_idx}"):
@@ -630,7 +630,7 @@ with row1_col1:
             
             st.markdown("<hr style='margin:1px 0px; border-top:1px solid #222222 !important;'>", unsafe_allow_html=True)
             
-        # 【重要微調 2】：加大迴圈底部的推力墊至 22px，強制將「上一頁、下一頁」橫欄大幅向下移動，徹底隔離碰撞！
+        # 加大迴圈底部的推力墊至 22px，強制將「上一頁、下一頁」橫欄大幅向下移動
         st.markdown("<div style='margin-top:22px !important;'></div>", unsafe_allow_html=True)
         
         # 分頁導航底欄
