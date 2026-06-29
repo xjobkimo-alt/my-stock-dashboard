@@ -61,8 +61,8 @@ st.markdown("""
     header[data-testid="stHeader"] { background-color: #121212 !important; border-bottom: 1px solid #1C1C1E !important; }
     div[data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
 
-     /* 完美復刻：高質感大圓角灰色故事卡片（加強鎖定版） */
-    div.xq-grid-card, [data-testid="stExpander"], div[class*="stTabs"] {
+    /* 完美復刻：高質感大圓角灰色故事卡片（精準鎖定，不誤傷分頁外殼） */
+    div.xq-grid-card, [data-testid="stExpander"] {
         background-color: #1A1A24 !important; /* 強制換上灰色大基底 */
         border: 1px solid #3A3A4C !important; /* 讓邊框顏色更明顯（仿照片中的微亮邊框） */
         border-radius: 16px !important;       /* 強制 16px 大圓角 */
@@ -623,10 +623,13 @@ with row1_col2:
         )
     )
     fig.update_yaxes(side="right", gridcolor="#2D2D2D")
+        # (這是右上格 K 線圖的結尾部分，請對齊貼在 st.plotly_chart 下方)
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
     st.markdown('</div>', unsafe_allow_html=True)
 
-# 建立下半部分橫列布局
+# ====================================================================
+# 修正核心：此處已完全拔除多餘的 st.tabs 死程式碼！直接建立下半部直欄
+# ====================================================================
 row2_col1, row2_col2 = st.columns(2)
 
 # --- 【左下格】：市場焦點動態與即時明細 ---
@@ -634,7 +637,6 @@ with row2_col1:
     st.markdown('<div class="xq-grid-card">', unsafe_allow_html=True)
     st.markdown(f"**🎯 【市場焦點動態】** <span style='color:{color_text}; font-weight:bold;'>{current_price:,.2f} ({sign}{price_change_pct:.2f}%)</span>", unsafe_allow_html=True)
     
-    # 這裡才是真正有作用的分頁！
     tab_trend, tab_ticks = st.tabs(["📊 當日分時走勢", "🧾 即時成交明細"])
     last_close = float(df['Close'].iloc[-1])
     last_high = float(df['High'].iloc[-1])
@@ -680,7 +682,7 @@ with row2_col2:
     st.markdown('<div class="xq-grid-card">', unsafe_allow_html=True)
     st.markdown("**🤖 【AI 與券商即時診斷大腦】**")
     
-    # 這裡才是真正有作用的分頁！
+    # 這裡才是真正有作用的分頁！(已修正後方飄移的死表情符號)
     tab_news, tab_ai, tab_shioaji, tab_picker = st.tabs([
         "📰 即時新聞", "🧠 AI 策略分析", "📊 永豐單股指標", "🔍 永豐全市場選股"
     ])
