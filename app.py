@@ -510,7 +510,7 @@ with row1_col1:
     watchlist_keys = list(st.session_state["watchlist_dict"].keys())
     
     with tab_portfolio:
-        # 強效緊縮行高 CSS 注入
+        # 【微調黃金高度 CSS】：放寬按鈕行高至 26px，並修正外邊距，完美根除第一筆與最後一筆的碰撞重疊 Bug！
         st.markdown("""
         <style>
         div[data-testid="stHorizontalBlock"] div.stButton button, 
@@ -528,9 +528,9 @@ with row1_col1:
             box-shadow: none !important;
             outline: none !important;
             font-weight: bold !important;
-            height: 22px !important;      
-            min-height: 22px !important;
-            line-height: 22px !important;
+            height: 26px !important;      /* 完美微調：由 22px 放寬至 26px 釋放字體空間 */
+            min-height: 26px !important;
+            line-height: 26px !important;
             font-size: 14px !important;
             display: block !important;
             width: 100% !important;
@@ -542,8 +542,8 @@ with row1_col1:
         div[data-testid="stHorizontalBlock"] {
             padding-top: 0px !important;   
             padding-bottom: 0px !important;
-            margin-top: -2px !important;   
-            margin-bottom: -2px !important;
+            margin-top: 0px !important;    /* 完美修正：回復標準外邊距，防止向上擠壓重疊 */
+            margin-bottom: 0px !important;
             gap: 0px !important;           
         }
         div[data-testid="stHorizontalBlock"] + hr {
@@ -553,7 +553,7 @@ with row1_col1:
         </style>
         """, unsafe_allow_html=True)
         
-        # 【重要優化】：響應指示，將原本每頁顯示 6 筆，硬性擴增為更飽滿的 10 筆！
+        # 每頁顯示 10 筆項目
         ITEMS_PER_PAGE = 10
         if "current_page" not in st.session_state: 
             st.session_state["current_page"] = 0
@@ -575,7 +575,7 @@ with row1_col1:
         with t_col6: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; padding-right:4px; margin:0;'>漲幅%</p>", unsafe_allow_html=True)
         st.markdown("<hr style='margin:4px 0px; border-top:1px solid #0D47A1 !important;'>", unsafe_allow_html=True)
 
-                # 2. 循環組裝資料列 (純 100% Python 控制流，精準渲染經典看盤紅綠色彩)
+        # 2. 循環組裝資料列 (純 100% Python 控制流，精準渲染經典看盤紅綠色彩)
         for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
             global_idx = start_idx + idx_offset
             
