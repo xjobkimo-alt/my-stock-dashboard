@@ -510,7 +510,7 @@ with row1_col1:
     watchlist_keys = list(st.session_state["watchlist_dict"].keys())
     
     with tab_portfolio:
-        # 強效緊縮行高 CSS 注入 (完全維持您最滿意的前二版 22px 黃金緊湊中間間距)
+        # 【最高優先權向上拉力 CSS 注入】：利用專屬類別名，硬性把商品名稱、買進賣出表頭往頂部提拉，釋放縱向窒息空間！
         st.markdown("""
         <style>
         div[data-testid="stHorizontalBlock"] div.stButton button, 
@@ -528,7 +528,7 @@ with row1_col1:
             box-shadow: none !important;
             outline: none !important;
             font-weight: bold !important;
-            height: 22px !important;      /* 中間股票完全死鎖 22px 黃金密集度 */
+            height: 22px !important;      /* 中間股票死鎖 22px 完美緊湊密集度 */
             min-height: 22px !important;
             line-height: 22px !important;
             font-size: 14px !important;
@@ -539,6 +539,7 @@ with row1_col1:
             color: #00B0FF !important;
             background: transparent !important;
         }
+        /* 針對股票列的標準縮邊，維持前兩版最棒的間距 */
         div[data-testid="stHorizontalBlock"] {
             padding-top: 0px !important;   
             padding-bottom: 0px !important;
@@ -550,11 +551,17 @@ with row1_col1:
             margin-top: 2px !important;
             margin-bottom: 2px !important;
         }
-        /* 底欄座艙氣墊，維持下方完美對齊 */
+        /* 【底欄底座氣墊】：維持下方完美不重疊 */
         .xq-footer-spacer {
             margin-top: 20px !important;
             height: 1px !important;
             display: block !important;
+        }
+        /* 【終極救星：表頭橫欄專屬提拉鎖】：利用負數外邊距，強行把被扯下來的表頭文字瘋狂往頂部反向拉升 14 像素！ */
+        div.xq-top-header-row, .xq-top-header-row {
+            margin-top: -14px !important;   /* 強力上提，緊貼分頁紅線 */
+            margin-bottom: 6px !important;  /* 推開下方股票的間距 */
+            height: 22px !important;
         }
         </style>
         """, unsafe_allow_html=True)
@@ -571,7 +578,8 @@ with row1_col1:
         start_idx = st.session_state["current_page"] * ITEMS_PER_PAGE
         end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
         
-        # 1. 宣告橫向死鎖表頭比例 [2.6, 1.4, 1.4, 1.6, 1.4, 1.6] (商品名稱、買進賣出永遠固定不動)
+        # 【物理提拉外殼】：給表頭單獨套上專屬類別名，令其 100% 強行脫離全域 CSS 的下扯拖累，瘋狂向上移位！
+        st.markdown('<div class="xq-top-header-row">', unsafe_allow_html=True)
         t_col1, t_col2, t_col3, t_col4, t_col5, t_col6 = st.columns([2.6, 1.4, 1.4, 1.6, 1.4, 1.6])
         with t_col1: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin:0; text-align:left; padding-left:4px;'>商品</p>", unsafe_allow_html=True)
         with t_col2: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>買進</p>", unsafe_allow_html=True)
@@ -579,10 +587,10 @@ with row1_col1:
         with t_col4: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>成交</p>", unsafe_allow_html=True)
         with t_col5: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>漲跌</p>", unsafe_allow_html=True)
         with t_col6: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; padding-right:4px; margin:0;'>漲幅%</p>", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
         
-        # 【終極破防千斤頂】：利用表頭內部的 hr 藍色橫線，直接強行向外死鎖注入 24 像素的 margin-bottom 下方邊界！
-        # 這會直接以最高權重物理性將「加權指數」整列強行向下推送開，Streamlit 磁吸大腦 100% 絕對無法阻止跑位！
-        st.markdown("<hr style='margin:4px 0px 24px 0px !important; border-top:1px solid #0D47A1 !important;'>", unsafe_allow_html=True)
+        # 表頭下方與第一筆股票的專屬深藍色細分隔線
+        st.markdown("<hr style='margin:2px 0px 4px 0px !important; border-top:1px solid #0D47A1 !important;'>", unsafe_allow_html=True)
 
         # 2. 循環組裝資料列 (純 100% Python 控制流，第一行自動觸發物理推力)
         for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
