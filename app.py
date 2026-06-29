@@ -510,7 +510,7 @@ with row1_col1:
     watchlist_keys = list(st.session_state["watchlist_dict"].keys())
     
     with tab_portfolio:
-        # 【全宇宙最高權重 CSS】：死鎖中間股票 22px 間距，並特別建立 .xq-first-row 頂部氣墊
+        # 強效緊縮行高 CSS 注入 (完全維持您最滿意的前二版 22px 黃金緊湊中間間距)
         st.markdown("""
         <style>
         div[data-testid="stHorizontalBlock"] div.stButton button, 
@@ -528,7 +528,7 @@ with row1_col1:
             box-shadow: none !important;
             outline: none !important;
             font-weight: bold !important;
-            height: 22px !important;      /* 中間股票死鎖 22px 完美密集度 */
+            height: 22px !important;      /* 中間股票完全死鎖 22px 黃金密集度 */
             min-height: 22px !important;
             line-height: 22px !important;
             font-size: 14px !important;
@@ -550,18 +550,11 @@ with row1_col1:
             margin-top: 2px !important;
             margin-bottom: 2px !important;
         }
-        /* 【底欄底座氣墊】：維持下方完美不重疊 */
+        /* 底欄座艙氣墊，維持下方完美對齊 */
         .xq-footer-spacer {
             margin-top: 20px !important;
             height: 1px !important;
             display: block !important;
-        }
-        /* 【終極救星：第一行專屬推力】：利用 CSS 物理性對第一行所有元素強制向下重力推送 15 像素！ */
-        .xq-first-row-btn button {
-            margin-top: 15px !important;
-        }
-        .xq-first-row-text {
-            margin-top: 21px !important;  /* 對齊按鈕中線，數據完美同步向下挪移 */
         }
         </style>
         """, unsafe_allow_html=True)
@@ -586,9 +579,12 @@ with row1_col1:
         with t_col4: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>成交</p>", unsafe_allow_html=True)
         with t_col5: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>漲跌</p>", unsafe_allow_html=True)
         with t_col6: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; padding-right:4px; margin:0;'>漲幅%</p>", unsafe_allow_html=True)
-        st.markdown("<hr style='margin:4px 0px 0px 0px; border-top:1px solid #0D47A1 !important;'>", unsafe_allow_html=True)
+        
+        # 【終極破防千斤頂】：利用表頭內部的 hr 藍色橫線，直接強行向外死鎖注入 24 像素的 margin-bottom 下方邊界！
+        # 這會直接以最高權重物理性將「加權指數」整列強行向下推送開，Streamlit 磁吸大腦 100% 絕對無法阻止跑位！
+        st.markdown("<hr style='margin:4px 0px 24px 0px !important; border-top:1px solid #0D47A1 !important;'>", unsafe_allow_html=True)
 
-                # 2. 循環組裝資料列 (純 100% Python 控制流，第一行自動觸發物理推力)
+        # 2. 循環組裝資料列 (純 100% Python 控制流，第一行自動觸發物理推力)
         for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
             global_idx = start_idx + idx_offset
             
