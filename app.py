@@ -522,43 +522,51 @@ with row1_col1:
         start_idx = st.session_state["current_page"] * ITEMS_PER_PAGE
         end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
         
-        # 【全宇宙最強按鈕剝皮優化 CSS】：精準鎖定類別，強制剝離按鈕的灰色巨型骨架，壓扁行高並徹底去除外框
+        # 【全宇宙最高權重按鈕粉碎 CSS】：利用 div 階層 + !important 硬性剝除所有外框與陰影，強制蒸發巨型按鈕骨架
         st.markdown("""
         <style>
-        .xq-stock-btn button {
+        div.xq-stock-btn button, div.xq-stock-btn div button, .xq-stock-btn button {
+            background: transparent !important;
             background-color: transparent !important;
             border: none !important;
+            border-width: 0px !important;
             color: #FFFFFF !important;
             text-align: left !important;
             padding: 0px !important;
-            margin: 0 !important;
+            margin: 0px !important;
             box-shadow: none !important;
+            outline: none !important;
             font-weight: bold !important;
-            height: 28px !important;
-            min-height: 28px !important;
-            line-height: 28px !important;
+            height: 24px !important;
+            min-height: 24px !important;
+            line-height: 24px !important;
             font-size: 14px !important;
         }
-        .xq-stock-btn button:hover {
+        div.xq-stock-btn button:hover, .xq-stock-btn button:hover {
             color: #00B0FF !important;
+            background: transparent !important;
             background-color: transparent !important;
         }
-        .xq-del-btn button {
+        div.xq-del-btn button, div.xq-del-btn div button, .xq-del-btn button {
+            background: transparent !important;
             background-color: transparent !important;
             border: none !important;
+            border-width: 0px !important;
             color: #FF3333 !important;
             text-align: center !important;
             padding: 0px !important;
-            margin: 0 !important;
+            margin: 0px !important;
             box-shadow: none !important;
+            outline: none !important;
             font-weight: bold !important;
-            height: 28px !important;
-            min-height: 28px !important;
-            line-height: 28px !important;
+            height: 24px !important;
+            min-height: 24px !important;
+            line-height: 24px !important;
             font-size: 13px !important;
         }
-        .xq-del-btn button:hover {
+        div.xq-del-btn button:hover, .xq-del-btn button:hover {
             color: #FF8A80 !important;
+            background: transparent !important;
             background-color: transparent !important;
         }
         </style>
@@ -603,14 +611,14 @@ with row1_col1:
             else:
                 v_color, s_arrow, sign_str = "#FFFFFF", " ", ""
             
-            # 安全切出純中文名稱字串（100% 不崩潰防禦錨定）
+            # 安全字串清洗
             pure_name_str = str(name).split(' (')[0].split('(')[0].strip()
             
             # 死鎖橫向資料欄位
             b_col1, b_col2, b_col3, b_col4, b_col5, b_col6, b_col7 = st.columns([2.5, 1.2, 1.2, 1.3, 1.2, 1.4, 0.5])
             
             with b_col1:
-                # 【流暢連動復活核心】：利用套用去框壓扁 CSS 的原生 Python 按鈕，100% 點擊秒級切換個股！
+                # 【物理去框】：強效強制隱形按鈕外框
                 st.markdown('<div class="xq-stock-btn">', unsafe_allow_html=True)
                 is_active = (name == st.session_state["main_stock_selector"])
                 btn_prefix = "🎯 " if is_active else "🔹 "
@@ -621,14 +629,14 @@ with row1_col1:
                 st.markdown('</div>', unsafe_allow_html=True)
             
             # 數據欄位靠右精準定位，無痛緊隨靠攏往前靠齊，完美解決右擠空隙
-            with b_col2: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{bid_str}</p>", unsafe_allow_html=True)
-            with b_col3: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{ask_str}</p>", unsafe_allow_html=True)
-            with b_col4: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{price_format}</p>", unsafe_allow_html=True)
-            with b_col5: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{s_arrow}{abs(chg):,.2f}</p>", unsafe_allow_html=True)
+            with b_col2: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:4px 0 0 0; font-family:monospace; font-size:13px;'>{bid_str}</p>", unsafe_allow_html=True)
+            with b_col3: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:4px 0 0 0; font-family:monospace; font-size:13px;'>{ask_str}</p>", unsafe_allow_html=True)
+            with b_col4: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:4px 0 0 0; font-family:monospace; font-size:13px;'>{price_format}</p>", unsafe_allow_html=True)
+            with b_col5: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:4px 0 0 0; font-family:monospace; font-size:13px;'>{s_arrow}{abs(chg):,.2f}</p>", unsafe_allow_html=True)
             with b_col6: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{sign_str}{pct:.2f}%</p>", unsafe_allow_html=True)
             
             with b_col7:
-                # 刪除功能同步走去框壓扁的原生按鈕通道，極致輕量化，不撐大行高
+                # 刪除功能硬性注入最高優先權去框樣式
                 st.markdown('<div class="xq-del-btn">', unsafe_allow_html=True)
                 if st.button("❌", key=f"f_del_btn_{code}_{global_idx}", use_container_width=True):
                     if total_items > 1:
@@ -642,7 +650,7 @@ with row1_col1:
             
             st.markdown("<hr style='margin:1px 0px; border-top:1px solid #222222 !important;'>", unsafe_allow_html=True)
 
-                # 分頁導航底欄
+        # 分頁導航底欄
         st.markdown("<div style='margin-top:4px;'></div>", unsafe_allow_html=True)
         p_col1, p_col2, p_col3 = st.columns([1.2, 2, 1.2])
         with p_col1:
