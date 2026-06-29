@@ -510,7 +510,7 @@ with row1_col1:
     watchlist_keys = list(st.session_state["watchlist_dict"].keys())
     
     with tab_portfolio:
-        # 強效緊縮行高 CSS 注入 (完全維持您最滿意的前二版 22px 黃金緊湊中間間距)
+        # 【全宇宙最高權重 CSS】：死鎖中間股票 22px 間距，並特別建立 .xq-first-row 頂部氣墊
         st.markdown("""
         <style>
         div[data-testid="stHorizontalBlock"] div.stButton button, 
@@ -528,7 +528,7 @@ with row1_col1:
             box-shadow: none !important;
             outline: none !important;
             font-weight: bold !important;
-            height: 22px !important;      
+            height: 22px !important;      /* 中間股票死鎖 22px 完美密集度 */
             min-height: 22px !important;
             line-height: 22px !important;
             font-size: 14px !important;
@@ -550,11 +550,18 @@ with row1_col1:
             margin-top: 2px !important;
             margin-bottom: 2px !important;
         }
-        /* 保留底部的氣墊類別鎖，維持下方完美對齊 */
+        /* 【底欄底座氣墊】：維持下方完美不重疊 */
         .xq-footer-spacer {
             margin-top: 20px !important;
             height: 1px !important;
             display: block !important;
+        }
+        /* 【終極救星：第一行專屬推力】：利用 CSS 物理性對第一行所有元素強制向下重力推送 15 像素！ */
+        .xq-first-row-btn button {
+            margin-top: 15px !important;
+        }
+        .xq-first-row-text {
+            margin-top: 21px !important;  /* 對齊按鈕中線，數據完美同步向下挪移 */
         }
         </style>
         """, unsafe_allow_html=True)
@@ -571,7 +578,7 @@ with row1_col1:
         start_idx = st.session_state["current_page"] * ITEMS_PER_PAGE
         end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
         
-        # 1. 宣告橫向死鎖表頭比例 [2.6, 1.4, 1.4, 1.6, 1.4, 1.6] (商品名稱、買進賣出絕對維持不動)
+        # 1. 宣告橫向死鎖表頭比例 [2.6, 1.4, 1.4, 1.6, 1.4, 1.6] (商品名稱、買進賣出永遠固定不動)
         t_col1, t_col2, t_col3, t_col4, t_col5, t_col6 = st.columns([2.6, 1.4, 1.4, 1.6, 1.4, 1.6])
         with t_col1: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin:0; text-align:left; padding-left:4px;'>商品</p>", unsafe_allow_html=True)
         with t_col2: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>買進</p>", unsafe_allow_html=True)
@@ -580,11 +587,8 @@ with row1_col1:
         with t_col5: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>漲跌</p>", unsafe_allow_html=True)
         with t_col6: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; padding-right:4px; margin:0;'>漲幅%</p>", unsafe_allow_html=True)
         st.markdown("<hr style='margin:4px 0px 0px 0px; border-top:1px solid #0D47A1 !important;'>", unsafe_allow_html=True)
-        
-        # 【核心修復點】：利用 Streamlit 官方標準文字排版空隙，硬性推開 14 像素垂直空間，表頭絕不再與加權指數發生任何碰撞！
-        st.markdown("<div style='line-height: 14px;'><br></div>", unsafe_allow_html=True)
 
-        # 2. 循環組裝資料列 (純 100% Python 控制流，精準渲染經典看盤紅綠色彩)
+                # 2. 循環組裝資料列 (純 100% Python 控制流，第一行自動觸發物理推力)
         for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
             global_idx = start_idx + idx_offset
             
@@ -613,30 +617,36 @@ with row1_col1:
                 v_color, s_arrow, sign_str = "#FFFFFF", " ", ""   
             
             # 100% 安全不崩潰中文名稱精準抽取
-            pure_name_str = str(name).split(' (')[0].split('(')[0].strip()
+            pure_name_str = str(name).split(' (').split('(').strip()
+            
+            # 【大復活關鍵】：當渲染到第一列資料時，動態換上專屬的 CSS 類別外殼
+            row_btn_class = "xq-first-row-btn" if idx_offset == 0 else "xq-normal-row"
+            row_txt_style = "class='xq-first-row-text'" if idx_offset == 0 else ""
             
             # 建立與表頭絕對死鎖定位的橫列
             b_col1, b_col2, b_col3, b_col4, b_col5, b_col6 = st.columns([2.6, 1.4, 1.4, 1.6, 1.4, 1.6])
             
             with b_col1:
-                # 商品原生選取按鈕（點擊秒級刷新連動）
+                # 商品原生選取按鈕（套用動態推力外殼）
+                st.markdown(f'<div class="{row_btn_class}">', unsafe_allow_html=True)
                 is_active = (name == st.session_state["main_stock_selector"])
                 btn_prefix = "🎯 " if is_active else "🔹 "
                 if st.button(f"{btn_prefix}{pure_name_str}", key=f"f_sel_p_core_{code}_{global_idx}"):
                     st.session_state["current_selected_idx"] = watchlist_keys.index(name)
                     st.session_state["main_stock_selector"] = name
                     st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
             
-            # 數據欄位靠右定位
-            with b_col2: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{bid_str}</p>", unsafe_allow_html=True)
-            with b_col3: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{ask_str}</p>", unsafe_allow_html=True)
-            with b_col4: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{price_format}</p>", unsafe_allow_html=True)
-            with b_col5: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{s_arrow}{abs(chg):,.2f}</p>", unsafe_allow_html=True)
-            with b_col6: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px; padding-right:4px;'>{sign_str}{pct:.2f}%</p>", unsafe_allow_html=True)
+            # 右側所有數據欄位，如果是第一行，同步套用 xq-first-row-text 強制向下推移對齊按鈕！
+            with b_col2: st.markdown(f"<p {row_txt_style} style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{bid_str}</p>", unsafe_allow_html=True)
+            with b_col3: st.markdown(f"<p {row_txt_style} style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{ask_str}</p>", unsafe_allow_html=True)
+            with b_col4: st.markdown(f"<p {row_txt_style} style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{price_format}</p>", unsafe_allow_html=True)
+            with b_col5: st.markdown(f"<p {row_txt_style} style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{s_arrow}{abs(chg):,.2f}</p>", unsafe_allow_html=True)
+            with b_col6: st.markdown(f"<p {row_txt_style} style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px; padding-right:4px;'>{sign_str}{pct:.2f}%</p>", unsafe_allow_html=True)
             
             st.markdown("<hr style='margin:1px 0px; border-top:1px solid #222222 !important;'>", unsafe_allow_html=True)
             
-        # 【物理炸開 2】：呼叫 CSS 類別底欄氣墊，強行把最下方的分頁按鈕橫列拉開，100% 絕對不重疊！
+        # 呼叫 CSS 類別底欄氣墊，強行把最下方的分頁按鈕橫欄拉開
         st.markdown("<span class='xq-footer-spacer'></span>", unsafe_allow_html=True)
         
         # 分頁導航底欄
