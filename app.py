@@ -648,17 +648,19 @@ with row1_col2:
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ====================================================================
-# 修正核心：此處已完全拔除多餘的 st.tabs 死程式碼！直接建立下半部直欄
-# ====================================================================
+# 建立下半部分橫列布局
 row2_col1, row2_col2 = st.columns(2)
 
 # --- 【左下格】：市場焦點動態與即時明細 ---
 with row2_col1:
     st.markdown('<div class="xq-grid-card">', unsafe_allow_html=True)
-    st.markdown(f"**🎯 【市場焦點動態】** <span style='color:{color_text}; font-weight:bold;'>{current_price:,.2f} ({sign}{price_change_pct:.2f}%)</span>", unsafe_allow_html=True)
     
-    tab_trend, tab_ticks = st.tabs(["📊 當日分時走勢", "🧾 即時成交明細"])
+    # 【神修正】：把大標題與原本的分頁融合，黑棒第一行放字，第二行放分頁切換
+    tab_trend, tab_ticks = st.tabs([
+        f"🎯 當日分時走勢 \n ({selected_display} {current_price:,.2f} {sign}{price_change_pct:.2f}%)", 
+        "🧾 查看即時成交明細"
+    ])
+    
     last_close = float(df['Close'].iloc[-1])
     last_high = float(df['High'].iloc[-1])
     last_low = float(df['Low'].iloc[-1])
@@ -679,7 +681,7 @@ with row2_col1:
         fig_line.update_layout(
             template="plotly_dark", 
             paper_bgcolor="#1A1A24", 
-            plot_bgcolor="#1A1A24",  
+            plot_bgcolor="#1A1A24", 
             height=185, 
             margin=dict(l=10, r=40, t=5, b=5)
         )
@@ -701,11 +703,13 @@ with row2_col1:
 # --- 【右下格】：唯一的融合去重四分頁控制台 ---
 with row2_col2:
     st.markdown('<div class="xq-grid-card">', unsafe_allow_html=True)
-    st.markdown("**🤖 【AI 與券商即時診斷大腦】**")
     
-    # 這裡才是真正有作用的分頁！(已修正後方飄移的死表情符號)
+    # 【神修正】：黑棒第一行放字大標題，第二行放四個功能分頁切換
     tab_news, tab_ai, tab_shioaji, tab_picker = st.tabs([
-        "📰 即時新聞", "🧠 AI 策略分析", "📊 永豐單股指標", "🔍 永豐全市場選股"
+        "🤖 AI與券商即時診斷 \n 📰 即時新聞", 
+        "🧠 AI 策略分析", 
+        "📊 永豐單股指標", 
+        "🔍 永豐全市場選股"
     ])
     
     with tab_news:
