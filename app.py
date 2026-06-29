@@ -616,10 +616,10 @@ with row1_col1:
             else:
                 v_color, s_arrow, sign_str = "#FFFFFF", " ", ""   
             
-            # 100% 安全不崩潰中文名稱精準抽取
-            pure_name_str = str(name).split(' (').split('(').strip()
+            # 【關鍵修復點】：加上了硬性死鎖的 [0] 索引解鎖通道，100% 根除 AttributeError 語法硬傷！
+            pure_name_str = str(name).split(' (')[0].split('(')[0].strip()
             
-            # 【大復活關鍵】：當渲染到第一列資料時，動態換上專屬的 CSS 類別外殼
+            # 當渲染到第一列資料(加權指數)時，動態換上專屬的 CSS 類別外殼
             row_btn_class = "xq-first-row-btn" if idx_offset == 0 else "xq-normal-row"
             row_txt_style = "class='xq-first-row-text'" if idx_offset == 0 else ""
             
@@ -627,7 +627,7 @@ with row1_col1:
             b_col1, b_col2, b_col3, b_col4, b_col5, b_col6 = st.columns([2.6, 1.4, 1.4, 1.6, 1.4, 1.6])
             
             with b_col1:
-                # 商品原生選取按鈕（套用動態推力外殼）
+                # 商品原生選取按鈕（套用動態推力外殼，點擊 100% 滿血秒連動）
                 st.markdown(f'<div class="{row_btn_class}">', unsafe_allow_html=True)
                 is_active = (name == st.session_state["main_stock_selector"])
                 btn_prefix = "🎯 " if is_active else "🔹 "
@@ -637,7 +637,7 @@ with row1_col1:
                     st.rerun()
                 st.markdown('</div>', unsafe_allow_html=True)
             
-            # 右側所有數據欄位，如果是第一行，同步套用 xq-first-row-text 強制向下推移對齊按鈕！
+            # 右側所有數據欄位，如果是第一行，同步套用 xq-first-row-text 強制向下推移 15 像素對齊按鈕！
             with b_col2: st.markdown(f"<p {row_txt_style} style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{bid_str}</p>", unsafe_allow_html=True)
             with b_col3: st.markdown(f"<p {row_txt_style} style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{ask_str}</p>", unsafe_allow_html=True)
             with b_col4: st.markdown(f"<p {row_txt_style} style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{price_format}</p>", unsafe_allow_html=True)
@@ -661,7 +661,6 @@ with row1_col1:
             if st.button("下一頁 ➡", disabled=(st.session_state["current_page"] >= max_page), use_container_width=True, key="next_page_btn"):
                 st.session_state["current_page"] += 1
                 st.rerun()
-
 
     with tab_manage:
         # --- 【搬移整併核心】：新增股票輸入表單與按鈕，依指示完美移入自選管理分頁中 ---
