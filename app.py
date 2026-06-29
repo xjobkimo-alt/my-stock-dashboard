@@ -510,10 +510,9 @@ with row1_col1:
     watchlist_keys = list(st.session_state["watchlist_dict"].keys())
     
     with tab_portfolio:
-        # 【重要！極致緊縮行高 CSS 注入】：硬性粉碎原生按鈕與欄位的巨大間距，將上下 Padding 縮減至極致！
+        # 強效緊縮行高 CSS 注入
         st.markdown("""
         <style>
-        /* 1. 物理閹割原生按鈕的死灰外框，並硬性鎖定高度與行高 */
         div[data-testid="stHorizontalBlock"] div.stButton button, 
         div.stButton button, 
         button[data-testid="baseButton-secondary"] {
@@ -529,7 +528,7 @@ with row1_col1:
             box-shadow: none !important;
             outline: none !important;
             font-weight: bold !important;
-            height: 22px !important;      /* 壓縮商品按鈕高度至 22px */
+            height: 22px !important;      
             min-height: 22px !important;
             line-height: 22px !important;
             font-size: 14px !important;
@@ -540,15 +539,13 @@ with row1_col1:
             color: #00B0FF !important;
             background: transparent !important;
         }
-        /* 2. 強制壓縮 Streamlit 原生 columns 的上下內距與橫列容器間距 */
         div[data-testid="stHorizontalBlock"] {
-            padding-top: 0px !important;   /* 完全拔除橫列頂部間距 */
-            padding-bottom: 0px !important;/* 完全拔除橫列底部間距 */
-            margin-top: -2px !important;   /* 輕微向上拉攏，校正縱向高度 */
+            padding-top: 0px !important;   
+            padding-bottom: 0px !important;
+            margin-top: -2px !important;   
             margin-bottom: -2px !important;
-            gap: 0px !important;           /* 抹除局部雜訊間距 */
+            gap: 0px !important;           
         }
-        /* 3. 微調分隔線上下外邊距，維持高質感極細分割 */
         div[data-testid="stHorizontalBlock"] + hr {
             margin-top: 2px !important;
             margin-bottom: 2px !important;
@@ -556,8 +553,8 @@ with row1_col1:
         </style>
         """, unsafe_allow_html=True)
         
-        # 分頁邏輯控制 (每頁顯示 6 筆項目)
-        ITEMS_PER_PAGE = 6
+        # 【重要優化】：響應指示，將原本每頁顯示 6 筆，硬性擴增為更飽滿的 10 筆！
+        ITEMS_PER_PAGE = 10
         if "current_page" not in st.session_state: 
             st.session_state["current_page"] = 0
         
@@ -568,7 +565,7 @@ with row1_col1:
         start_idx = st.session_state["current_page"] * ITEMS_PER_PAGE
         end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
         
-        # 1. 宣告橫向死鎖表頭比例，[2.6, 1.4, 1.4, 1.6, 1.4, 1.6]，寬度完完全全對齊商品列
+        # 1. 宣告橫向死鎖表頭比例 [2.6, 1.4, 1.4, 1.6, 1.4, 1.6]
         t_col1, t_col2, t_col3, t_col4, t_col5, t_col6 = st.columns([2.6, 1.4, 1.4, 1.6, 1.4, 1.6])
         with t_col1: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin:0; text-align:left; padding-left:4px;'>商品</p>", unsafe_allow_html=True)
         with t_col2: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>買進</p>", unsafe_allow_html=True)
@@ -578,7 +575,7 @@ with row1_col1:
         with t_col6: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; padding-right:4px; margin:0;'>漲幅%</p>", unsafe_allow_html=True)
         st.markdown("<hr style='margin:4px 0px; border-top:1px solid #0D47A1 !important;'>", unsafe_allow_html=True)
 
-        # 2. 循環組裝資料列 (純 100% Python 控制流，去框透明按鈕點擊秒級重新渲染連動)
+                # 2. 循環組裝資料列 (純 100% Python 控制流，精準渲染經典看盤紅綠色彩)
         for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
             global_idx = start_idx + idx_offset
             
@@ -598,32 +595,30 @@ with row1_col1:
                 c_p, chg, pct, bid_str, ask_str = 0.0, 0.0, 0.0, "--", "--"
                 price_format = f"{c_p:,.2f}"
             
-            # 多空紅綠配色與符號判定
+            # 【經典紅綠多空判定】：將原本暗沉的灰色全面復活為高飽和度看盤經典配色！
             if chg > 0:
-                v_color, s_arrow, sign_str = "#FF3333", "▲", "+"
+                v_color, s_arrow, sign_str = "#FF3333", "▲", "+"  # 多方實心紅
             elif chg < 0:
-                v_color, s_arrow, sign_str = "#00AA00", "▼", ""
+                v_color, s_arrow, sign_str = "#00AA00", "▼", ""   # 空方實心綠
             else:
-                v_color, s_arrow, sign_str = "#FFFFFF", " ", ""
+                v_color, s_arrow, sign_str = "#FFFFFF", " ", ""   # 平盤純淨白
             
-            # 100% 不崩潰安全中文名稱抽取
-            pure_name_str = str(name).split(' (')[0].split('(')[0]
+            # 100% 安全字串清洗
+            pure_name_str = str(name).split(' (').split('(')
             
-            # 精準死鎖與表頭完全一致的資料欄位橫列
+            # 建立與表頭絕對死鎖定位的橫列
             b_col1, b_col2, b_col3, b_col4, b_col5, b_col6 = st.columns([2.6, 1.4, 1.4, 1.6, 1.4, 1.6])
             
             with b_col1:
-                # 【流暢連動大復活】：使用完全隱形的原生按鈕，點擊 100% 跨越沙盒防線，一秒切換股票！
+                # 商品原生選取按鈕（點擊 100% 秒級刷新連動）
                 is_active = (name == st.session_state["main_stock_selector"])
                 btn_prefix = "🎯 " if is_active else "🔹 "
-                
-                # 觸發點擊事件
                 if st.button(f"{btn_prefix}{pure_name_str}", key=f"f_sel_p_core_{code}_{global_idx}"):
                     st.session_state["current_selected_idx"] = watchlist_keys.index(name)
                     st.session_state["main_stock_selector"] = name
                     st.rerun()
             
-            # 數據欄位靠右定位，緊隨貼齊往前移動
+            # 數據欄位精準注入對應的 v_color，紅綠視覺效果直接拉滿！
             with b_col2: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{bid_str}</p>", unsafe_allow_html=True)
             with b_col3: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{ask_str}</p>", unsafe_allow_html=True)
             with b_col4: st.markdown(f"<p style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{price_format}</p>", unsafe_allow_html=True)
@@ -645,6 +640,7 @@ with row1_col1:
             if st.button("下一頁 ➡", disabled=(st.session_state["current_page"] >= max_page), use_container_width=True, key="next_page_btn"):
                 st.session_state["current_page"] += 1
                 st.rerun()
+
 
                 
     with tab_manage:
