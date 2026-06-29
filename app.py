@@ -663,7 +663,7 @@ with row1_col1:
     with tab_manage:
         st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
         
-        # 【強效 Expander 黑化 CSS 注入】：利用最高階權重鎖，強行把新增自選股展開時的底色壓成純黑，徹底消滅白底 Bug！
+        # 【強效 Expander 黑化 CSS 注入】：維持新增自選股展開時的流暢純黑底色
         st.markdown("""
         <style>
         div[data-testid="stExpander"], 
@@ -677,9 +677,12 @@ with row1_col1:
         div[data-testid="stExpander"] p {
             color: #FFFFFF !important;
         }
-        /* 修正文字輸入框聚焦時的底色防禦 */
         div[data-testid="stTextField"] input {
             color: #FFFFFF !important;
+        }
+        /* 額外防禦：強制微調下拉選單的外邊距，使其絕不向上侵略重疊 */
+        div[data-testid="stSelectbox"] {
+            margin-top: 4px !important;
         }
         </style>
         """, unsafe_allow_html=True)
@@ -716,12 +719,13 @@ with row1_col1:
 
         st.markdown("<div style='margin-top:12px;'></div>", unsafe_allow_html=True)
 
-        # --- 2. 【大團圓大復活】：精準找回下拉選單，並與下方的刪除按鈕形成強大邏輯鎖連動！ ---
-        st.markdown("<p style='color:#BBBBBB; font-size:13px; font-weight:bold; margin:0;'>請選擇欲移除的商品</p>", unsafe_allow_html=True)
+        # --- 2. 【移除自選股區塊】：精準拉開標題與選單間距 ---
+        # 【重要修復】：注入 margin-bottom: 8px !important; 強制向下物理性頂開下拉選單，100% 解決遮擋 Bug！
+        st.markdown("<p style='color:#BBBBBB; font-size:13px; font-weight:bold; margin:0px 0px 8px 0px !important;'>請選擇欲移除的商品</p>", unsafe_allow_html=True)
         
         # 防禦選單空置導致崩潰
         if watchlist_keys:
-            # 成功接回下拉選單，讓使用者能自由挑選想刪除的個股商品
+            # 成功接回下拉選單
             delete_target = st.selectbox(
                 "選擇移除商品", 
                 options=watchlist_keys, 
@@ -729,21 +733,19 @@ with row1_col1:
                 label_visibility="collapsed"
             )
             
-            st.markdown("<div style='margin-top:4px;'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
             
-            # 刪除鍵邏輯核心：當點擊時，精準抓取上方下拉選單選中的個股 `delete_target` 進行即時切除！
+            # 刪除鍵邏輯
             if st.button(f"❌ 從清單中刪除目前股票", use_container_width=True, key="manage_delete_current_focus_btn"):
                 if total_items > 1:
                     if delete_target in st.session_state["watchlist_dict"]:
-                        # 執行硬碟與 Session 同步刪除
                         del st.session_state["watchlist_dict"][delete_target]
                         save_my_watchlist()
                         
-                        # 安全洗牌：大腦指引回歸安全第一筆，防禦索引越界崩潰
                         remaining_keys = list(st.session_state["watchlist_dict"].keys())
                         st.session_state["current_selected_idx"] = 0
                         st.session_state["main_stock_selector"] = remaining_keys if remaining_keys else ""
-                        st.success(f"已成功移出股票：{delete_target.split(' ')}")
+                        st.success(f"已成功移出股票")
                         st.rerun()
                 else:
                     st.error("⚠️ 自選清單內最少必須保留一檔個股商品，無法繼續刪除！")
@@ -764,13 +766,14 @@ with row1_col1:
             step=1,
             key="xq_live_refresh_rate_slider"
         )
-        # 即時回寫更新頻率狀態
         st.session_state["refresh_rate"] = refresh_rate
             
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- 【右上格】：技術分析 K 線與均線圖 ---
 with row1_col2:
+# 這裡無痛連接您原本第 9 點右上格的 Plotly 技術分析 K 線繪製程式碼...
+
 # 這裡無痛連接您原本第 9 點右上格的 Plotly 技術分析 K 線與成交量能繪圖程式碼...
 
 # 這裡向下毫無阻礙地緊接著連接您原本的 Plotly 技術分析 K 線繪製程式碼即可...
