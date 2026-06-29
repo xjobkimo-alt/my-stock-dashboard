@@ -510,7 +510,7 @@ with row1_col1:
     watchlist_keys = list(st.session_state["watchlist_dict"].keys())
     
     with tab_portfolio:
-        # 【微調黃金高度 CSS】：放寬按鈕行高至 26px，並修正外邊距，完美根除第一筆與最後一筆的碰撞重疊 Bug！
+        # 【回歸最完美緊湊 CSS】：鎖回 22px 黃金高度！其餘每行上下邊距全部死鎖零摩擦
         st.markdown("""
         <style>
         div[data-testid="stHorizontalBlock"] div.stButton button, 
@@ -528,9 +528,9 @@ with row1_col1:
             box-shadow: none !important;
             outline: none !important;
             font-weight: bold !important;
-            height: 26px !important;      /* 完美微調：由 22px 放寬至 26px 釋放字體空間 */
-            min-height: 26px !important;
-            line-height: 26px !important;
+            height: 22px !important;      /* 完美復原：回到您最喜歡的 22px 超緊密間距 */
+            min-height: 22px !important;
+            line-height: 22px !important;
             font-size: 14px !important;
             display: block !important;
             width: 100% !important;
@@ -542,8 +542,8 @@ with row1_col1:
         div[data-testid="stHorizontalBlock"] {
             padding-top: 0px !important;   
             padding-bottom: 0px !important;
-            margin-top: 0px !important;    /* 完美修正：回復標準外邊距，防止向上擠壓重疊 */
-            margin-bottom: 0px !important;
+            margin-top: -2px !important;   /* 強力拉回前兩版的超緊湊縱向排版 */
+            margin-bottom: -2px !important;
             gap: 0px !important;           
         }
         div[data-testid="stHorizontalBlock"] + hr {
@@ -573,7 +573,9 @@ with row1_col1:
         with t_col4: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>成交</p>", unsafe_allow_html=True)
         with t_col5: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>漲跌</p>", unsafe_allow_html=True)
         with t_col6: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; padding-right:4px; margin:0;'>漲幅%</p>", unsafe_allow_html=True)
-        st.markdown("<hr style='margin:4px 0px; border-top:1px solid #0D47A1 !important;'>", unsafe_allow_html=True)
+        
+        # 【精準拉開 1】：利用橫線底部的 margin-bottom 屬性，單獨把表頭與加權指數之間拉開 8 像素，不影響中間！
+        st.markdown("<hr style='margin:4px 0px 8px 0px; border-top:1px solid #0D47A1 !important;'>", unsafe_allow_html=True)
 
         # 2. 循環組裝資料列 (純 100% Python 控制流，精準渲染經典看盤紅綠色彩)
         for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
