@@ -510,7 +510,7 @@ with row1_col1:
     watchlist_keys = list(st.session_state["watchlist_dict"].keys())
     
     with tab_portfolio:
-        # 【最高優先權向上拉力 CSS 注入】：利用專屬類別名，硬性把商品名稱、買進賣出表頭往頂部提拉，釋放縱向窒息空間！
+        # 強效緊縮個股行高 CSS 注入 (完全維持您最滿意的 22px 黃金緊湊中間股票間距)
         st.markdown("""
         <style>
         div[data-testid="stHorizontalBlock"] div.stButton button, 
@@ -528,7 +528,7 @@ with row1_col1:
             box-shadow: none !important;
             outline: none !important;
             font-weight: bold !important;
-            height: 22px !important;      /* 中間股票死鎖 22px 完美緊湊密集度 */
+            height: 22px !important;      /* 中間股票死鎖 22px 完美緊湊度 */
             min-height: 22px !important;
             line-height: 22px !important;
             font-size: 14px !important;
@@ -539,7 +539,6 @@ with row1_col1:
             color: #00B0FF !important;
             background: transparent !important;
         }
-        /* 針對股票列的標準縮邊，維持前兩版最棒的間距 */
         div[data-testid="stHorizontalBlock"] {
             padding-top: 0px !important;   
             padding-bottom: 0px !important;
@@ -551,17 +550,11 @@ with row1_col1:
             margin-top: 2px !important;
             margin-bottom: 2px !important;
         }
-        /* 【底欄底座氣墊】：維持下方完美不重疊 */
+        /* 底欄底座氣墊，維持下方完美對齊 */
         .xq-footer-spacer {
             margin-top: 20px !important;
             height: 1px !important;
             display: block !important;
-        }
-        /* 【終極救星：表頭橫欄專屬提拉鎖】：利用負數外邊距，強行把被扯下來的表頭文字瘋狂往頂部反向拉升 14 像素！ */
-        div.xq-top-header-row, .xq-top-header-row {
-            margin-top: -14px !important;   /* 強力上提，緊貼分頁紅線 */
-            margin-bottom: 6px !important;  /* 推開下方股票的間距 */
-            height: 22px !important;
         }
         </style>
         """, unsafe_allow_html=True)
@@ -578,19 +571,20 @@ with row1_col1:
         start_idx = st.session_state["current_page"] * ITEMS_PER_PAGE
         end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
         
-        # 【物理提拉外殼】：給表頭單獨套上專屬類別名，令其 100% 強行脫離全域 CSS 的下扯拖累，瘋狂向上移位！
-        st.markdown('<div class="xq-top-header-row">', unsafe_allow_html=True)
-        t_col1, t_col2, t_col3, t_col4, t_col5, t_col6 = st.columns([2.6, 1.4, 1.4, 1.6, 1.4, 1.6])
-        with t_col1: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; margin:0; text-align:left; padding-left:4px;'>商品</p>", unsafe_allow_html=True)
-        with t_col2: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>買進</p>", unsafe_allow_html=True)
-        with t_col3: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>賣出</p>", unsafe_allow_html=True)
-        with t_col4: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>成交</p>", unsafe_allow_html=True)
-        with t_col5: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; margin:0;'>漲跌</p>", unsafe_allow_html=True)
-        with t_col6: st.markdown("<p style='color:#64B5F6; font-size:13px; font-weight:bold; text-align:right; padding-right:4px; margin:0;'>漲幅%</p>", unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        # 表頭下方與第一筆股票的專屬深藍色細分隔線
-        st.markdown("<hr style='margin:2px 0px 4px 0px !important; border-top:1px solid #0D47A1 !important;'>", unsafe_allow_html=True)
+        # 【破防降維打擊核心】：拋棄 st.columns 表頭，直接改用純 HTML / CSS 的 flex 橫列直繪表頭！
+        # 利用 margin-top: -16px !important; 產生強大的鋼鐵提拉力，強制表頭這行字「瘋狂往上移位調升」緊貼分頁線！
+        # 百分比寬度完美精準對齊下方的個股數據：商品(24%)、買進(14%)、賣出(14%)、成交(16%)、漲跌(14%)、漲幅%(18%)
+        st.markdown("""
+        <div style="display: flex; width: 100%; margin-top: -16px !important; margin-bottom: 4px !important; font-family: sans-serif; line-height: 1.2;">
+            <div style="width: 24%; color: #64B5F6; font-size: 13px; font-weight: bold; text-align: left; padding-left: 4px;">商品</div>
+            <div style="width: 14%; color: #64B5F6; font-size: 13px; font-weight: bold; text-align: right;">買進</div>
+            <div style="width: 14%; color: #64B5F6; font-size: 13px; font-weight: bold; text-align: right;">賣出</div>
+            <div style="width: 16%; color: #64B5F6; font-size: 13px; font-weight: bold; text-align: right;">成交</div>
+            <div style="width: 14%; color: #64B5F6; font-size: 13px; font-weight: bold; text-align: right;">漲跌</div>
+            <div style="width: 18%; color: #64B5F6; font-size: 13px; font-weight: bold; text-align: right; padding-right: 4px;">漲幅%</div>
+        </div>
+        <hr style="margin: 0px 0px 4px 0px !important; border-top: 1px solid #0D47A1 !important;">
+        """, unsafe_allow_html=True)
 
         # 2. 循環組裝資料列 (純 100% Python 控制流，第一行自動觸發物理推力)
         for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
