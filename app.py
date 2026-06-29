@@ -586,7 +586,7 @@ with row1_col1:
         <hr style="margin: 0px 0px 4px 0px !important; border-top: 1px solid #0D47A1 !important;">
         """, unsafe_allow_html=True)
 
-        #        # 2. 循環組裝資料列 (純 100% Python 控制流，數據列與商品按鈕同步雙向換裝紅綠多空色彩)
+        # 2. 循環組裝資料列 (純 100% Python 控制流，第一行自動觸發物理推力)
         for idx_offset, (name, code) in enumerate(watchlist_items[start_idx:end_idx]):
             global_idx = start_idx + idx_offset
             
@@ -606,46 +606,36 @@ with row1_col1:
                 c_p, chg, pct, bid_str, ask_str = 0.0, 0.0, 0.0, "--", "--"
                 price_format = f"{c_p:,.2f}"
             
-            # 高階多空配色引擎
+            # 經典紅綠多空配色判定
             if chg > 0:
-                v_color, s_arrow, sign_str = "#FF3333", "▲", "+"  # 數據紅
-                btn_color_class = "xq-btn-up"                     # 按鈕字體強制上漲紅
+                v_color, s_arrow, sign_str = "#FF3333", "▲", "+"  
             elif chg < 0:
-                v_color, s_arrow, sign_str = "#00AA00", "▼", ""   # 數據綠
-                btn_color_class = "xq-btn-down"                   # 按鈕字體強制下跌綠
+                v_color, s_arrow, sign_str = "#00AA00", "▼", ""   
             else:
-                v_color, s_arrow, sign_str = "#FFFFFF", " ", ""   # 平盤白
-                btn_color_class = "xq-btn-flat"                   # 按鈕字體標準白
+                v_color, s_arrow, sign_str = "#FFFFFF", " ", ""   
             
-            # 【鋼鐵防禦：字串清洗與超長字數強制截斷鎖】
-            # Step 1: 先清洗剝除所有可能殘留的括號後綴
-            clean_name = str(name).split(' (').split('(').strip()
+            # 【關鍵修復點】：加上了硬性死鎖的 [0] 索引解鎖通道，100% 根除 AttributeError 語法硬傷！
+            pure_name_str = str(name).split(' (')[0].split('(')[0].strip()
             
-            # Step 2: 核心防禦！如果名稱超過 7 個字（不論中文或英文），強制截斷並補上 "..."，100% 物理死鎖欄位寬度！
-            if len(clean_name) > 7:
-                pure_name_str = clean_name[:7] + "..."
-            else:
-                pure_name_str = clean_name
-            
-            # 當渲染到第一列資料(加權指數)時，自動注入動態向上提拉與向下推移補正
-            row_btn_class = f"{btn_color_class} xq-first-row-btn" if idx_offset == 0 else btn_color_class
+            # 當渲染到第一列資料(加權指數)時，動態換上專屬的 CSS 類別外殼
+            row_btn_class = "xq-first-row-btn" if idx_offset == 0 else "xq-normal-row"
             row_txt_style = "class='xq-first-row-text'" if idx_offset == 0 else ""
             
             # 建立與表頭絕對死鎖定位的橫列
             b_col1, b_col2, b_col3, b_col4, b_col5, b_col6 = st.columns([2.6, 1.4, 1.4, 1.6, 1.4, 1.6])
             
             with b_col1:
-                # 商品原生選取按鈕（套用字數截斷後的名稱，保證寬度絕不超載，數據永不跑位錯位）
+                # 商品原生選取按鈕（套用動態推力外殼，點擊 100% 滿血秒連動）
                 st.markdown(f'<div class="{row_btn_class}">', unsafe_allow_html=True)
                 is_active = (name == st.session_state["main_stock_selector"])
                 btn_prefix = "🎯 " if is_active else "🔹 "
-                if st.button(f"{btn_prefix}{pure_name_str}", key=f"f_sel_p_core_{code}_{global_idx}", use_container_width=True):
+                if st.button(f"{btn_prefix}{pure_name_str}", key=f"f_sel_p_core_{code}_{global_idx}"):
                     st.session_state["current_selected_idx"] = watchlist_keys.index(name)
                     st.session_state["main_stock_selector"] = name
                     st.rerun()
                 st.markdown('</div>', unsafe_allow_html=True)
             
-            # 數據欄位靠右定位，100% 工整對齊
+            # 右側所有數據欄位，如果是第一行，同步套用 xq-first-row-text 強制向下推移 15 像素對齊按鈕！
             with b_col2: st.markdown(f"<p {row_txt_style} style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{bid_str}</p>", unsafe_allow_html=True)
             with b_col3: st.markdown(f"<p {row_txt_style} style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{ask_str}</p>", unsafe_allow_html=True)
             with b_col4: st.markdown(f"<p {row_txt_style} style='text-align:right; font-weight:bold; color:{v_color}; margin:6px 0 0 0; font-family:monospace; font-size:13px;'>{price_format}</p>", unsafe_allow_html=True)
