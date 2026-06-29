@@ -513,14 +513,14 @@ with row1_col1:
         ITEMS_PER_PAGE = 6
         if "current_page" not in st.session_state: 
             st.session_state["current_page"] = 0
-            
+        
         max_page = max(0, (total_items - 1) // ITEMS_PER_PAGE)
         if st.session_state["current_page"] > max_page:
             st.session_state["current_page"] = max_page
-            
+        
         start_idx = st.session_state["current_page"] * ITEMS_PER_PAGE
         end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
-
+        
         # 1. 宣告一體化表頭，橫向與縱向黃金配比鎖死 [18%, 14%, 14%, 15%, 14%, 15%, 10%]
         html_code = """<table style="width:100%; border-collapse:collapse; font-family:'Courier New', monospace; font-size:14px; table-layout:fixed; line-height:1.2;"><tr style="border-bottom:2px solid #0D47A1; height:26px; vertical-align:middle;"><th style="width:18%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:left; padding-left:4px;">商品</th><th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">買進</th><th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">賣出</th><th style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">成交</th><th style="width:14%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲跌</th><th style="width:15%; color:#64B5F6; font-size:13px; font-weight:bold; text-align:right;">漲幅%</th><th style="width:10%; color:#64B5F6; font-size:11px; font-weight:bold; text-align:center; padding-right:4px;">移除</th></tr>"""
         
@@ -552,68 +552,70 @@ with row1_col1:
                 v_color, s_arrow, sign_str = "#00AA00", "▼", ""
             else:
                 v_color, s_arrow, sign_str = "#FFFFFF", " ", ""
-                
-            # 清洗並純化商品名稱（只拿第一段字串，消滅 tuple 與陣列符號）
+            
+            # 清洗並純化商品名稱
             pure_name_str = str(name).split(' (')[0].split('(')[0].replace("[", "").replace("]", "").replace("'", "").replace('"', '')
             
-            # 【關鍵優化】點擊事件改用純前端 postMessage 通道發送，拋棄外部庫，改用網頁視窗原生機制
+            # 點擊事件改用最外層 window.parent.postMessage 通道傳送
             html_code += f"""
             <tr style="background-color:{bg_color}; border-bottom:1px solid #222222; height:28px; vertical-align:middle;">
-                <td style="text-align:left; padding-left:4px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                    <span style="color:#FFFFFF; cursor:pointer; display:block; width:100%;" onmouseover="this.style.color='#00B0FF'" onmouseout="this.style.color='#FFFFFF'" onclick="window.parent.postMessage({{type:'stock_click', val:{global_idx}}}, '*')">🔹{pure_name_str}</span>
-                </td>
-                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{bid_str}</td>
-                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{ask_str}</td>
-                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{price_format}</td>
-                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{s_arrow}{abs(chg):,.2f}</td>
-                <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{sign_str}{pct:.2f}%</td>
-                <td style="text-align:center; padding-right:4px;">
-                    <span style="color:#FF3333; cursor:pointer; font-size:12px; font-weight:bold; white-space:nowrap;" onmouseover="this.style.color='#FF8A80'" onmouseout="this.style.color='#FF3333'" onclick="window.parent.postMessage({{type:'del_click', val:{global_idx}}}, '*')">[❌]</span>
-                </td>
+            <td style="text-align:left; padding-left:4px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            <span style="color:#FFFFFF; cursor:pointer; display:block; width:100%;" onmouseover="this.style.color='#00B0FF'" onmouseout="this.style.color='#FFFFFF'" onclick="window.parent.postMessage({{type:'stock_click', val:{global_idx}}}, '*')">🔹{pure_name_str}</span>
+            </td>
+            <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{bid_str}</td>
+            <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{ask_str}</td>
+            <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{price_format}</td>
+            <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{s_arrow}{abs(chg):,.2f}</td>
+            <td style="text-align:right; font-weight:bold; color:{v_color}; white-space:nowrap;">{sign_str}{pct:.2f}%</td>
+            <td style="text-align:center; padding-right:4px;">
+            <span style="color:#FF3333; cursor:pointer; font-size:12px; font-weight:bold; white-space:nowrap;" onmouseover="this.style.color='#FF8A80'" onmouseout="this.style.color='#FF3333'" onclick="window.parent.postMessage({{type:'del_click', val:{global_idx}}}, '*')">[❌]</span>
+            </td>
             </tr>
             """
             
-        html_code += "</table>"
-        
-        # 壓縮 HTML 字串防 Markdown 誤判原始碼
+            html_code += "</table>"
         clean_html_code = html_code.replace("\n", "").replace("\r", "")
         st.markdown(clean_html_code, unsafe_allow_html=True)
-
-        # 3. 用 Streamlit 內建的原生 components 元件監聽前端點擊，不需要匯入 elements 套件
+        
+        # 3. 原生 components 元件監聽前端點擊，精準鎖定最外層視窗注入參數並導向
         import streamlit.components.v1 as components
         js_listener = """
         <script>
         window.addEventListener('message', function(e) {
             if(e.data.type === 'stock_click') {
-                const url = new URL(window.parent.location.href);
-                url.searchParams.set('fast_sel', e.data.val);
-                window.parent.location.replace(url.href);
+                const topUrl = new URL(window.top.location.href);
+                topUrl.searchParams.set('fast_sel', e.data.val);
+                window.top.location.href = topUrl.href;
             }
             if(e.data.type === 'del_click') {
-                const url = new URL(window.parent.location.href);
-                url.searchParams.set('fast_del', e.data.val);
-                window.parent.location.replace(url.href);
+                const topUrl = new URL(window.top.location.href);
+                topUrl.searchParams.set('fast_del', e.data.val);
+                window.top.location.href = topUrl.href;
             }
         });
         </script>
         """
-        components.html(js_listener, height=0, width=0) # 高度設為 0，在頁面上完全不著痕跡
+        components.html(js_listener, height=0, width=0)
         
-        # 4. 接收通道回傳參數並在 Session 中高速響應切換，防禦登出
-        curr_params = st.query_params
+        # 4. 接收通道回傳參數，轉換為標準 dict 防禦新版相容性，強制寫入 Session 狀態
+        if hasattr(st.query_params, 'to_dict'):
+            curr_params = st.query_params.to_dict()
+        else:
+            curr_params = st.query_params
         
         if "fast_sel" in curr_params:
             sel_idx = int(curr_params["fast_sel"])
             if sel_idx < len(watchlist_items):
                 st.session_state["current_selected_idx"] = sel_idx
-                st.session_state["main_stock_selector"] = watchlist_items[sel_idx][0] # 綁定正確的字串 key
+                # 注意：綁定對應的顯示字串名稱作為 Key
+                st.session_state["main_stock_selector"] = watchlist_items[sel_idx][0]
                 st.query_params.clear()
                 st.rerun()
-                
+        
         if "fast_del" in curr_params:
             del_idx = int(curr_params["fast_del"])
             if total_items > 1 and del_idx < len(watchlist_items):
-                target_del_name = watchlist_items[del_idx][0] # 綁定正確的字串 key
+                target_del_name = watchlist_items[del_idx][0]
                 del st.session_state["watchlist_dict"][target_del_name]
                 save_my_watchlist()
                 remaining_keys = list(st.session_state["watchlist_dict"].keys())
@@ -621,8 +623,8 @@ with row1_col1:
                 st.session_state["main_stock_selector"] = remaining_keys[0] if remaining_keys else ""
                 st.query_params.clear()
                 st.rerun()
-            
-        # 分頁導航底欄 (緊湊對齊不跑位)
+        
+        # 分頁導航底欄
         st.markdown("<div style='margin-top:8px;'></div>", unsafe_allow_html=True)
         p_col1, p_col2, p_col3 = st.columns([1.2, 2, 1.2])
         with p_col1:
@@ -636,19 +638,19 @@ with row1_col1:
                 st.session_state["current_page"] += 1
                 st.rerun()
                 
-    with tab_manage:
-        st.markdown("<p style='color:#BBBBBB; font-size:14px; font-weight:bold; margin-top:5px;'>➕ 新增自選股商品</p>", unsafe_allow_html=True)
+            with tab_manage:
+                st.markdown("<p style='color:#BBBBBB; font-size:14px; font-weight:bold; margin-top:5px;'>➕ 新增自選股商品</p>", unsafe_allow_html=True)
         new_code = st.text_input("請在此輸入欲新增之股票代碼", placeholder="例如: 2330", key="manage_add_input_unique").strip()
         if st.button("🚀 確認加入自選清單", use_container_width=True, key="manage_add_btn_unique"):
             if new_code:
                 target_code = new_code.upper()
-                pure_number = target_code.split('.') if '.' in target_code else target_code
+                pure_number = target_code.split('.')[0] if '.' in target_code else target_code
                 if pure_number.isdigit() and not target_code.endswith(".TW") and not target_code.endswith(".TWO"):
                     target_code = f"{pure_number}.TW"
                 
                 existing_codes = list(st.session_state["watchlist_dict"].values())
                 if target_code in existing_codes:
-                    st.warning(f"💡 提示：商品代碼 [{target_code}] 已存在於您的自選股清單中，無需重複建立！")
+                    st.warning(f"提示：商品代碼 [{target_code}] 已存在於您的自選股清單中，無需重複建立！")
                 else:
                     try:
                         with st.spinner("正在驗證商品代碼..."):
@@ -665,85 +667,28 @@ with row1_col1:
                                 st.rerun()
                     except Exception as e:
                         st.error(f"連線驗證失敗: {e}")
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # --- 【右上格】：技術分析 K 線與均線圖 ---
 with row1_col2:
-    st.markdown('<div class="xq-grid-card">', unsafe_allow_html=True) # 包裹獨立卡片
-    st.markdown("📈 **【技術分析 K 線與均線】**") # 【修正亂碼問題】
+    st.markdown('<div class="xq-grid-card">', unsafe_allow_html=True)
+    st.markdown("📈 **【技術分析 K 線與均線】**")
     time_frame = st.radio("選擇時間區間", ["當日", "近月", "一年", "五年"], index=1, horizontal=True, key="tech_radio")
     
     df['MA5'] = df['Close'].rolling(window=5).mean()
     df['MA20'] = df['Close'].rolling(window=20).mean()
     plot_df = df.tail(30) if time_frame == "近月" else (df.tail(250) if time_frame == "一年" else df)
     
-        # 建立具有共享 X 軸的雙列圖表（上圖為K線與均線，下圖為成交量能）
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.08, row_heights=[0.7, 0.3])
     
-    # 1. 繪製台股專用標準實心紅綠 K 線
     fig.add_trace(go.Candlestick(
-        x=plot_df.index, 
-        open=plot_df['Open'], 
-        high=plot_df['High'], 
-        low=plot_df['Low'], 
-        close=plot_df['Close'],
-        name="<b>K線圖</b>", 
-        increasing=dict(line=dict(color='#FF3333'), fillcolor='#FF3333'),  # 陽線：實心紅棒
-        decreasing=dict(line=dict(color='#00AA00'), fillcolor='#00AA00'),  # 陰線：實心綠棒
-        showlegend=True
+        x=plot_df.index, open=plot_df['Open'], high=plot_df['High'], low=plot_df['Low'], close=plot_df['Close'],
+        name="<b>K線圖</b>", increasing=dict(line=dict(color='#FF3333'), fillcolor='#FF3333'),
+        decreasing=dict(line=dict(color='#00AA00'), fillcolor='#00AA00'), showlegend=True
     ), row=1, col=1)
     
-    # 2. 疊加短、中期經典均線系統
-    fig.add_trace(go.Scatter(
-        x=plot_df.index, 
-        y=plot_df['MA5'], 
-        mode='lines', 
-        line=dict(color='#00B0FF', width=2.0), 
-        name="<b>5MA</b>"
-    ), row=1, col=1)
-    
-    fig.add_trace(go.Scatter(
-        x=plot_df.index, 
-        y=plot_df['MA20'], 
-        mode='lines', 
-        line=dict(color='#E040FB', width=2.0), 
-        name="<b>20MA</b>"
-    ), row=1, col=1)
-    
-    # 3. 根據當日收盤狀況動態變更成交量柱狀體顏色 (上漲紅棒、下跌綠棒)
-    vol_colors = ['#FF3333' if c >= o else '#00AA00' for o, c in zip(plot_df['Open'], plot_df['Close'])]
-    fig.add_trace(go.Bar(
-        x=plot_df.index, 
-        y=plot_df['Volume'], 
-        marker_color=vol_colors, 
-        name="成交量", 
-        showlegend=False
-    ), row=2, col=1)
-    
-    # 4. 圖表全局排版美化設定
-    fig.update_layout(
-        template="plotly_dark", 
-        paper_bgcolor="#1A1A1E", 
-        plot_bgcolor="#1A1A1E", 
-        xaxis_rangeslider_visible=False,  # 隱藏 X 軸滑塊，騰出空間給四宮格高密度排版
-        height=205, 
-        margin=dict(l=10, r=40, t=5, b=5),
-        showlegend=True, 
-        legend=dict(
-            orientation="h", 
-            yanchor="bottom", 
-            y=1.02, 
-            xanchor="right", 
-            x=1.0, 
-            bgcolor="rgba(0, 0, 0, 0)", 
-            font=dict(size=11, color="#FFFFFF")
-        )
-    )
-    
-    # 5. 強制將 Y 軸座標向右側對齊（完全同步 XQ 精誠系統終端排版）
-    fig.update_yaxes(side="right", gridcolor="#2D2D2D")
-    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    st.markdown('</div>', unsafe_allow_html=True)  # 閉合左上/右上排版容器
+    fig.add_trace(go.Scatter(x=plot_df.index, y=df['MA5'].loc[plot_df.index], mode='lines', line=dict(color='#00B0FF', width=2.0), name="<b>5MA</b>"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=plot_df.index, y=df['MA20'].loc[plot_df.index], mode='lines', line=dict(color='#E040FB', width=2.0), name="<b>20MA</b>"), row=1, col=1)
 
 # 建立四宮格的下半部分主要橫列布局
 row2_col1, row2_col2 = st.columns(2)
