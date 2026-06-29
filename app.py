@@ -607,7 +607,8 @@ with row1_col1:
             sel_idx = int(curr_params["fast_sel"])
             if sel_idx < len(watchlist_items):
                 st.session_state["current_selected_idx"] = sel_idx
-                # 【終極連動 Bug 修復】：.items() 陣列中每一筆是 (顯示名稱, 代碼)，必須指定 [0] 拿取純字串名稱
+                # 【大魔王 Bug 終極修復】：watchlist_items[sel_idx] 是 (顯示名稱, 代碼) 元組
+                # 必須加上 [0] 拿取純字串顯示名稱，全宇宙唯一大腦才能正確識別連動！
                 st.session_state["main_stock_selector"] = watchlist_items[sel_idx][0]
                 st.query_params.clear()
                 st.rerun()
@@ -615,7 +616,7 @@ with row1_col1:
         if "fast_del" in curr_params:
             del_idx = int(curr_params["fast_del"])
             if total_items > 1 and del_idx < len(watchlist_items):
-                target_del_name = watchlist_items[del_idx][0] # 同步指定 [0] 取其字串名稱
+                target_del_name = watchlist_items[del_idx][0] # 同步加上 [0] 修正元組刪除 Bug
                 del st.session_state["watchlist_dict"][target_del_name]
                 save_my_watchlist()
                 remaining_keys = list(st.session_state["watchlist_dict"].keys())
