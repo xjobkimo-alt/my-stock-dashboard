@@ -634,6 +634,7 @@ with row2_col1:
     st.markdown('<div class="xq-grid-card">', unsafe_allow_html=True)
     st.markdown(f"**🎯 【市場焦點動態】** <span style='color:{color_text}; font-weight:bold;'>{current_price:,.2f} ({sign}{price_change_pct:.2f}%)</span>", unsafe_allow_html=True)
     
+    # 這裡才是真正有作用的分頁！
     tab_trend, tab_ticks = st.tabs(["📊 當日分時走勢", "🧾 即時成交明細"])
     last_close = float(df['Close'].iloc[-1])
     last_high = float(df['High'].iloc[-1])
@@ -654,8 +655,8 @@ with row2_col1:
         
         fig_line.update_layout(
             template="plotly_dark", 
-            paper_bgcolor="#1A1A24", # 已同步修正為灰色卡片底色
-            plot_bgcolor="#1A1A24",  # 已同步修正為灰色卡片底色
+            paper_bgcolor="#1A1A24", 
+            plot_bgcolor="#1A1A24",  
             height=185, 
             margin=dict(l=10, r=40, t=5, b=5)
         )
@@ -679,6 +680,7 @@ with row2_col2:
     st.markdown('<div class="xq-grid-card">', unsafe_allow_html=True)
     st.markdown("**🤖 【AI 與券商即時診斷大腦】**")
     
+    # 這裡才是真正有作用的分頁！
     tab_news, tab_ai, tab_shioaji, tab_picker = st.tabs([
         "📰 即時新聞", "🧠 AI 策略分析", "📊 永豐單股指標", "🔍 永豐全市場選股"
     ])
